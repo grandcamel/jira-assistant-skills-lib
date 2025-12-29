@@ -22,7 +22,7 @@ Example usage:
         print(issue['fields']['summary'])
 """
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 
 # Error handling
 from .error_handler import (
@@ -124,7 +124,16 @@ from .time_utils import (
 # Cache
 from .cache import (
     JiraCache,
+    CacheStats,
     get_cache,
+)
+
+# Request batching
+from .request_batcher import (
+    RequestBatcher,
+    BatchResult,
+    BatchError,
+    batch_fetch_issues,
 )
 
 # Automation client
@@ -225,7 +234,13 @@ __all__ = [
     "DAYS_PER_WEEK",
     # Cache
     "JiraCache",
+    "CacheStats",
     "get_cache",
+    # Request Batching
+    "RequestBatcher",
+    "BatchResult",
+    "BatchError",
+    "batch_fetch_issues",
     # Batch Processing
     "BatchProcessor",
     "BatchConfig",
