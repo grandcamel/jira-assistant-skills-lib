@@ -22,7 +22,7 @@ Example usage:
         print(issue['fields']['summary'])
 """
 
-__version__ = "0.1.3"
+__version__ = "0.1.4"
 
 # Error handling
 from .error_handler import (
@@ -100,6 +100,7 @@ from .adf_helper import (
     create_adf_heading,
     create_adf_code_block,
     wiki_markup_to_adf,
+    _parse_wiki_inline,  # Exposed for testing
 )
 
 # Time utilities
@@ -167,6 +168,63 @@ from .batch_processor import (
     get_recommended_batch_size,
     generate_operation_id,
     list_pending_checkpoints,
+)
+
+# Credential management
+from .credential_manager import (
+    CredentialManager,
+    CredentialBackend,
+    CredentialNotFoundError,
+    is_keychain_available,
+    get_credentials,
+    store_credentials,
+    validate_credentials,
+)
+
+# Project context
+from .project_context import (
+    ProjectContext,
+    get_project_context,
+    clear_context_cache,
+    has_project_context,
+    get_defaults_for_issue_type,
+    get_valid_transitions,
+    get_statuses_for_issue_type,
+    suggest_assignee,
+    get_common_labels,
+    validate_transition,
+    format_context_summary,
+)
+
+# Transition helpers
+from .transition_helpers import (
+    find_transition_by_name,
+    find_transition_by_keywords,
+    format_transition_list,
+)
+
+# User helpers
+from .user_helpers import (
+    UserNotFoundError,
+    resolve_user_to_account_id,
+    get_user_display_info,
+    resolve_users_batch,
+)
+
+# JSM utilities
+from .jsm_utils import (
+    format_sla_time,
+    format_duration,
+    calculate_sla_percentage,
+    is_sla_at_risk,
+    get_sla_status_emoji,
+    get_sla_status_text,
+)
+
+# Autocomplete cache
+from .autocomplete_cache import (
+    AutocompleteCache,
+    get_autocomplete_cache,
 )
 
 __all__ = [
@@ -284,4 +342,43 @@ __all__ = [
     "VALID_HOLDER_TYPES",
     "HOLDER_TYPES_WITH_PARAMETER",
     "HOLDER_TYPES_WITHOUT_PARAMETER",
+    # Credential Management
+    "CredentialManager",
+    "CredentialBackend",
+    "CredentialNotFoundError",
+    "is_keychain_available",
+    "get_credentials",
+    "store_credentials",
+    "validate_credentials",
+    # Project Context
+    "ProjectContext",
+    "get_project_context",
+    "clear_context_cache",
+    "has_project_context",
+    "get_defaults_for_issue_type",
+    "get_valid_transitions",
+    "get_statuses_for_issue_type",
+    "suggest_assignee",
+    "get_common_labels",
+    "validate_transition",
+    "format_context_summary",
+    # Transition Helpers
+    "find_transition_by_name",
+    "find_transition_by_keywords",
+    "format_transition_list",
+    # User Helpers
+    "UserNotFoundError",
+    "resolve_user_to_account_id",
+    "get_user_display_info",
+    "resolve_users_batch",
+    # JSM Utilities
+    "format_sla_time",
+    "format_duration",
+    "calculate_sla_percentage",
+    "is_sla_at_risk",
+    "get_sla_status_emoji",
+    "get_sla_status_text",
+    # Autocomplete Cache
+    "AutocompleteCache",
+    "get_autocomplete_cache",
 ]
