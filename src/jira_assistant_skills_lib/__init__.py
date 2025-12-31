@@ -22,7 +22,7 @@ Example usage:
         print(issue['fields']['summary'])
 """
 
-__version__ = "0.1.2"
+__version__ = "0.1.3"
 
 # Error handling
 from .error_handler import (
@@ -51,6 +51,7 @@ from .jira_client import JiraClient
 from .config_manager import (
     ConfigManager,
     get_jira_client,
+    get_automation_client,
 )
 
 # Validators
@@ -139,6 +140,24 @@ from .request_batcher import (
 # Automation client
 from .automation_client import AutomationClient
 
+# Permission helpers
+from .permission_helpers import (
+    parse_grant_string,
+    format_grant,
+    format_grant_for_export,
+    build_grant_payload,
+    validate_permission,
+    validate_holder_type,
+    find_scheme_by_name,
+    group_grants_by_permission,
+    find_grant_by_spec,
+    get_holder_display,
+    format_scheme_summary,
+    VALID_HOLDER_TYPES,
+    HOLDER_TYPES_WITH_PARAMETER,
+    HOLDER_TYPES_WITHOUT_PARAMETER,
+)
+
 # Batch processing
 from .batch_processor import (
     BatchProcessor,
@@ -159,6 +178,7 @@ __all__ = [
     # Config
     "ConfigManager",
     "get_jira_client",
+    "get_automation_client",
     # Errors
     "JiraError",
     "AuthenticationError",
@@ -249,4 +269,19 @@ __all__ = [
     "get_recommended_batch_size",
     "generate_operation_id",
     "list_pending_checkpoints",
+    # Permission Helpers
+    "parse_grant_string",
+    "format_grant",
+    "format_grant_for_export",
+    "build_grant_payload",
+    "validate_permission",
+    "validate_holder_type",
+    "find_scheme_by_name",
+    "group_grants_by_permission",
+    "find_grant_by_spec",
+    "get_holder_display",
+    "format_scheme_summary",
+    "VALID_HOLDER_TYPES",
+    "HOLDER_TYPES_WITH_PARAMETER",
+    "HOLDER_TYPES_WITHOUT_PARAMETER",
 ]
