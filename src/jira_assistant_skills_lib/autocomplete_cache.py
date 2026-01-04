@@ -28,6 +28,17 @@ class AutocompleteCache:
     Caches JQL autocomplete suggestions to reduce API calls.
     """
 
+    # Cache key constants
+    KEY_AUTOCOMPLETE_DATA = "jql:autocomplete:data"
+    KEY_FIELDS_LIST = "jql:fields:all"
+    KEY_FUNCTIONS_LIST = "jql:functions:all"
+    KEY_RESERVED_WORDS = "jql:reserved:all"
+    KEY_SUGGESTION_PREFIX = "jql:suggest:"
+
+    # TTL constants
+    TTL_AUTOCOMPLETE = timedelta(hours=24)  # 24 hours for field/function definitions
+    TTL_SUGGESTIONS = timedelta(hours=1)    # 1 hour for value suggestions
+
     def __init__(self, cache: Optional[SkillCache] = None):
         """
         Initialize autocomplete cache.
