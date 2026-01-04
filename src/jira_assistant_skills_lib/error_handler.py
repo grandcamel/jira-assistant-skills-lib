@@ -41,6 +41,8 @@ class AuthenticationError(BaseAuthenticationError):
     """Raised when authentication fails."""
 
     def __init__(self, message: str = "Authentication failed", **kwargs: Any):
+        # Remove 'message' from kwargs if present to avoid duplicate argument
+        kwargs.pop('message', None)
         hint = "\n\nTroubleshooting:\n"
         hint += "  1. Verify JIRA_API_TOKEN is set correctly\n"
         hint += "  2. Check that your email matches your JIRA account\n"
@@ -53,6 +55,8 @@ class PermissionError(BasePermissionError):
     """Raised when the user lacks permissions for an operation."""
 
     def __init__(self, message: str = "Permission denied", **kwargs: Any):
+        # Remove 'message' from kwargs if present to avoid duplicate argument
+        kwargs.pop('message', None)
         hint = "\n\nTroubleshooting:\n"
         hint += "  1. Check your JIRA permissions for this project\n"
         hint += "  2. Verify you have the required role (e.g., Developer, Admin)\n"
@@ -64,6 +68,8 @@ class ValidationError(BaseValidationError):
     """Raised when input validation fails."""
 
     def __init__(self, message: str = "Validation failed", field: Optional[str] = None, **kwargs: Any):
+        # Remove 'message' from kwargs if present to avoid duplicate argument
+        kwargs.pop('message', None)
         self.field = field
         if field:
             message = f"{message} (field: {field})"
@@ -74,6 +80,8 @@ class NotFoundError(BaseNotFoundError):
     """Raised when a resource is not found."""
 
     def __init__(self, resource_type: str = "Resource", resource_id: str = "", **kwargs: Any):
+        # Remove 'message' from kwargs if present to avoid duplicate argument
+        kwargs.pop('message', None)
         message = f"{resource_type} not found"
         if resource_id:
             message += f": {resource_id}"
@@ -84,13 +92,15 @@ class RateLimitError(BaseRateLimitError):
     """Raised when API rate limit is exceeded."""
 
     def __init__(self, retry_after: Optional[int] = None, **kwargs: Any):
-        self.retry_after = retry_after
+        # Remove 'message' from kwargs if present to avoid duplicate argument
+        kwargs.pop('message', None)
         message = "API rate limit exceeded"
         if retry_after:
             message += f". Retry after {retry_after} seconds"
         else:
             message += ". Please wait before retrying"
-        super().__init__(message, **kwargs)
+        # Pass retry_after to base class so it sets the attribute
+        super().__init__(message, retry_after=retry_after, **kwargs)
 
 
 class ConflictError(BaseConflictError):
@@ -102,6 +112,8 @@ class ServerError(BaseServerError):
     """Raised when the JIRA server encounters an error."""
 
     def __init__(self, message: str = "JIRA server error", **kwargs: Any):
+        # Remove 'message' from kwargs if present to avoid duplicate argument
+        kwargs.pop('message', None)
         hint = "\n\nThe JIRA server encountered an error. Please try again later."
         super().__init__(message + hint, **kwargs)
 
@@ -114,6 +126,8 @@ class AutomationError(JiraError): # Inherit from JiraError as it's Jira-specific
     """Base exception for Automation API errors."""
 
     def __init__(self, message: str = "Automation API error", **kwargs: Any):
+        # Remove 'message' from kwargs if present to avoid duplicate argument
+        kwargs.pop('message', None)
         hint = "\n\nTroubleshooting:\n"
         hint += "  1. Verify you have Jira Administrator permissions\n"
         hint += "  2. Ensure the Cloud ID is correct\n"
@@ -125,6 +139,8 @@ class AutomationNotFoundError(AutomationError):
     """Raised when an automation rule or template is not found."""
 
     def __init__(self, resource_type: str = "Automation resource", resource_id: str = "", **kwargs: Any):
+        # Remove 'message' from kwargs if present to avoid duplicate argument
+        kwargs.pop('message', None)
         message = f"{resource_type} not found"
         if resource_id:
             message += f": {resource_id}"
@@ -135,6 +151,8 @@ class AutomationPermissionError(AutomationError):
     """Raised when the user lacks permissions for automation management."""
 
     def __init__(self, message: str = "Automation permission denied", **kwargs: Any):
+        # Remove 'message' from kwargs if present to avoid duplicate argument
+        kwargs.pop('message', None)
         hint = "\n\nTroubleshooting:\n"
         hint += "  1. You need Jira Administrator permission for full rule management\n"
         hint += "  2. Project Administrator is needed for project-scoped rules\n"
@@ -146,6 +164,8 @@ class AutomationValidationError(AutomationError):
     """Raised when automation rule configuration is invalid."""
 
     def __init__(self, message: str = "Automation validation failed", field: Optional[str] = None, **kwargs: Any):
+        # Remove 'message' from kwargs if present to avoid duplicate argument
+        kwargs.pop('message', None)
         self.field = field
         if field:
             message = f"{message} (field: {field})"
