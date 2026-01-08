@@ -98,8 +98,53 @@ When adding new modules:
 4. Use existing error classes from error_handler.py
 5. Follow the validation pattern: validate inputs before API calls
 
+## Mock Client
+
+The library includes a mock JIRA client for testing without real API calls.
+
+### Architecture
+
+```
+src/jira_assistant_skills_lib/mock/
+├── __init__.py      # Exports MockJiraClient, is_mock_mode
+├── base.py          # MockJiraClientBase with core operations + is_mock_mode()
+├── clients.py       # Composed clients (MockJiraClient = Base + all mixins)
+└── mixins/          # Specialized functionality
+    ├── agile.py     # Boards, sprints, backlog
+    ├── search.py    # Advanced JQL parsing
+    ├── jsm.py       # Service desk, SLAs
+    └── ...          # admin, collaborate, dev, fields, relationships, time
+```
+
+### Enabling Mock Mode
+
+Set `JIRA_MOCK_MODE=true` environment variable. The `get_jira_client()` function checks this:
+
+```python
+def get_jira_client(profile=None):
+    from .mock import is_mock_mode, MockJiraClient
+    if is_mock_mode():
+        return MockJiraClient()  # Returns mock instead of real client
+    # ... normal client creation
+```
+
+### Seed Data
+
+Mock client provides deterministic test data:
+- **DEMO project**: DEMO-84 (Epic), DEMO-85 (Story), DEMO-86 (Bug), DEMO-87 (Task), DEMO-91 (Bug)
+- **DEMOSD project**: DEMOSD-1 through DEMOSD-5 (Service desk requests)
+- **Users**: Jason Krueger (abc123), Jane Manager (def456)
+
+## Gotchas
+
+- **Mock API parity**: Mock methods must match `JiraClient` signatures exactly. If real client adds parameters (e.g., `next_page_token`), mock must accept them too or skills will fail with `TypeError: got unexpected keyword argument`.
+- **Version sync**: `pyproject.toml` version and `__init__.py` `__version__` must match. Use `./scripts/sync-version.sh` if available.
+- **Import from package**: Always `from jira_assistant_skills_lib import ...`, never import internal modules directly.
+- **Mixin method conflicts**: When adding mock methods, check if base class or other mixins define the same method. Use `super()` calls if extending.
+- **Test with real signatures**: When updating mock, test against actual skill scripts to catch signature mismatches early.
+
 ## Version Management
 
 Version is defined in two places that must stay in sync:
-- `pyproject.toml`: `version = "0.2.0"` (source of truth for publishing)
-- `src/jira_assistant_skills_lib/__init__.py`: `__version__ = "0.1.5"` (runtime access)
+- `pyproject.toml`: `version = "0.2.3"` (source of truth for publishing)
+- `src/jira_assistant_skills_lib/__init__.py`: `__version__ = "0.2.3"` (runtime access)
