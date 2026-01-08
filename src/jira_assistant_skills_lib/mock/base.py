@@ -483,10 +483,11 @@ class MockJiraClientBase:
     def search_issues(
         self,
         jql: str,
-        start_at: int = 0,
+        start_at: Optional[int] = 0,
         max_results: int = 50,
         fields: str = None,
         expand: str = None,
+        next_page_token: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Search issues with JQL. Supports basic project and assignee filtering.
 
@@ -496,6 +497,7 @@ class MockJiraClientBase:
             max_results: Maximum number of results to return.
             fields: Comma-separated list of fields to return.
             expand: Fields to expand.
+            next_page_token: Pagination token (ignored in mock, for API compatibility).
 
         Returns:
             Search results with pagination info and matching issues.
