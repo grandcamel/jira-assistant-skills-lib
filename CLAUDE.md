@@ -40,7 +40,7 @@ mypy src
 The package is organized as a flat module under `src/jira_assistant_skills_lib/`:
 
 - **jira_client.py**: HTTP client with retry logic (3 attempts, exponential backoff on 429/5xx), session management, and unified error handling for JIRA REST API v3
-- **config_manager.py**: Multi-source configuration merging with profile support. Priority: env vars > keychain > settings.local.json > settings.json > defaults
+- **config_manager.py**: Configuration from environment variables. Priority: env vars > keychain > settings.local.json > settings.json > defaults
 - **error_handler.py**: Exception hierarchy mapping HTTP status codes to domain exceptions (400→ValidationError, 401→AuthenticationError, 403→PermissionError, 404→NotFoundError, 429→RateLimitError, 5xx→ServerError)
 - **validators.py**: Input validation for JIRA-specific formats (issue keys: `^[A-Z][A-Z0-9]*-[0-9]+$`, project keys, JQL, URLs, emails)
 - **formatters.py**: Output formatting for tables (via tabulate), JSON, and CSV export
@@ -69,9 +69,9 @@ Environment variables (highest priority):
 - `JIRA_API_TOKEN`: API token from https://id.atlassian.com/manage-profile/security/api-tokens
 - `JIRA_EMAIL`: Email associated with JIRA account
 - `JIRA_SITE_URL`: JIRA instance URL (e.g., https://company.atlassian.net)
-- `JIRA_PROFILE`: Profile name for multi-instance support
+- `JIRA_MOCK_MODE`: Set to `true` to use mock client instead of real API
 
-Profile-based Agile field overrides via env vars:
+Agile field overrides (optional):
 - `JIRA_EPIC_LINK_FIELD`, `JIRA_STORY_POINTS_FIELD`, `JIRA_SPRINT_FIELD`
 
 ### Error Handling Pattern
@@ -121,11 +121,11 @@ src/jira_assistant_skills_lib/mock/
 Set `JIRA_MOCK_MODE=true` environment variable. The `get_jira_client()` function checks this:
 
 ```python
-def get_jira_client(profile=None):
+def get_jira_client():
     from .mock import is_mock_mode, MockJiraClient
     if is_mock_mode():
         return MockJiraClient()  # Returns mock instead of real client
-    # ... normal client creation
+    # ... normal client creation from JIRA_* env vars
 ```
 
 ### Seed Data
