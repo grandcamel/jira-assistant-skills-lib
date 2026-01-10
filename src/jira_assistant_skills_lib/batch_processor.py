@@ -10,11 +10,11 @@ Provides:
 
 import json
 import time
-import os
-from pathlib import Path
-from typing import List, Dict, Any, Optional, Callable, TypeVar, Generic
-from dataclasses import dataclass, field, asdict
+from collections.abc import Callable
+from dataclasses import asdict, dataclass, field
 from datetime import datetime
+from pathlib import Path
+from typing import Any, Generic, TypeVar
 
 T = TypeVar("T")
 
@@ -31,8 +31,8 @@ class BatchProgress:
     total_batches: int = 0
     started_at: str = ""
     updated_at: str = ""
-    errors: Dict[str, str] = field(default_factory=dict)
-    processed_keys: List[str] = field(default_factory=list)
+    errors: dict[str, str] = field(default_factory=dict)
+    processed_keys: list[str] = field(default_factory=list)
 
     @property
     def is_complete(self) -> bool:
@@ -56,8 +56,8 @@ class BatchConfig:
     delay_between_items: float = 0.1
     max_items: int = 10000
     enable_checkpoints: bool = True
-    checkpoint_dir: Optional[str] = None
-    operation_id: Optional[str] = None
+    checkpoint_dir: str | None = None
+    operation_id: str | None = None
 
     def __post_init__(self):
         # Enforce reasonable limits
@@ -102,7 +102,7 @@ class CheckpointManager:
             json.dump(data, f, indent=2)
         temp_file.rename(self.checkpoint_file)
 
-    def load(self) -> Optional[BatchProgress]:
+    def load(self) -> BatchProgress | None:
         """
         Load progress from checkpoint file.
 
@@ -140,9 +140,9 @@ class BatchProcessor(Generic[T]):
 
     def __init__(
         self,
-        config: Optional[BatchConfig] = None,
-        process_item: Optional[Callable[[T], bool]] = None,
-        progress_callback: Optional[Callable[[BatchProgress], None]] = None,
+        config: BatchConfig | None = None,
+        process_item: Callable[[T], bool] | None = None,
+        progress_callback: Callable[[BatchProgress], None] | None = None,
     ):
         """
         Initialize batch processor.
@@ -158,7 +158,7 @@ class BatchProcessor(Generic[T]):
 
     def process(
         self,
-        items: List[T],
+        items: list[T],
         get_key: Callable[[T], str],
         resume: bool = True,
         dry_run: bool = False,
@@ -256,7 +256,7 @@ class BatchProcessor(Generic[T]):
 
         return progress
 
-    def _create_batches(self, items: List[T]) -> List[List[T]]:
+    def _create_batches(self, items: list[T]) -> list[list[T]]:
         """Split items into batches."""
         return [
             items[i : i + self.config.batch_size]
@@ -297,7 +297,7 @@ def get_recommended_batch_size(total_items: int, operation_type: str = "simple")
 
 
 def generate_operation_id(
-    operation_type: str, timestamp: Optional[datetime] = None
+    operation_type: str, timestamp: datetime | None = None
 ) -> str:
     """
     Generate unique operation ID for checkpointing.
@@ -316,8 +316,8 @@ def generate_operation_id(
 
 
 def list_pending_checkpoints(
-    checkpoint_dir: Optional[str] = None,
-) -> List[Dict[str, Any]]:
+    checkpoint_dir: str | None = None,
+) -> list[dict[str, Any]]:
     """
     List all pending checkpoints that can be resumed.
 

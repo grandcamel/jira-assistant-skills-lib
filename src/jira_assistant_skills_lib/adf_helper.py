@@ -6,10 +6,10 @@ used by JIRA for rich text fields like descriptions and comments.
 """
 
 import re
-from typing import Dict, Any, List
+from typing import Any
 
 
-def text_to_adf(text: str) -> Dict[str, Any]:
+def text_to_adf(text: str) -> dict[str, Any]:
     """
     Convert plain text to ADF format.
 
@@ -34,7 +34,7 @@ def text_to_adf(text: str) -> Dict[str, Any]:
     return {"version": 1, "type": "doc", "content": content if content else []}
 
 
-def markdown_to_adf(markdown: str) -> Dict[str, Any]:
+def markdown_to_adf(markdown: str) -> dict[str, Any]:
     """
     Convert markdown to ADF format (basic conversion).
 
@@ -151,7 +151,7 @@ def markdown_to_adf(markdown: str) -> Dict[str, Any]:
     return {"version": 1, "type": "doc", "content": content if content else []}
 
 
-def _parse_inline_formatting(text: str) -> List[Dict[str, Any]]:
+def _parse_inline_formatting(text: str) -> list[dict[str, Any]]:
     """
     Parse inline markdown formatting (bold, italic, code, links).
 
@@ -223,7 +223,7 @@ def _parse_inline_formatting(text: str) -> List[Dict[str, Any]]:
     return result if result else [{"type": "text", "text": ""}]
 
 
-def adf_to_text(adf: Dict[str, Any]) -> str:
+def adf_to_text(adf: dict[str, Any]) -> str:
     """
     Convert ADF to plain text (extract text content).
 
@@ -243,7 +243,7 @@ def adf_to_text(adf: Dict[str, Any]) -> str:
     return "\n".join(lines).strip()
 
 
-def _node_to_text(node: Dict[str, Any]) -> str:
+def _node_to_text(node: dict[str, Any]) -> str:
     """
     Convert a single ADF node to text.
 
@@ -293,7 +293,7 @@ def _node_to_text(node: Dict[str, Any]) -> str:
     return ""
 
 
-def create_adf_paragraph(text: str, **marks) -> Dict[str, Any]:
+def create_adf_paragraph(text: str, **marks) -> dict[str, Any]:
     """
     Create an ADF paragraph with optional formatting.
 
@@ -321,7 +321,7 @@ def create_adf_paragraph(text: str, **marks) -> Dict[str, Any]:
     return {"type": "paragraph", "content": [text_node]}
 
 
-def create_adf_heading(text: str, level: int = 1) -> Dict[str, Any]:
+def create_adf_heading(text: str, level: int = 1) -> dict[str, Any]:
     """
     Create an ADF heading.
 
@@ -339,7 +339,7 @@ def create_adf_heading(text: str, level: int = 1) -> Dict[str, Any]:
     }
 
 
-def create_adf_code_block(code: str, language: str = "") -> Dict[str, Any]:
+def create_adf_code_block(code: str, language: str = "") -> dict[str, Any]:
     """
     Create an ADF code block.
 
@@ -362,7 +362,7 @@ def create_adf_code_block(code: str, language: str = "") -> Dict[str, Any]:
     return node
 
 
-def wiki_markup_to_adf(text: str) -> Dict[str, Any]:
+def wiki_markup_to_adf(text: str) -> dict[str, Any]:
     """
     Convert JIRA wiki markup to ADF format.
 
@@ -407,7 +407,7 @@ def wiki_markup_to_adf(text: str) -> Dict[str, Any]:
     }
 
 
-def _parse_wiki_inline(text: str) -> List[Dict[str, Any]]:
+def _parse_wiki_inline(text: str) -> list[dict[str, Any]]:
     """
     Parse wiki-style inline formatting.
 

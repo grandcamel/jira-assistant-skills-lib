@@ -5,12 +5,12 @@ Provides functions to find transitions by name with fuzzy matching
 support (case-insensitive, exact and partial matching).
 """
 
-from typing import List, Dict, Any, Optional
+from typing import Any
 
 
 def find_transition_by_name(
-    transitions: List[Dict[str, Any]], name: str
-) -> Dict[str, Any]:
+    transitions: list[dict[str, Any]], name: str
+) -> dict[str, Any]:
     """
     Find a transition by name (case-insensitive, partial match).
 
@@ -63,10 +63,10 @@ def find_transition_by_name(
 
 
 def find_transition_by_keywords(
-    transitions: List[Dict[str, Any]],
-    keywords: List[str],
-    prefer_exact: Optional[str] = None,
-) -> Optional[Dict[str, Any]]:
+    transitions: list[dict[str, Any]],
+    keywords: list[str],
+    prefer_exact: str | None = None,
+) -> dict[str, Any] | None:
     """
     Find a transition matching any of the given keywords.
 
@@ -105,7 +105,7 @@ def find_transition_by_keywords(
     return matching[0]
 
 
-def format_transition_list(transitions: List[Dict[str, Any]]) -> str:
+def format_transition_list(transitions: list[dict[str, Any]]) -> str:
     """
     Format a list of transitions for display.
 

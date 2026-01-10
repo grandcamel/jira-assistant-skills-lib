@@ -25,203 +25,16 @@ Example usage:
 __version__ = "0.2.4"
 
 # Error handling
-from .error_handler import (
-    JiraError,
-    AuthenticationError,
-    PermissionError,
-    ValidationError,
-    NotFoundError,
-    RateLimitError,
-    ConflictError,
-    ServerError,
-    AutomationError,
-    AutomationNotFoundError,
-    AutomationPermissionError,
-    AutomationValidationError,
-    handle_jira_error,
-    sanitize_error_message,
-    print_error,
-    handle_errors,
-)
-
-# JIRA Client
-from .jira_client import JiraClient
-
-# Configuration
-from .config_manager import (
-    ConfigManager,
-    get_jira_client,
-    get_automation_client,
-    get_agile_fields,
-    get_agile_field,
-    get_project_defaults,
-)
-
-# Validators
-from .validators import (
-    validate_issue_key,
-    validate_jql,
-    validate_project_key,
-    validate_file_path,
-    validate_url,
-    validate_email,
-    validate_transition_id,
-    validate_project_type,
-    validate_assignee_type,
-    validate_project_template,
-    validate_project_name,
-    validate_category_name,
-    validate_avatar_file,
-    VALID_PROJECT_TYPES,
-    VALID_ASSIGNEE_TYPES,
-    PROJECT_TEMPLATES,
-)
-
-# Formatters
-from .formatters import (
-    format_issue,
-    format_table,
-    format_json,
-    export_csv,
-    get_csv_string,
-    format_transitions,
-    format_comments,
-    format_search_results,
-    print_success,
-    print_warning,
-    print_info,
-    EPIC_LINK_FIELD,
-    STORY_POINTS_FIELD,
-)
-
 # ADF Helper
 from .adf_helper import (
-    text_to_adf,
-    markdown_to_adf,
-    adf_to_text,
-    create_adf_paragraph,
-    create_adf_heading,
-    create_adf_code_block,
-    wiki_markup_to_adf,
     _parse_wiki_inline,  # Exposed for testing
-)
-
-# Time utilities
-from .time_utils import (
-    parse_time_string,
-    format_seconds,
-    format_seconds_long,
-    parse_relative_date,
-    format_datetime_for_jira,
-    validate_time_format,
-    calculate_progress,
-    format_progress_bar,
-    parse_date_to_iso,
-    convert_to_jira_datetime_string,
-    SECONDS_PER_MINUTE,
-    SECONDS_PER_HOUR,
-    SECONDS_PER_DAY,
-    SECONDS_PER_WEEK,
-    HOURS_PER_DAY,
-    DAYS_PER_WEEK,
-)
-
-# Cache
-from .cache import (
-    JiraCache,
-    CacheStats,
-    get_cache,
-)
-
-# Request batching
-from .request_batcher import (
-    RequestBatcher,
-    BatchResult,
-    BatchError,
-    batch_fetch_issues,
-)
-
-# Automation client
-from .automation_client import AutomationClient
-
-# Permission helpers
-from .permission_helpers import (
-    parse_grant_string,
-    format_grant,
-    format_grant_for_export,
-    build_grant_payload,
-    validate_permission,
-    validate_holder_type,
-    find_scheme_by_name,
-    group_grants_by_permission,
-    find_grant_by_spec,
-    get_holder_display,
-    format_scheme_summary,
-    VALID_HOLDER_TYPES,
-    HOLDER_TYPES_WITH_PARAMETER,
-    HOLDER_TYPES_WITHOUT_PARAMETER,
-)
-
-# Batch processing
-from .batch_processor import (
-    BatchProcessor,
-    BatchConfig,
-    BatchProgress,
-    CheckpointManager,
-    get_recommended_batch_size,
-    generate_operation_id,
-    list_pending_checkpoints,
-)
-
-# Credential management
-from .credential_manager import (
-    CredentialManager,
-    CredentialBackend,
-    CredentialNotFoundError,
-    is_keychain_available,
-    get_credentials,
-    store_credentials,
-    validate_credentials,
-)
-
-# Project context
-from .project_context import (
-    ProjectContext,
-    get_project_context,
-    clear_context_cache,
-    has_project_context,
-    get_defaults_for_issue_type,
-    get_valid_transitions,
-    get_statuses_for_issue_type,
-    suggest_assignee,
-    get_common_labels,
-    validate_transition,
-    format_context_summary,
-)
-
-# Transition helpers
-from .transition_helpers import (
-    find_transition_by_name,
-    find_transition_by_keywords,
-    format_transition_list,
-)
-
-# User helpers
-from .user_helpers import (
-    UserNotFoundError,
-    resolve_user_to_account_id,
-    get_user_display_info,
-    resolve_users_batch,
-)
-
-# JSM utilities
-from .jsm_utils import (
-    format_sla_time,
-    format_duration,
-    calculate_sla_percentage,
-    is_sla_at_risk,
-    get_sla_status_emoji,
-    get_sla_status_text,
+    adf_to_text,
+    create_adf_code_block,
+    create_adf_heading,
+    create_adf_paragraph,
+    markdown_to_adf,
+    text_to_adf,
+    wiki_markup_to_adf,
 )
 
 # Autocomplete cache
@@ -230,161 +43,348 @@ from .autocomplete_cache import (
     get_autocomplete_cache,
 )
 
+# Automation client
+from .automation_client import AutomationClient
+
+# Batch processing
+from .batch_processor import (
+    BatchConfig,
+    BatchProcessor,
+    BatchProgress,
+    CheckpointManager,
+    generate_operation_id,
+    get_recommended_batch_size,
+    list_pending_checkpoints,
+)
+
+# Cache
+from .cache import (
+    CacheStats,
+    JiraCache,
+    get_cache,
+)
+
+# Configuration
+from .config_manager import (
+    ConfigManager,
+    get_agile_field,
+    get_agile_fields,
+    get_automation_client,
+    get_jira_client,
+    get_project_defaults,
+)
+
+# Credential management
+from .credential_manager import (
+    CredentialBackend,
+    CredentialManager,
+    CredentialNotFoundError,
+    get_credentials,
+    is_keychain_available,
+    store_credentials,
+    validate_credentials,
+)
+from .error_handler import (
+    AuthenticationError,
+    AutomationError,
+    AutomationNotFoundError,
+    AutomationPermissionError,
+    AutomationValidationError,
+    ConflictError,
+    JiraError,
+    NotFoundError,
+    PermissionError,
+    RateLimitError,
+    ServerError,
+    ValidationError,
+    handle_errors,
+    handle_jira_error,
+    print_error,
+    sanitize_error_message,
+)
+
+# Formatters
+from .formatters import (
+    EPIC_LINK_FIELD,
+    STORY_POINTS_FIELD,
+    export_csv,
+    format_comments,
+    format_issue,
+    format_json,
+    format_search_results,
+    format_table,
+    format_transitions,
+    get_csv_string,
+    print_info,
+    print_success,
+    print_warning,
+)
+
+# JIRA Client
+from .jira_client import JiraClient
+
+# JSM utilities
+from .jsm_utils import (
+    calculate_sla_percentage,
+    format_duration,
+    format_sla_time,
+    get_sla_status_emoji,
+    get_sla_status_text,
+    is_sla_at_risk,
+)
+
+# Permission helpers
+from .permission_helpers import (
+    HOLDER_TYPES_WITH_PARAMETER,
+    HOLDER_TYPES_WITHOUT_PARAMETER,
+    VALID_HOLDER_TYPES,
+    build_grant_payload,
+    find_grant_by_spec,
+    find_scheme_by_name,
+    format_grant,
+    format_grant_for_export,
+    format_scheme_summary,
+    get_holder_display,
+    group_grants_by_permission,
+    parse_grant_string,
+    validate_holder_type,
+    validate_permission,
+)
+
+# Project context
+from .project_context import (
+    ProjectContext,
+    clear_context_cache,
+    format_context_summary,
+    get_common_labels,
+    get_defaults_for_issue_type,
+    get_project_context,
+    get_statuses_for_issue_type,
+    get_valid_transitions,
+    has_project_context,
+    suggest_assignee,
+    validate_transition,
+)
+
+# Request batching
+from .request_batcher import (
+    BatchError,
+    BatchResult,
+    RequestBatcher,
+    batch_fetch_issues,
+)
+
+# Time utilities
+from .time_utils import (
+    DAYS_PER_WEEK,
+    HOURS_PER_DAY,
+    SECONDS_PER_DAY,
+    SECONDS_PER_HOUR,
+    SECONDS_PER_MINUTE,
+    SECONDS_PER_WEEK,
+    calculate_progress,
+    convert_to_jira_datetime_string,
+    format_datetime_for_jira,
+    format_progress_bar,
+    format_seconds,
+    format_seconds_long,
+    parse_date_to_iso,
+    parse_relative_date,
+    parse_time_string,
+    validate_time_format,
+)
+
+# Transition helpers
+from .transition_helpers import (
+    find_transition_by_keywords,
+    find_transition_by_name,
+    format_transition_list,
+)
+
+# User helpers
+from .user_helpers import (
+    UserNotFoundError,
+    get_user_display_info,
+    resolve_user_to_account_id,
+    resolve_users_batch,
+)
+
+# Validators
+from .validators import (
+    PROJECT_TEMPLATES,
+    VALID_ASSIGNEE_TYPES,
+    VALID_PROJECT_TYPES,
+    validate_assignee_type,
+    validate_avatar_file,
+    validate_category_name,
+    validate_email,
+    validate_file_path,
+    validate_issue_key,
+    validate_jql,
+    validate_project_key,
+    validate_project_name,
+    validate_project_template,
+    validate_project_type,
+    validate_transition_id,
+    validate_url,
+)
+
 __all__ = [
-    # Version
-    "__version__",
-    # Client
-    "JiraClient",
-    "AutomationClient",
-    # Config
-    "ConfigManager",
-    "get_jira_client",
-    "get_automation_client",
-    "get_agile_fields",
-    "get_agile_field",
-    "get_project_defaults",
-    # Errors
-    "JiraError",
+    "DAYS_PER_WEEK",
+    "EPIC_LINK_FIELD",
+    "HOLDER_TYPES_WITHOUT_PARAMETER",
+    "HOLDER_TYPES_WITH_PARAMETER",
+    "HOURS_PER_DAY",
+    "PROJECT_TEMPLATES",
+    "SECONDS_PER_DAY",
+    "SECONDS_PER_HOUR",
+    "SECONDS_PER_MINUTE",
+    "SECONDS_PER_WEEK",
+    "STORY_POINTS_FIELD",
+    "VALID_ASSIGNEE_TYPES",
+    "VALID_HOLDER_TYPES",
+    "VALID_PROJECT_TYPES",
     "AuthenticationError",
-    "PermissionError",
-    "ValidationError",
-    "NotFoundError",
-    "RateLimitError",
-    "ConflictError",
-    "ServerError",
+    # Autocomplete Cache
+    "AutocompleteCache",
+    "AutomationClient",
     "AutomationError",
     "AutomationNotFoundError",
     "AutomationPermissionError",
     "AutomationValidationError",
-    "handle_jira_error",
-    "sanitize_error_message",
-    "print_error",
+    "BatchConfig",
+    "BatchError",
+    # Batch Processing
+    "BatchProcessor",
+    "BatchProgress",
+    "BatchResult",
+    "CacheStats",
+    "CheckpointManager",
+    # Config
+    "ConfigManager",
+    "ConflictError",
+    "CredentialBackend",
+    # Credential Management
+    "CredentialManager",
+    "CredentialNotFoundError",
+    # Cache
+    "JiraCache",
+    # Client
+    "JiraClient",
+    # Errors
+    "JiraError",
+    "NotFoundError",
+    "PermissionError",
+    # Project Context
+    "ProjectContext",
+    "RateLimitError",
+    # Request Batching
+    "RequestBatcher",
+    "ServerError",
+    # User Helpers
+    "UserNotFoundError",
+    "ValidationError",
+    # Version
+    "__version__",
+    "_parse_wiki_inline",  # Exposed for testing
+    "adf_to_text",
+    "batch_fetch_issues",
+    "build_grant_payload",
+    "calculate_progress",
+    "calculate_sla_percentage",
+    "clear_context_cache",
+    "convert_to_jira_datetime_string",
+    "create_adf_code_block",
+    "create_adf_heading",
+    "create_adf_paragraph",
+    "export_csv",
+    "find_grant_by_spec",
+    "find_scheme_by_name",
+    "find_transition_by_keywords",
+    # Transition Helpers
+    "find_transition_by_name",
+    "format_comments",
+    "format_context_summary",
+    "format_datetime_for_jira",
+    "format_duration",
+    "format_grant",
+    "format_grant_for_export",
+    # Formatters
+    "format_issue",
+    "format_json",
+    "format_progress_bar",
+    "format_scheme_summary",
+    "format_search_results",
+    "format_seconds",
+    "format_seconds_long",
+    # JSM Utilities
+    "format_sla_time",
+    "format_table",
+    "format_transition_list",
+    "format_transitions",
+    "generate_operation_id",
+    "get_agile_field",
+    "get_agile_fields",
+    "get_autocomplete_cache",
+    "get_automation_client",
+    "get_cache",
+    "get_common_labels",
+    "get_credentials",
+    "get_csv_string",
+    "get_defaults_for_issue_type",
+    "get_holder_display",
+    "get_jira_client",
+    "get_project_context",
+    "get_project_defaults",
+    "get_recommended_batch_size",
+    "get_sla_status_emoji",
+    "get_sla_status_text",
+    "get_statuses_for_issue_type",
+    "get_user_display_info",
+    "get_valid_transitions",
+    "group_grants_by_permission",
     "handle_errors",
+    "handle_jira_error",
+    "has_project_context",
+    "is_keychain_available",
+    "is_sla_at_risk",
+    "list_pending_checkpoints",
+    "markdown_to_adf",
+    "parse_date_to_iso",
+    # Permission Helpers
+    "parse_grant_string",
+    "parse_relative_date",
+    # Time Utils
+    "parse_time_string",
+    "print_error",
+    "print_info",
+    "print_success",
+    "print_warning",
+    "resolve_user_to_account_id",
+    "resolve_users_batch",
+    "sanitize_error_message",
+    "store_credentials",
+    "suggest_assignee",
+    # ADF Helper
+    "text_to_adf",
+    "validate_assignee_type",
+    "validate_avatar_file",
+    "validate_category_name",
+    "validate_credentials",
+    "validate_email",
+    "validate_file_path",
+    "validate_holder_type",
     # Validators
     "validate_issue_key",
     "validate_jql",
-    "validate_project_key",
-    "validate_file_path",
-    "validate_url",
-    "validate_email",
-    "validate_transition_id",
-    "validate_project_type",
-    "validate_assignee_type",
-    "validate_project_template",
-    "validate_project_name",
-    "validate_category_name",
-    "validate_avatar_file",
-    "VALID_PROJECT_TYPES",
-    "VALID_ASSIGNEE_TYPES",
-    "PROJECT_TEMPLATES",
-    # Formatters
-    "format_issue",
-    "format_table",
-    "format_json",
-    "export_csv",
-    "get_csv_string",
-    "format_transitions",
-    "format_comments",
-    "format_search_results",
-    "print_success",
-    "print_warning",
-    "print_info",
-    "EPIC_LINK_FIELD",
-    "STORY_POINTS_FIELD",
-    # ADF Helper
-    "text_to_adf",
-    "markdown_to_adf",
-    "adf_to_text",
-    "create_adf_paragraph",
-    "create_adf_heading",
-    "create_adf_code_block",
-    "wiki_markup_to_adf",
-    # Time Utils
-    "parse_time_string",
-    "format_seconds",
-    "format_seconds_long",
-    "parse_relative_date",
-    "format_datetime_for_jira",
-    "validate_time_format",
-    "calculate_progress",
-    "format_progress_bar",
-    "parse_date_to_iso",
-    "convert_to_jira_datetime_string",
-    "SECONDS_PER_MINUTE",
-    "SECONDS_PER_HOUR",
-    "SECONDS_PER_DAY",
-    "SECONDS_PER_WEEK",
-    "HOURS_PER_DAY",
-    "DAYS_PER_WEEK",
-    # Cache
-    "JiraCache",
-    "CacheStats",
-    "get_cache",
-    # Request Batching
-    "RequestBatcher",
-    "BatchResult",
-    "BatchError",
-    "batch_fetch_issues",
-    # Batch Processing
-    "BatchProcessor",
-    "BatchConfig",
-    "BatchProgress",
-    "CheckpointManager",
-    "get_recommended_batch_size",
-    "generate_operation_id",
-    "list_pending_checkpoints",
-    # Permission Helpers
-    "parse_grant_string",
-    "format_grant",
-    "format_grant_for_export",
-    "build_grant_payload",
     "validate_permission",
-    "validate_holder_type",
-    "find_scheme_by_name",
-    "group_grants_by_permission",
-    "find_grant_by_spec",
-    "get_holder_display",
-    "format_scheme_summary",
-    "VALID_HOLDER_TYPES",
-    "HOLDER_TYPES_WITH_PARAMETER",
-    "HOLDER_TYPES_WITHOUT_PARAMETER",
-    # Credential Management
-    "CredentialManager",
-    "CredentialBackend",
-    "CredentialNotFoundError",
-    "is_keychain_available",
-    "get_credentials",
-    "store_credentials",
-    "validate_credentials",
-    # Project Context
-    "ProjectContext",
-    "get_project_context",
-    "clear_context_cache",
-    "has_project_context",
-    "get_defaults_for_issue_type",
-    "get_valid_transitions",
-    "get_statuses_for_issue_type",
-    "suggest_assignee",
-    "get_common_labels",
+    "validate_project_key",
+    "validate_project_name",
+    "validate_project_template",
+    "validate_project_type",
+    "validate_time_format",
     "validate_transition",
-    "format_context_summary",
-    # Transition Helpers
-    "find_transition_by_name",
-    "find_transition_by_keywords",
-    "format_transition_list",
-    # User Helpers
-    "UserNotFoundError",
-    "resolve_user_to_account_id",
-    "get_user_display_info",
-    "resolve_users_batch",
-    # JSM Utilities
-    "format_sla_time",
-    "format_duration",
-    "calculate_sla_percentage",
-    "is_sla_at_risk",
-    "get_sla_status_emoji",
-    "get_sla_status_text",
-    # Autocomplete Cache
-    "AutocompleteCache",
-    "get_autocomplete_cache",
+    "validate_transition_id",
+    "validate_url",
+    "wiki_markup_to_adf",
 ]

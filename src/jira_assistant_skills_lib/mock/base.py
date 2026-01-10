@@ -5,7 +5,7 @@ operations that other mixins build upon.
 """
 
 import os
-from typing import Any, Dict, List, Optional
+from typing import Any, ClassVar
 
 
 def is_mock_mode() -> bool:
@@ -30,7 +30,7 @@ class MockJiraClientBase:
     # Class Constants - Users
     # =========================================================================
 
-    USERS = {
+    USERS: ClassVar[dict[str, dict[str, Any]]] = {
         "abc123": {
             "accountId": "abc123",
             "displayName": "Jason Krueger",
@@ -49,7 +49,7 @@ class MockJiraClientBase:
     # Class Constants - Projects
     # =========================================================================
 
-    PROJECTS = [
+    PROJECTS: ClassVar[list[dict[str, str]]] = [
         {
             "key": "DEMO",
             "name": "Demo Project",
@@ -70,7 +70,7 @@ class MockJiraClientBase:
     # Class Constants - Transitions
     # =========================================================================
 
-    TRANSITIONS = [
+    TRANSITIONS: ClassVar[list[dict[str, Any]]] = [
         {"id": "11", "name": "To Do", "to": {"name": "To Do", "id": "10000"}},
         {"id": "21", "name": "In Progress", "to": {"name": "In Progress", "id": "10001"}},
         {"id": "31", "name": "Done", "to": {"name": "Done", "id": "10002"}},
@@ -109,10 +109,10 @@ class MockJiraClientBase:
         # Initialize mutable state
         self._next_issue_id = 100
         self._issues = self._init_issues()
-        self._comments: Dict[str, List[Dict]] = {}
-        self._worklogs: Dict[str, List[Dict]] = {}
+        self._comments: dict[str, list[dict]] = {}
+        self._worklogs: dict[str, list[dict]] = {}
 
-    def _init_issues(self) -> Dict[str, Dict]:
+    def _init_issues(self) -> dict[str, dict]:
         """Initialize issue store with seed data matching DEMO project.
 
         Returns:
@@ -461,7 +461,7 @@ class MockJiraClientBase:
     # Issue Operations
     # =========================================================================
 
-    def get_issue(self, issue_key: str, fields: str = None, expand: str = None) -> Dict[str, Any]:
+    def get_issue(self, issue_key: str, fields: str | None = None, expand: str | None = None) -> dict[str, Any]:
         """Get issue by key.
 
         Args:
@@ -483,12 +483,12 @@ class MockJiraClientBase:
     def search_issues(
         self,
         jql: str,
-        start_at: Optional[int] = 0,
+        start_at: int | None = 0,
         max_results: int = 50,
-        fields: str = None,
-        expand: str = None,
-        next_page_token: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        fields: str | None = None,
+        expand: str | None = None,
+        next_page_token: str | None = None,
+    ) -> dict[str, Any]:
         """Search issues with JQL. Supports basic project and assignee filtering.
 
         Args:
@@ -576,7 +576,7 @@ class MockJiraClientBase:
             "issues": paginated,
         }
 
-    def create_issue(self, fields: Dict[str, Any]) -> Dict[str, Any]:
+    def create_issue(self, fields: dict[str, Any]) -> dict[str, Any]:
         """Create a new issue.
 
         Args:
@@ -629,9 +629,9 @@ class MockJiraClientBase:
     def update_issue(
         self,
         issue_key: str,
-        fields: Dict[str, Any] = None,
-        update: Dict[str, Any] = None,
-    ) -> Dict[str, Any]:
+        fields: dict[str, Any] | None = None,
+        update: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """Update an issue.
 
         Args:
@@ -668,7 +668,7 @@ class MockJiraClientBase:
             raise NotFoundError(f"Issue {issue_key} not found")
         del self._issues[issue_key]
 
-    def assign_issue(self, issue_key: str, account_id: Optional[str] = None) -> None:
+    def assign_issue(self, issue_key: str, account_id: str | None = None) -> None:
         """Assign an issue to a user.
 
         Args:
@@ -718,9 +718,9 @@ class MockJiraClientBase:
         self,
         issue_key: str,
         transition_id: str,
-        fields: Dict[str, Any] = None,
-        update: Dict[str, Any] = None,
-        comment: str = None,
+        fields: dict[str, Any] | None = None,
+        update: dict[str, Any] | None = None,
+        comment: str | None = None,
     ) -> None:
         """Transition an issue to a new status.
 
@@ -748,7 +748,7 @@ class MockJiraClientBase:
     # Comment Operations
     # =========================================================================
 
-    def add_comment(self, issue_key: str, body: Dict[str, Any]) -> Dict[str, Any]:
+    def add_comment(self, issue_key: str, body: dict[str, Any]) -> dict[str, Any]:
         """Add a comment to an issue.
 
         Args:
@@ -784,7 +784,7 @@ class MockJiraClientBase:
         issue_key: str,
         start_at: int = 0,
         max_results: int = 50,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get comments for an issue.
 
         Args:
@@ -810,7 +810,7 @@ class MockJiraClientBase:
             "comments": comments[start_at : start_at + max_results],
         }
 
-    def get_comment(self, issue_key: str, comment_id: str) -> Dict[str, Any]:
+    def get_comment(self, issue_key: str, comment_id: str) -> dict[str, Any]:
         """Get a specific comment.
 
         Args:
@@ -838,8 +838,8 @@ class MockJiraClientBase:
         self,
         issue_key: str,
         comment_id: str,
-        body: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        body: dict[str, Any],
+    ) -> dict[str, Any]:
         """Update a comment.
 
         Args:
@@ -889,14 +889,14 @@ class MockJiraClientBase:
     def add_worklog(
         self,
         issue_key: str,
-        time_spent: str = None,
-        time_spent_seconds: int = None,
-        started: str = None,
-        comment: Dict[str, Any] = None,
-        adjust_estimate: str = None,
-        new_estimate: str = None,
-        reduce_by: str = None,
-    ) -> Dict[str, Any]:
+        time_spent: str | None = None,
+        time_spent_seconds: int | None = None,
+        started: str | None = None,
+        comment: dict[str, Any] | None = None,
+        adjust_estimate: str | None = None,
+        new_estimate: str | None = None,
+        reduce_by: str | None = None,
+    ) -> dict[str, Any]:
         """Add a worklog to an issue.
 
         Args:
@@ -941,7 +941,7 @@ class MockJiraClientBase:
         issue_key: str,
         start_at: int = 0,
         max_results: int = 1000,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get worklogs for an issue.
 
         Args:
@@ -973,8 +973,8 @@ class MockJiraClientBase:
 
     def search_users(
         self,
-        query: str = None,
-        account_id: str = None,
+        query: str | None = None,
+        account_id: str | None = None,
         start_at: int = 0,
         max_results: int = 50,
     ) -> list:
@@ -1004,11 +1004,11 @@ class MockJiraClientBase:
 
     def get_user(
         self,
-        account_id: str = None,
-        username: str = None,
-        key: str = None,
-        expand: Optional[list] = None,
-    ) -> Dict[str, Any]:
+        account_id: str | None = None,
+        username: str | None = None,
+        key: str | None = None,
+        expand: list | None = None,
+    ) -> dict[str, Any]:
         """Get user by account ID.
 
         Args:
@@ -1035,7 +1035,7 @@ class MockJiraClientBase:
         from ..error_handler import NotFoundError
         raise NotFoundError("User not found")
 
-    def get_current_user(self, expand: Optional[list] = None) -> Dict[str, Any]:
+    def get_current_user(self, expand: list | None = None) -> dict[str, Any]:
         """Get the current authenticated user.
 
         Args:
@@ -1056,9 +1056,9 @@ class MockJiraClientBase:
 
     def find_assignable_users(
         self,
-        project: str = None,
-        issue_key: str = None,
-        query: str = None,
+        project: str | None = None,
+        issue_key: str | None = None,
+        query: str | None = None,
         start_at: int = 0,
         max_results: int = 50,
     ) -> list:
@@ -1083,9 +1083,9 @@ class MockJiraClientBase:
     def get_project(
         self,
         project_key: str,
-        expand: str = None,
-        properties: list = None,
-    ) -> Dict[str, Any]:
+        expand: str | None = None,
+        properties: list | None = None,
+    ) -> dict[str, Any]:
         """Get project by key.
 
         Args:
@@ -1140,10 +1140,10 @@ class MockJiraClientBase:
     def get(
         self,
         endpoint: str,
-        params: Optional[Dict[str, Any]] = None,
+        params: dict[str, Any] | None = None,
         operation: str = "fetch data",
-        headers: Optional[Dict[str, str]] = None,
-    ) -> Dict[str, Any]:
+        headers: dict[str, str] | None = None,
+    ) -> dict[str, Any]:
         """Generic GET - returns empty dict for unmocked endpoints.
 
         Args:
@@ -1160,10 +1160,10 @@ class MockJiraClientBase:
     def post(
         self,
         endpoint: str,
-        data: Optional[Dict[str, Any]] = None,
+        data: dict[str, Any] | None = None,
         operation: str = "create resource",
-        headers: Optional[Dict[str, str]] = None,
-    ) -> Dict[str, Any]:
+        headers: dict[str, str] | None = None,
+    ) -> dict[str, Any]:
         """Generic POST - returns empty dict for unmocked endpoints.
 
         Args:
@@ -1180,9 +1180,9 @@ class MockJiraClientBase:
     def put(
         self,
         endpoint: str,
-        data: Optional[Dict[str, Any]] = None,
+        data: dict[str, Any] | None = None,
         operation: str = "update resource",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Generic PUT - returns empty dict for unmocked endpoints.
 
         Args:
@@ -1198,7 +1198,7 @@ class MockJiraClientBase:
     def delete(
         self,
         endpoint: str,
-        params: Optional[Dict[str, Any]] = None,
+        params: dict[str, Any] | None = None,
         operation: str = "delete resource",
     ) -> None:
         """Generic DELETE - no-op for unmocked endpoints.

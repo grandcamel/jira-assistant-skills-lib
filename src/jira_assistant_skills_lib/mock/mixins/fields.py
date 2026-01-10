@@ -3,7 +3,7 @@
 Provides mock implementations for field metadata, screens, and custom fields.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, ClassVar
 
 
 class FieldsMixin:
@@ -18,7 +18,7 @@ class FieldsMixin:
     # Class Constants - System Fields
     # =========================================================================
 
-    SYSTEM_FIELDS = [
+    SYSTEM_FIELDS: ClassVar[list[dict[str, Any]]] = [
         {"id": "summary", "name": "Summary", "schema": {"type": "string"}, "custom": False},
         {"id": "description", "name": "Description", "schema": {"type": "doc"}, "custom": False},
         {"id": "issuetype", "name": "Issue Type", "schema": {"type": "issuetype"}, "custom": False},
@@ -41,7 +41,7 @@ class FieldsMixin:
     # Class Constants - Custom Fields
     # =========================================================================
 
-    CUSTOM_FIELDS = [
+    CUSTOM_FIELDS: ClassVar[list[dict[str, Any]]] = [
         {
             "id": "customfield_10016",
             "name": "Story Points",
@@ -90,7 +90,7 @@ class FieldsMixin:
     # Class Constants - Screens
     # =========================================================================
 
-    SCREENS = [
+    SCREENS: ClassVar[list[dict[str, str]]] = [
         {"id": "1", "name": "Default Screen", "description": "Default screen for all issue operations"},
         {"id": "2", "name": "Resolve Issue Screen", "description": "Screen for resolving issues"},
         {"id": "3", "name": "Workflow Screen", "description": "Screen for workflow transitions"},
@@ -100,7 +100,7 @@ class FieldsMixin:
     # Field Operations
     # =========================================================================
 
-    def get_fields(self) -> List[Dict[str, Any]]:
+    def get_fields(self) -> list[dict[str, Any]]:
         """Get all fields (system and custom).
 
         Returns:
@@ -108,7 +108,7 @@ class FieldsMixin:
         """
         return self.SYSTEM_FIELDS + self.CUSTOM_FIELDS
 
-    def get_field(self, field_id: str) -> Dict[str, Any]:
+    def get_field(self, field_id: str) -> dict[str, Any]:
         """Get a specific field by ID.
 
         Args:
@@ -127,7 +127,7 @@ class FieldsMixin:
         from ...error_handler import NotFoundError
         raise NotFoundError(f"Field {field_id} not found")
 
-    def get_system_fields(self) -> List[Dict[str, Any]]:
+    def get_system_fields(self) -> list[dict[str, Any]]:
         """Get all system fields.
 
         Returns:
@@ -135,7 +135,7 @@ class FieldsMixin:
         """
         return self.SYSTEM_FIELDS
 
-    def get_custom_fields(self) -> List[Dict[str, Any]]:
+    def get_custom_fields(self) -> list[dict[str, Any]]:
         """Get all custom fields.
 
         Returns:
@@ -145,9 +145,9 @@ class FieldsMixin:
 
     def search_fields(
         self,
-        query: str = None,
-        custom: bool = None,
-    ) -> List[Dict[str, Any]]:
+        query: str | None = None,
+        custom: bool | None = None,
+    ) -> list[dict[str, Any]]:
         """Search for fields.
 
         Args:
@@ -172,7 +172,7 @@ class FieldsMixin:
     # Project Field Operations
     # =========================================================================
 
-    def get_project_fields(self, project_key: str) -> List[Dict[str, Any]]:
+    def get_project_fields(self, project_key: str) -> list[dict[str, Any]]:
         """Get fields available for a project.
 
         Args:
@@ -186,10 +186,10 @@ class FieldsMixin:
 
     def get_create_meta(
         self,
-        project_keys: List[str] = None,
-        issue_type_ids: List[str] = None,
-        expand: str = None,
-    ) -> Dict[str, Any]:
+        project_keys: list[str] | None = None,
+        issue_type_ids: list[str] | None = None,
+        expand: str | None = None,
+    ) -> dict[str, Any]:
         """Get create metadata for issues.
 
         Args:
@@ -239,7 +239,7 @@ class FieldsMixin:
     def get_edit_meta(
         self,
         issue_key: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get edit metadata for an issue.
 
         Args:
@@ -263,7 +263,7 @@ class FieldsMixin:
     # Agile Field Operations
     # =========================================================================
 
-    def get_agile_fields(self, board_id: int = None) -> Dict[str, Any]:
+    def get_agile_fields(self, board_id: int | None = None) -> dict[str, Any]:
         """Get agile-specific field configuration.
 
         Args:
@@ -295,7 +295,7 @@ class FieldsMixin:
             },
         }
 
-    def get_story_points_field(self) -> Dict[str, Any]:
+    def get_story_points_field(self) -> dict[str, Any]:
         """Get the story points field configuration.
 
         Returns:
@@ -303,7 +303,7 @@ class FieldsMixin:
         """
         return self.get_field("customfield_10016")
 
-    def get_sprint_field(self) -> Dict[str, Any]:
+    def get_sprint_field(self) -> dict[str, Any]:
         """Get the sprint field configuration.
 
         Returns:
@@ -311,7 +311,7 @@ class FieldsMixin:
         """
         return self.get_field("customfield_10017")
 
-    def get_epic_link_field(self) -> Dict[str, Any]:
+    def get_epic_link_field(self) -> dict[str, Any]:
         """Get the epic link field configuration.
 
         Returns:
@@ -327,7 +327,7 @@ class FieldsMixin:
         self,
         start_at: int = 0,
         max_results: int = 100,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get all screens.
 
         Args:
@@ -347,7 +347,7 @@ class FieldsMixin:
             "values": paginated,
         }
 
-    def get_screen(self, screen_id: str) -> Dict[str, Any]:
+    def get_screen(self, screen_id: str) -> dict[str, Any]:
         """Get a screen by ID.
 
         Args:
@@ -366,7 +366,7 @@ class FieldsMixin:
         from ...error_handler import NotFoundError
         raise NotFoundError(f"Screen {screen_id} not found")
 
-    def get_screen_tabs(self, screen_id: str) -> List[Dict[str, Any]]:
+    def get_screen_tabs(self, screen_id: str) -> list[dict[str, Any]]:
         """Get tabs for a screen.
 
         Args:
@@ -379,7 +379,7 @@ class FieldsMixin:
             {"id": "1", "name": "Field Tab", "position": 0},
         ]
 
-    def get_screen_tab_fields(self, screen_id: str, tab_id: str) -> List[Dict[str, Any]]:
+    def get_screen_tab_fields(self, screen_id: str, tab_id: str) -> list[dict[str, Any]]:
         """Get fields in a screen tab.
 
         Args:
@@ -405,7 +405,7 @@ class FieldsMixin:
         self,
         start_at: int = 0,
         max_results: int = 50,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get field configurations.
 
         Args:
@@ -437,7 +437,7 @@ class FieldsMixin:
         configuration_id: str,
         start_at: int = 0,
         max_results: int = 50,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get items in a field configuration.
 
         Args:
@@ -472,7 +472,7 @@ class FieldsMixin:
         field_id: str,
         start_at: int = 0,
         max_results: int = 50,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get options for a select field.
 
         Args:
@@ -508,7 +508,7 @@ class FieldsMixin:
         self,
         field_id: str,
         value: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Create an option for a select field.
 
         Args:
@@ -528,7 +528,7 @@ class FieldsMixin:
         field_id: str,
         option_id: str,
         value: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Update a field option.
 
         Args:

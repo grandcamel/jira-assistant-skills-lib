@@ -3,7 +3,7 @@
 Provides mock implementations for service desk, request, SLA, and queue operations.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, ClassVar
 
 
 class JSMMixin:
@@ -20,7 +20,7 @@ class JSMMixin:
     # Class Constants - Service Desks
     # =========================================================================
 
-    SERVICE_DESKS = [
+    SERVICE_DESKS: ClassVar[list[dict[str, str]]] = [
         {
             "id": "1",
             "projectId": "10001",
@@ -33,7 +33,7 @@ class JSMMixin:
     # Class Constants - Request Types
     # =========================================================================
 
-    REQUEST_TYPES = {
+    REQUEST_TYPES: ClassVar[dict[str, list[dict[str, str]]]] = {
         "1": [  # Service desk ID 1
             {"id": "1", "name": "IT help", "description": "Get help from IT"},
             {"id": "2", "name": "Computer support", "description": "Computer hardware/software issues"},
@@ -47,7 +47,7 @@ class JSMMixin:
     # Class Constants - Queues
     # =========================================================================
 
-    QUEUES = {
+    QUEUES: ClassVar[dict[str, list[dict[str, Any]]]] = {
         "1": [  # Service desk ID 1
             {"id": "1", "name": "All open", "issueCount": 5},
             {"id": "2", "name": "Assigned to me", "issueCount": 0},
@@ -59,7 +59,7 @@ class JSMMixin:
     # Class Constants - SLAs
     # =========================================================================
 
-    SLAS = {
+    SLAS: ClassVar[dict[str, dict[str, Any]]] = {
         "1": {"name": "Time to first response", "completedCycles": []},
         "2": {"name": "Time to resolution", "completedCycles": []},
     }
@@ -68,7 +68,7 @@ class JSMMixin:
     # Class Constants - JSM Transitions
     # =========================================================================
 
-    JSM_TRANSITIONS = [
+    JSM_TRANSITIONS: ClassVar[list[dict[str, str]]] = [
         {"id": "11", "name": "Waiting for support"},
         {"id": "21", "name": "In Progress"},
         {"id": "31", "name": "Pending"},
@@ -79,7 +79,7 @@ class JSMMixin:
     # Service Desk Operations
     # =========================================================================
 
-    def get_service_desks(self, start: int = 0, limit: int = 50) -> Dict[str, Any]:
+    def get_service_desks(self, start: int = 0, limit: int = 50) -> dict[str, Any]:
         """Get all service desks.
 
         Args:
@@ -97,7 +97,7 @@ class JSMMixin:
             "values": self.SERVICE_DESKS,
         }
 
-    def get_service_desk(self, service_desk_id: str) -> Dict[str, Any]:
+    def get_service_desk(self, service_desk_id: str) -> dict[str, Any]:
         """Get service desk by ID.
 
         Args:
@@ -115,7 +115,7 @@ class JSMMixin:
         from ...error_handler import NotFoundError
         raise NotFoundError(f"Service desk {service_desk_id} not found")
 
-    def lookup_service_desk_by_project_key(self, project_key: str) -> Dict[str, Any]:
+    def lookup_service_desk_by_project_key(self, project_key: str) -> dict[str, Any]:
         """Lookup service desk by project key.
 
         Args:
@@ -143,7 +143,7 @@ class JSMMixin:
         include_count: bool = False,
         start: int = 0,
         limit: int = 50,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get queues for a service desk.
 
         Args:
@@ -170,7 +170,7 @@ class JSMMixin:
         include_count: bool = False,
         start: int = 0,
         limit: int = 50,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Alias for get_service_desk_queues.
 
         Args:
@@ -184,7 +184,7 @@ class JSMMixin:
         """
         return self.get_service_desk_queues(service_desk_id, include_count, start, limit)
 
-    def get_queue(self, service_desk_id: int, queue_id: int) -> Dict[str, Any]:
+    def get_queue(self, service_desk_id: int, queue_id: int) -> dict[str, Any]:
         """Get a specific queue by ID.
 
         Args:
@@ -210,7 +210,7 @@ class JSMMixin:
         queue_id: int,
         start: int = 0,
         limit: int = 50,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get issues in a service desk queue.
 
         Args:
@@ -252,7 +252,7 @@ class JSMMixin:
         service_desk_id: str,
         start: int = 0,
         limit: int = 50,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get request types for a service desk.
 
         Args:
@@ -276,7 +276,7 @@ class JSMMixin:
     # Request Operations
     # =========================================================================
 
-    def get_request(self, issue_key: str, expand: Optional[list] = None) -> Dict[str, Any]:
+    def get_request(self, issue_key: str, expand: list | None = None) -> dict[str, Any]:
         """Get JSM request details.
 
         Args:
@@ -308,7 +308,7 @@ class JSMMixin:
             ],
         }
 
-    def get_request_status(self, issue_key: str) -> Dict[str, Any]:
+    def get_request_status(self, issue_key: str) -> dict[str, Any]:
         """Get the status of a JSM request.
 
         Args:
@@ -331,9 +331,9 @@ class JSMMixin:
         self,
         service_desk_id: str,
         request_type_id: str,
-        request_field_values: Dict[str, Any],
-        raise_on_behalf_of: str = None,
-    ) -> Dict[str, Any]:
+        request_field_values: dict[str, Any],
+        raise_on_behalf_of: str | None = None,
+    ) -> dict[str, Any]:
         """Create a new JSM request.
 
         Args:
@@ -398,7 +398,7 @@ class JSMMixin:
         issue_key: str,
         start: int = 0,
         limit: int = 50,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get SLAs for a request.
 
         Args:
@@ -451,8 +451,8 @@ class JSMMixin:
     def get_request_sla(
         self,
         issue_key: str,
-        sla_metric_id: str = None,
-    ) -> Dict[str, Any]:
+        sla_metric_id: str | None = None,
+    ) -> dict[str, Any]:
         """Get a specific SLA for a request.
 
         Args:
@@ -483,7 +483,7 @@ class JSMMixin:
         issue_key: str,
         body: str,
         public: bool = True,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Add a JSM comment with visibility.
 
         Args:
@@ -518,11 +518,11 @@ class JSMMixin:
     def get_request_comments(
         self,
         issue_key: str,
-        public: bool = None,
-        internal: bool = None,
+        public: bool | None = None,
+        internal: bool | None = None,
         start: int = 0,
         limit: int = 100,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get JSM comments with visibility filter.
 
         Args:
@@ -583,7 +583,7 @@ class JSMMixin:
         self,
         issue_key: str,
         transition_id: str,
-        comment: Optional[str] = None,
+        comment: str | None = None,
         public: bool = True,
     ) -> None:
         """Transition a JSM request to a new status.
@@ -618,10 +618,10 @@ class JSMMixin:
     def get_customers(
         self,
         service_desk_id: str,
-        query: str = None,
+        query: str | None = None,
         start: int = 0,
         limit: int = 50,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get customers for a service desk.
 
         Args:
@@ -653,8 +653,8 @@ class JSMMixin:
     def add_customers(
         self,
         service_desk_id: str,
-        account_ids: List[str] = None,
-        emails: List[str] = None,
+        account_ids: list[str] | None = None,
+        emails: list[str] | None = None,
     ) -> None:
         """Add customers to a service desk.
 
@@ -669,8 +669,8 @@ class JSMMixin:
     def remove_customers(
         self,
         service_desk_id: str,
-        account_ids: List[str] = None,
-        emails: List[str] = None,
+        account_ids: list[str] | None = None,
+        emails: list[str] | None = None,
     ) -> None:
         """Remove customers from a service desk.
 
@@ -688,10 +688,10 @@ class JSMMixin:
 
     def get_organizations(
         self,
-        service_desk_id: str = None,
+        service_desk_id: str | None = None,
         start: int = 0,
         limit: int = 50,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get organizations.
 
         Args:
@@ -723,7 +723,7 @@ class JSMMixin:
             "values": orgs,
         }
 
-    def create_organization(self, name: str) -> Dict[str, Any]:
+    def create_organization(self, name: str) -> dict[str, Any]:
         """Create an organization.
 
         Args:
@@ -738,7 +738,7 @@ class JSMMixin:
             "links": {"self": f"{self.base_url}/rest/servicedeskapi/organization/3"},
         }
 
-    def get_organization(self, organization_id: str) -> Dict[str, Any]:
+    def get_organization(self, organization_id: str) -> dict[str, Any]:
         """Get an organization by ID.
 
         Args:
@@ -765,7 +765,7 @@ class JSMMixin:
     def add_users_to_organization(
         self,
         organization_id: str,
-        account_ids: List[str],
+        account_ids: list[str],
     ) -> None:
         """Add users to an organization.
 
@@ -779,7 +779,7 @@ class JSMMixin:
     def remove_users_from_organization(
         self,
         organization_id: str,
-        account_ids: List[str],
+        account_ids: list[str],
     ) -> None:
         """Remove users from an organization.
 

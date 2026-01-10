@@ -5,27 +5,21 @@ Provides functions to format JIRA API responses as tables, JSON,
 CSV, and human-readable text.
 """
 
-from typing import Dict, Any, List, Optional
-from .adf_helper import adf_to_text
+from typing import Any
 
 # Import generic formatters from the base library
 from assistant_skills_lib.formatters import (
     format_table,
-    format_json,
-    export_csv,
-    get_csv_string,
-    print_success,
-    print_warning,
-    print_info,
     format_timestamp,
 )
 
+from .adf_helper import adf_to_text
 
 EPIC_LINK_FIELD = "customfield_10014"
 STORY_POINTS_FIELD = "customfield_10016"
 
 
-def format_issue(issue: Dict[str, Any], detailed: bool = False) -> str:
+def format_issue(issue: dict[str, Any], detailed: bool = False) -> str:
     """
     Format a JIRA issue for display.
 
@@ -112,7 +106,7 @@ def format_issue(issue: Dict[str, Any], detailed: bool = False) -> str:
                 desc_text = str(description)
 
             if desc_text:
-                output.append(f"\nDescription:")
+                output.append("\nDescription:")
                 for line in desc_text.split("\n"):
                     output.append(f"  {line}")
 
@@ -140,7 +134,7 @@ def format_issue(issue: Dict[str, Any], detailed: bool = False) -> str:
         if issue_links:
             output.append(f"\nLinks ({len(issue_links)}):")
             for link in issue_links:
-                link_type = link.get("type", {}).get("name", "Unknown")
+                link.get("type", {}).get("name", "Unknown")
                 if "outwardIssue" in link:
                     direction = link.get("type", {}).get("outward", "links to")
                     linked = link["outwardIssue"]
@@ -159,7 +153,7 @@ def format_issue(issue: Dict[str, Any], detailed: bool = False) -> str:
     return "\n".join(output)
 
 
-def format_transitions(transitions: List[Dict[str, Any]]) -> str:
+def format_transitions(transitions: list[dict[str, Any]]) -> str:
     """
     Format available transitions for display.
 
@@ -185,7 +179,7 @@ def format_transitions(transitions: List[Dict[str, Any]]) -> str:
     return format_table(data, columns=["ID", "Name", "To Status"])
 
 
-def format_comments(comments: List[Dict[str, Any]], limit: Optional[int] = None) -> str:
+def format_comments(comments: list[dict[str, Any]], limit: int | None = None) -> str:
     """
     Format issue comments for display.
 
@@ -222,7 +216,7 @@ def format_comments(comments: List[Dict[str, Any]], limit: Optional[int] = None)
 
 
 def format_search_results(
-    issues: List[Dict[str, Any]],
+    issues: list[dict[str, Any]],
     show_agile: bool = False,
     show_links: bool = False,
     show_time: bool = False,

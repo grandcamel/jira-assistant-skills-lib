@@ -16,7 +16,7 @@ class TestPackageImports:
 
     def test_client_imports(self):
         """Test client classes are importable."""
-        from jira_assistant_skills_lib import JiraClient, AutomationClient
+        from jira_assistant_skills_lib import AutomationClient, JiraClient
 
         assert JiraClient is not None
         assert AutomationClient is not None
@@ -31,17 +31,9 @@ class TestPackageImports:
     def test_error_imports(self):
         """Test error classes are importable."""
         from jira_assistant_skills_lib import (
-            JiraError,
             AuthenticationError,
-            PermissionError,
+            JiraError,
             ValidationError,
-            NotFoundError,
-            RateLimitError,
-            ConflictError,
-            ServerError,
-            handle_jira_error,
-            print_error,
-            handle_errors,
         )
 
         assert JiraError is not None
@@ -53,10 +45,6 @@ class TestPackageImports:
         from jira_assistant_skills_lib import (
             validate_issue_key,
             validate_jql,
-            validate_project_key,
-            validate_file_path,
-            validate_url,
-            validate_email,
         )
 
         assert validate_issue_key is not None
@@ -67,11 +55,6 @@ class TestPackageImports:
         from jira_assistant_skills_lib import (
             format_issue,
             format_table,
-            format_json,
-            export_csv,
-            print_success,
-            print_warning,
-            print_info,
         )
 
         assert format_issue is not None
@@ -80,10 +63,8 @@ class TestPackageImports:
     def test_adf_imports(self):
         """Test ADF helper functions are importable."""
         from jira_assistant_skills_lib import (
-            text_to_adf,
             markdown_to_adf,
-            adf_to_text,
-            wiki_markup_to_adf,
+            text_to_adf,
         )
 
         assert text_to_adf is not None
@@ -92,11 +73,9 @@ class TestPackageImports:
     def test_time_utils_imports(self):
         """Test time utilities are importable."""
         from jira_assistant_skills_lib import (
-            parse_time_string,
-            format_seconds,
-            parse_relative_date,
             SECONDS_PER_HOUR,
-            SECONDS_PER_DAY,
+            format_seconds,
+            parse_time_string,
         )
 
         assert parse_time_string is not None
@@ -124,8 +103,9 @@ class TestValidators:
 
     def test_validate_issue_key_invalid(self):
         """Test invalid issue key."""
-        from jira_assistant_skills_lib import validate_issue_key
         from assistant_skills_lib.error_handler import ValidationError
+
+        from jira_assistant_skills_lib import validate_issue_key
 
         with pytest.raises(ValidationError):
             validate_issue_key("")
@@ -143,8 +123,9 @@ class TestValidators:
 
     def test_validate_project_key_invalid(self):
         """Test invalid project key."""
-        from jira_assistant_skills_lib import validate_project_key
         from assistant_skills_lib.error_handler import ValidationError
+
+        from jira_assistant_skills_lib import validate_project_key
 
         with pytest.raises(ValidationError):
             validate_project_key("")
@@ -160,8 +141,9 @@ class TestValidators:
 
     def test_validate_jql_invalid(self):
         """Test invalid JQL."""
-        from jira_assistant_skills_lib import validate_jql
         from assistant_skills_lib.error_handler import ValidationError
+
+        from jira_assistant_skills_lib import validate_jql
 
         with pytest.raises(ValidationError):
             validate_jql("")

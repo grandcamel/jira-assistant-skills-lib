@@ -3,7 +3,7 @@
 Provides mock implementations for issue links, dependencies, and cloning.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, ClassVar
 
 
 class RelationshipsMixin:
@@ -20,7 +20,7 @@ class RelationshipsMixin:
     # Class Constants - Link Types
     # =========================================================================
 
-    LINK_TYPES = [
+    LINK_TYPES: ClassVar[list[dict[str, str]]] = [
         {
             "id": "10000",
             "name": "Blocks",
@@ -65,13 +65,13 @@ class RelationshipsMixin:
     def _ensure_links_state(self):
         """Ensure _issue_links dict exists."""
         if not hasattr(self, "_issue_links"):
-            self._issue_links: Dict[str, List[Dict]] = {}
+            self._issue_links: dict[str, list[dict]] = {}
 
     # =========================================================================
     # Link Type Operations
     # =========================================================================
 
-    def get_issue_link_types(self) -> Dict[str, Any]:
+    def get_issue_link_types(self) -> dict[str, Any]:
         """Get all issue link types.
 
         Returns:
@@ -81,7 +81,7 @@ class RelationshipsMixin:
             "issueLinkTypes": self.LINK_TYPES,
         }
 
-    def get_issue_link_type(self, link_type_id: str) -> Dict[str, Any]:
+    def get_issue_link_type(self, link_type_id: str) -> dict[str, Any]:
         """Get an issue link type by ID.
 
         Args:
@@ -109,7 +109,7 @@ class RelationshipsMixin:
         link_type: str,
         inward_issue: str,
         outward_issue: str,
-        comment: Dict[str, Any] = None,
+        comment: dict[str, Any] | None = None,
     ) -> None:
         """Create a link between two issues.
 
@@ -161,7 +161,7 @@ class RelationshipsMixin:
         self._issue_links[inward_issue].append(link)
         self._issue_links[outward_issue].append(link)
 
-    def get_issue_link(self, link_id: str) -> Dict[str, Any]:
+    def get_issue_link(self, link_id: str) -> dict[str, Any]:
         """Get an issue link by ID.
 
         Args:
@@ -205,7 +205,7 @@ class RelationshipsMixin:
             from ...error_handler import NotFoundError
             raise NotFoundError(f"Link {link_id} not found")
 
-    def get_issue_links(self, issue_key: str) -> List[Dict[str, Any]]:
+    def get_issue_links(self, issue_key: str) -> list[dict[str, Any]]:
         """Get all links for an issue.
 
         Args:
@@ -229,7 +229,7 @@ class RelationshipsMixin:
     # Remote Link Operations
     # =========================================================================
 
-    def get_remote_links(self, issue_key: str) -> List[Dict[str, Any]]:
+    def get_remote_links(self, issue_key: str) -> list[dict[str, Any]]:
         """Get remote links for an issue.
 
         Args:
@@ -268,10 +268,10 @@ class RelationshipsMixin:
         issue_key: str,
         url: str,
         title: str,
-        relationship: str = None,
-        icon_url: str = None,
-        icon_title: str = None,
-    ) -> Dict[str, Any]:
+        relationship: str | None = None,
+        icon_url: str | None = None,
+        icon_title: str | None = None,
+    ) -> dict[str, Any]:
         """Create a remote link for an issue.
 
         Args:
@@ -319,12 +319,12 @@ class RelationshipsMixin:
     def clone_issue(
         self,
         issue_key: str,
-        summary: str = None,
-        project_key: str = None,
+        summary: str | None = None,
+        project_key: str | None = None,
         include_links: bool = False,
         include_attachments: bool = False,
         include_subtasks: bool = False,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Clone an issue.
 
         Args:
@@ -375,7 +375,7 @@ class RelationshipsMixin:
     # Dependency Analysis Operations
     # =========================================================================
 
-    def get_blockers(self, issue_key: str, recursive: bool = False) -> List[Dict[str, Any]]:
+    def get_blockers(self, issue_key: str, recursive: bool = False) -> list[dict[str, Any]]:
         """Get issues that block this issue.
 
         Args:
@@ -411,7 +411,7 @@ class RelationshipsMixin:
 
         return blockers
 
-    def get_blocked_by(self, issue_key: str, recursive: bool = False) -> List[Dict[str, Any]]:
+    def get_blocked_by(self, issue_key: str, recursive: bool = False) -> list[dict[str, Any]]:
         """Get issues that are blocked by this issue.
 
         Args:
@@ -446,7 +446,7 @@ class RelationshipsMixin:
 
         return blocked
 
-    def get_related_issues(self, issue_key: str, link_type: str = None) -> List[Dict[str, Any]]:
+    def get_related_issues(self, issue_key: str, link_type: str | None = None) -> list[dict[str, Any]]:
         """Get all related issues.
 
         Args:

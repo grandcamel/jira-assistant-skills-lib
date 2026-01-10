@@ -13,12 +13,11 @@ metadata, workflows, patterns, and defaults. Context is loaded from:
 import json
 import os
 from dataclasses import dataclass, field
-from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 # Module-level cache for session persistence
-_context_cache: Dict[str, "ProjectContext"] = {}
+_context_cache: dict[str, "ProjectContext"] = {}
 
 
 @dataclass
@@ -26,34 +25,34 @@ class ProjectContext:
     """Structured project context data."""
 
     project_key: str
-    metadata: Dict[str, Any] = field(default_factory=dict)
-    workflows: Dict[str, Any] = field(default_factory=dict)
-    patterns: Dict[str, Any] = field(default_factory=dict)
-    defaults: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
+    workflows: dict[str, Any] = field(default_factory=dict)
+    patterns: dict[str, Any] = field(default_factory=dict)
+    defaults: dict[str, Any] = field(default_factory=dict)
     source: str = "none"  # 'skill', 'settings', 'merged', 'none'
-    discovered_at: Optional[str] = None
+    discovered_at: str | None = None
 
     def has_context(self) -> bool:
         """Check if any context data is available."""
         return bool(self.metadata or self.workflows or self.patterns or self.defaults)
 
-    def get_issue_types(self) -> List[Dict[str, Any]]:
+    def get_issue_types(self) -> list[dict[str, Any]]:
         """Get available issue types."""
         return self.metadata.get("issue_types", [])
 
-    def get_components(self) -> List[Dict[str, Any]]:
+    def get_components(self) -> list[dict[str, Any]]:
         """Get available components."""
         return self.metadata.get("components", [])
 
-    def get_versions(self) -> List[Dict[str, Any]]:
+    def get_versions(self) -> list[dict[str, Any]]:
         """Get available versions."""
         return self.metadata.get("versions", [])
 
-    def get_priorities(self) -> List[Dict[str, Any]]:
+    def get_priorities(self) -> list[dict[str, Any]]:
         """Get available priorities."""
         return self.metadata.get("priorities", [])
 
-    def get_assignable_users(self) -> List[Dict[str, Any]]:
+    def get_assignable_users(self) -> list[dict[str, Any]]:
         """Get assignable users."""
         return self.metadata.get("assignable_users", [])
 
@@ -69,18 +68,18 @@ def get_project_skill_path(project_key: str) -> Path:
     return get_skills_root() / "skills" / f"jira-project-{project_key}"
 
 
-def load_json_file(path: Path) -> Optional[Dict[str, Any]]:
+def load_json_file(path: Path) -> dict[str, Any] | None:
     """Load a JSON file if it exists."""
     if path.exists():
         try:
-            with open(path, "r", encoding="utf-8") as f:
+            with open(path, encoding="utf-8") as f:
                 return json.load(f)
-        except (json.JSONDecodeError, IOError):
+        except (OSError, json.JSONDecodeError):
             return None
     return None
 
 
-def load_skill_context(project_key: str) -> Optional[Dict[str, Any]]:
+def load_skill_context(project_key: str) -> dict[str, Any] | None:
     """
     Load context from a project skill directory.
 
@@ -121,8 +120,8 @@ def load_skill_context(project_key: str) -> Optional[Dict[str, Any]]:
 
 
 def load_settings_context(
-    project_key: str, profile: Optional[str] = None
-) -> Optional[Dict[str, Any]]:
+    project_key: str, profile: str | None = None
+) -> dict[str, Any] | None:
     """
     Load context overrides from settings.local.json.
 
@@ -173,8 +172,8 @@ def load_settings_context(
 
 
 def merge_contexts(
-    skill_ctx: Optional[Dict[str, Any]], settings_ctx: Optional[Dict[str, Any]]
-) -> Tuple[Dict[str, Any], str]:
+    skill_ctx: dict[str, Any] | None, settings_ctx: dict[str, Any] | None
+) -> tuple[dict[str, Any], str]:
     """
     Merge settings overrides on top of skill context.
 
@@ -208,7 +207,7 @@ def merge_contexts(
     return merged, "merged"
 
 
-def _deep_merge(base: Dict, override: Dict) -> Dict:
+def _deep_merge(base: dict, override: dict) -> dict:
     """Recursively merge override dict into base dict."""
     result = base.copy()
 
@@ -222,7 +221,7 @@ def _deep_merge(base: Dict, override: Dict) -> Dict:
 
 
 def get_project_context(
-    project_key: str, profile: Optional[str] = None, force_refresh: bool = False
+    project_key: str, profile: str | None = None, force_refresh: bool = False
 ) -> ProjectContext:
     """
     Lazy-load project context with caching.
@@ -279,7 +278,7 @@ def get_project_context(
     return context
 
 
-def clear_context_cache(project_key: Optional[str] = None) -> None:
+def clear_context_cache(project_key: str | None = None) -> None:
     """
     Clear the context cache.
 
@@ -299,7 +298,7 @@ def clear_context_cache(project_key: Optional[str] = None) -> None:
 
 def get_defaults_for_issue_type(
     context: ProjectContext, issue_type: str
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Get creation defaults for a specific issue type.
 
@@ -336,7 +335,7 @@ def get_defaults_for_issue_type(
 
 def get_valid_transitions(
     context: ProjectContext, issue_type: str, current_status: str
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """
     Get valid transitions from current status for an issue type.
 
@@ -359,7 +358,7 @@ def get_valid_transitions(
 
 def get_statuses_for_issue_type(
     context: ProjectContext, issue_type: str
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """
     Get all statuses for an issue type.
 
@@ -379,8 +378,8 @@ def get_statuses_for_issue_type(
 
 
 def suggest_assignee(
-    context: ProjectContext, issue_type: Optional[str] = None
-) -> Optional[str]:
+    context: ProjectContext, issue_type: str | None = None
+) -> str | None:
     """
     Suggest the most common assignee based on patterns.
 
@@ -413,8 +412,8 @@ def suggest_assignee(
 
 
 def get_common_labels(
-    context: ProjectContext, issue_type: Optional[str] = None, limit: int = 10
-) -> List[str]:
+    context: ProjectContext, issue_type: str | None = None, limit: int = 10
+) -> list[str]:
     """
     Get the most commonly used labels.
 
@@ -526,7 +525,7 @@ def format_context_summary(context: ProjectContext) -> str:
 
 
 # Convenience function for external access
-def has_project_context(project_key: str, profile: Optional[str] = None) -> bool:
+def has_project_context(project_key: str, profile: str | None = None) -> bool:
     """
     Check if project context exists without fully loading it.
 

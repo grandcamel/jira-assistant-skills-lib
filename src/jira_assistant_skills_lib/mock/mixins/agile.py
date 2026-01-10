@@ -3,7 +3,7 @@
 Provides mock implementations for boards, sprints, and backlog operations.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, ClassVar
 
 
 class AgileMixin:
@@ -19,7 +19,7 @@ class AgileMixin:
     # Class Constants - Boards
     # =========================================================================
 
-    BOARDS = [
+    BOARDS: ClassVar[list[dict[str, Any]]] = [
         {
             "id": 1,
             "self": "https://mock.atlassian.net/rest/agile/1.0/board/1",
@@ -50,7 +50,7 @@ class AgileMixin:
     # Class Constants - Sprints
     # =========================================================================
 
-    SPRINTS = [
+    SPRINTS: ClassVar[list[dict[str, Any]]] = [
         {
             "id": 1,
             "self": "https://mock.atlassian.net/rest/agile/1.0/sprint/1",
@@ -92,10 +92,10 @@ class AgileMixin:
         self,
         start_at: int = 0,
         max_results: int = 50,
-        project_key_or_id: str = None,
-        board_type: str = None,
-        name: str = None,
-    ) -> Dict[str, Any]:
+        project_key_or_id: str | None = None,
+        board_type: str | None = None,
+        name: str | None = None,
+    ) -> dict[str, Any]:
         """Get all boards.
 
         Args:
@@ -134,7 +134,7 @@ class AgileMixin:
             "values": paginated,
         }
 
-    def get_board(self, board_id: int) -> Dict[str, Any]:
+    def get_board(self, board_id: int) -> dict[str, Any]:
         """Get a specific board.
 
         Args:
@@ -153,7 +153,7 @@ class AgileMixin:
         from ...error_handler import NotFoundError
         raise NotFoundError(f"Board {board_id} not found")
 
-    def get_board_configuration(self, board_id: int) -> Dict[str, Any]:
+    def get_board_configuration(self, board_id: int) -> dict[str, Any]:
         """Get board configuration.
 
         Args:
@@ -186,8 +186,8 @@ class AgileMixin:
         board_id: int,
         start_at: int = 0,
         max_results: int = 50,
-        state: str = None,
-    ) -> Dict[str, Any]:
+        state: str | None = None,
+    ) -> dict[str, Any]:
         """Get sprints for a board.
 
         Args:
@@ -214,7 +214,7 @@ class AgileMixin:
             "values": paginated,
         }
 
-    def get_sprint(self, sprint_id: int) -> Dict[str, Any]:
+    def get_sprint(self, sprint_id: int) -> dict[str, Any]:
         """Get a specific sprint.
 
         Args:
@@ -237,10 +237,10 @@ class AgileMixin:
         self,
         name: str,
         board_id: int,
-        start_date: str = None,
-        end_date: str = None,
-        goal: str = None,
-    ) -> Dict[str, Any]:
+        start_date: str | None = None,
+        end_date: str | None = None,
+        goal: str | None = None,
+    ) -> dict[str, Any]:
         """Create a new sprint.
 
         Args:
@@ -275,12 +275,12 @@ class AgileMixin:
     def update_sprint(
         self,
         sprint_id: int,
-        name: str = None,
-        state: str = None,
-        start_date: str = None,
-        end_date: str = None,
-        goal: str = None,
-    ) -> Dict[str, Any]:
+        name: str | None = None,
+        state: str | None = None,
+        start_date: str | None = None,
+        end_date: str | None = None,
+        goal: str | None = None,
+    ) -> dict[str, Any]:
         """Update a sprint.
 
         Args:
@@ -318,9 +318,9 @@ class AgileMixin:
         sprint_id: int,
         start_at: int = 0,
         max_results: int = 50,
-        jql: str = None,
-        fields: List[str] = None,
-    ) -> Dict[str, Any]:
+        jql: str | None = None,
+        fields: list[str] | None = None,
+    ) -> dict[str, Any]:
         """Get issues in a sprint.
 
         Args:
@@ -348,7 +348,7 @@ class AgileMixin:
             "issues": paginated,
         }
 
-    def move_issues_to_sprint(self, sprint_id: int, issue_keys: List[str]) -> None:
+    def move_issues_to_sprint(self, sprint_id: int, issue_keys: list[str]) -> None:
         """Move issues to a sprint.
 
         Args:
@@ -367,9 +367,9 @@ class AgileMixin:
         board_id: int,
         start_at: int = 0,
         max_results: int = 50,
-        jql: str = None,
-        fields: List[str] = None,
-    ) -> Dict[str, Any]:
+        jql: str | None = None,
+        fields: list[str] | None = None,
+    ) -> dict[str, Any]:
         """Get backlog issues for a board.
 
         Args:
@@ -397,7 +397,7 @@ class AgileMixin:
             "issues": paginated,
         }
 
-    def move_issues_to_backlog(self, issue_keys: List[str]) -> None:
+    def move_issues_to_backlog(self, issue_keys: list[str]) -> None:
         """Move issues to backlog (remove from sprint).
 
         Args:
@@ -408,9 +408,9 @@ class AgileMixin:
 
     def rank_issues(
         self,
-        issue_keys: List[str],
-        rank_before_issue: str = None,
-        rank_after_issue: str = None,
+        issue_keys: list[str],
+        rank_before_issue: str | None = None,
+        rank_after_issue: str | None = None,
     ) -> None:
         """Rank issues in the backlog.
 
@@ -431,8 +431,8 @@ class AgileMixin:
         board_id: int,
         start_at: int = 0,
         max_results: int = 50,
-        done: bool = None,
-    ) -> Dict[str, Any]:
+        done: bool | None = None,
+    ) -> dict[str, Any]:
         """Get epics for a board.
 
         Args:
@@ -471,9 +471,9 @@ class AgileMixin:
         epic_id_or_key: str,
         start_at: int = 0,
         max_results: int = 50,
-        jql: str = None,
-        fields: List[str] = None,
-    ) -> Dict[str, Any]:
+        jql: str | None = None,
+        fields: list[str] | None = None,
+    ) -> dict[str, Any]:
         """Get issues in an epic.
 
         Args:
@@ -504,7 +504,7 @@ class AgileMixin:
             "issues": paginated,
         }
 
-    def move_issues_to_epic(self, epic_id_or_key: str, issue_keys: List[str]) -> None:
+    def move_issues_to_epic(self, epic_id_or_key: str, issue_keys: list[str]) -> None:
         """Move issues to an epic.
 
         Args:
@@ -514,7 +514,7 @@ class AgileMixin:
         # In mock, this is a no-op
         pass
 
-    def remove_issues_from_epic(self, issue_keys: List[str]) -> None:
+    def remove_issues_from_epic(self, issue_keys: list[str]) -> None:
         """Remove issues from their epic.
 
         Args:

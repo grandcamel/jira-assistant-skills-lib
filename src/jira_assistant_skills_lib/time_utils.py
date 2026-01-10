@@ -7,7 +7,6 @@ and convert between seconds and human-readable formats.
 
 import re
 from datetime import datetime, timedelta
-from typing import Optional
 
 # JIRA default time units (configurable in JIRA, these are common defaults)
 SECONDS_PER_MINUTE = 60
@@ -171,7 +170,7 @@ def format_seconds_long(seconds: int) -> str:
 
 
 def parse_relative_date(
-    date_str: str, base_date: Optional[datetime] = None
+    date_str: str, base_date: datetime | None = None
 ) -> datetime:
     """
     Parse relative or absolute date strings.
@@ -334,7 +333,7 @@ def format_progress_bar(progress: float, width: int = 20) -> str:
     return "█" * filled + "░" * empty
 
 
-def parse_date_to_iso(date_str: str, base_date: Optional[datetime] = None) -> str:
+def parse_date_to_iso(date_str: str, base_date: datetime | None = None) -> str:
     """
     Parse various date formats to ISO 8601 format for JIRA API.
 
@@ -402,7 +401,7 @@ def parse_date_to_iso(date_str: str, base_date: Optional[datetime] = None) -> st
 
 
 def convert_to_jira_datetime_string(
-    date_str: str, base_date: Optional[datetime] = None
+    date_str: str, base_date: datetime | None = None
 ) -> str:
     """
     Convert a date string to JIRA datetime format with timezone offset.

@@ -4,11 +4,9 @@ Helper utilities for permission scheme operations.
 Provides functions for parsing, formatting, and validating permission grants.
 """
 
-import re
-from typing import Dict, Any, Optional, List, Tuple
+from typing import Any
 
 from .error_handler import ValidationError
-
 
 # Valid holder types for permission grants
 VALID_HOLDER_TYPES = [
@@ -34,7 +32,7 @@ HOLDER_TYPES_WITHOUT_PARAMETER = [
 ]
 
 
-def parse_grant_string(grant_string: str) -> Tuple[str, str, Optional[str]]:
+def parse_grant_string(grant_string: str) -> tuple[str, str, str | None]:
     """
     Parse a grant string in the format PERMISSION:HOLDER_TYPE[:HOLDER_PARAMETER].
 
@@ -96,7 +94,7 @@ def parse_grant_string(grant_string: str) -> Tuple[str, str, Optional[str]]:
     return permission, holder_type, holder_parameter
 
 
-def format_grant(grant: Dict[str, Any]) -> str:
+def format_grant(grant: dict[str, Any]) -> str:
     """
     Format a permission grant for display.
 
@@ -118,7 +116,7 @@ def format_grant(grant: Dict[str, Any]) -> str:
         return holder_type
 
 
-def format_grant_for_export(grant: Dict[str, Any]) -> str:
+def format_grant_for_export(grant: dict[str, Any]) -> str:
     """
     Format a permission grant as a grant string for export/template.
 
@@ -140,8 +138,8 @@ def format_grant_for_export(grant: Dict[str, Any]) -> str:
 
 
 def build_grant_payload(
-    permission: str, holder_type: str, holder_parameter: Optional[str] = None
-) -> Dict[str, Any]:
+    permission: str, holder_type: str, holder_parameter: str | None = None
+) -> dict[str, Any]:
     """
     Build a permission grant payload for the JIRA API.
 
@@ -160,7 +158,7 @@ def build_grant_payload(
     return {"permission": permission, "holder": holder}
 
 
-def validate_permission(permission: str, available_permissions: Dict[str, Any]) -> bool:
+def validate_permission(permission: str, available_permissions: dict[str, Any]) -> bool:
     """
     Validate that a permission key exists in the JIRA instance.
 
@@ -180,7 +178,7 @@ def validate_permission(permission: str, available_permissions: Dict[str, Any]) 
         # Get suggestions
         suggestions = [
             k
-            for k in available_permissions.keys()
+            for k in available_permissions
             if permission_upper in k or k in permission_upper
         ]
         msg = f"Invalid permission key: '{permission}'"
@@ -213,8 +211,8 @@ def validate_holder_type(holder_type: str) -> bool:
 
 
 def find_scheme_by_name(
-    schemes: List[Dict[str, Any]], name: str, fuzzy: bool = False
-) -> Optional[Dict[str, Any]]:
+    schemes: list[dict[str, Any]], name: str, fuzzy: bool = False
+) -> dict[str, Any] | None:
     """
     Find a permission scheme by name.
 
@@ -258,8 +256,8 @@ def find_scheme_by_name(
 
 
 def group_grants_by_permission(
-    grants: List[Dict[str, Any]],
-) -> Dict[str, List[Dict[str, Any]]]:
+    grants: list[dict[str, Any]],
+) -> dict[str, list[dict[str, Any]]]:
     """
     Group permission grants by permission key.
 
@@ -279,11 +277,11 @@ def group_grants_by_permission(
 
 
 def find_grant_by_spec(
-    grants: List[Dict[str, Any]],
+    grants: list[dict[str, Any]],
     permission: str,
     holder_type: str,
-    holder_parameter: Optional[str] = None,
-) -> Optional[Dict[str, Any]]:
+    holder_parameter: str | None = None,
+) -> dict[str, Any] | None:
     """
     Find a specific grant by permission and holder specification.
 
@@ -317,7 +315,7 @@ def find_grant_by_spec(
     return None
 
 
-def get_holder_display(holder: Dict[str, Any]) -> str:
+def get_holder_display(holder: dict[str, Any]) -> str:
     """
     Get a human-readable display string for a holder.
 
@@ -350,7 +348,7 @@ def get_holder_display(holder: Dict[str, Any]) -> str:
         return holder_type
 
 
-def format_scheme_summary(scheme: Dict[str, Any]) -> str:
+def format_scheme_summary(scheme: dict[str, Any]) -> str:
     """
     Format a permission scheme for summary display.
 

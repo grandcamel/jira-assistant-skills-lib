@@ -4,7 +4,7 @@ Provides mock implementations for advanced JQL parsing, filters, and search oper
 """
 
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any, ClassVar
 
 
 class SearchMixin:
@@ -20,7 +20,7 @@ class SearchMixin:
     # Class Constants - Saved Filters
     # =========================================================================
 
-    FILTERS = [
+    FILTERS: ClassVar[list[dict[str, Any]]] = [
         {
             "id": "10000",
             "name": "My Open Issues",
@@ -53,10 +53,10 @@ class SearchMixin:
         jql: str,
         start_at: int = 0,
         max_results: int = 50,
-        fields: List[str] = None,
-        expand: List[str] = None,
+        fields: list[str] | None = None,
+        expand: list[str] | None = None,
         validate_query: bool = True,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Perform advanced JQL search with full parsing.
 
         Args:
@@ -96,7 +96,7 @@ class SearchMixin:
             "warningMessages": [],
         }
 
-    def _apply_jql_filters(self, issues: List[Dict], jql: str) -> List[Dict]:
+    def _apply_jql_filters(self, issues: list[dict], jql: str) -> list[dict]:
         """Apply JQL filters to issue list.
 
         Args:
@@ -107,7 +107,7 @@ class SearchMixin:
             Filtered list of issues.
         """
         jql_upper = jql.upper()
-        jql_lower = jql.lower()
+        jql.lower()
 
         # Project filter
         project_match = re.search(r"PROJECT\s*=\s*(\w+)", jql_upper)
@@ -213,7 +213,7 @@ class SearchMixin:
 
         return issues
 
-    def _apply_jql_order(self, issues: List[Dict], jql: str) -> List[Dict]:
+    def _apply_jql_order(self, issues: list[dict], jql: str) -> list[dict]:
         """Apply JQL ORDER BY clause.
 
         Args:
@@ -255,7 +255,7 @@ class SearchMixin:
     # JQL Validation
     # =========================================================================
 
-    def validate_jql(self, jql: str) -> Dict[str, Any]:
+    def validate_jql(self, jql: str) -> dict[str, Any]:
         """Validate a JQL query.
 
         Args:
@@ -299,7 +299,7 @@ class SearchMixin:
             "jql": jql,
         }
 
-    def parse_jql(self, jql: str) -> Dict[str, Any]:
+    def parse_jql(self, jql: str) -> dict[str, Any]:
         """Parse JQL into structured components.
 
         Args:
@@ -335,7 +335,7 @@ class SearchMixin:
     # Filter Operations
     # =========================================================================
 
-    def get_filter(self, filter_id: str) -> Dict[str, Any]:
+    def get_filter(self, filter_id: str) -> dict[str, Any]:
         """Get a saved filter by ID.
 
         Args:
@@ -354,7 +354,7 @@ class SearchMixin:
         from ...error_handler import NotFoundError
         raise NotFoundError(f"Filter {filter_id} not found")
 
-    def get_favourite_filters(self) -> List[Dict[str, Any]]:
+    def get_favourite_filters(self) -> list[dict[str, Any]]:
         """Get user's favourite filters.
 
         Returns:
@@ -362,7 +362,7 @@ class SearchMixin:
         """
         return [f for f in self.FILTERS if f.get("favourite")]
 
-    def get_my_filters(self) -> List[Dict[str, Any]]:
+    def get_my_filters(self) -> list[dict[str, Any]]:
         """Get filters owned by current user.
 
         Returns:
@@ -372,11 +372,11 @@ class SearchMixin:
 
     def search_filters(
         self,
-        filter_name: str = None,
-        account_id: str = None,
+        filter_name: str | None = None,
+        account_id: str | None = None,
         start_at: int = 0,
         max_results: int = 50,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Search for filters.
 
         Args:
@@ -411,9 +411,9 @@ class SearchMixin:
         self,
         name: str,
         jql: str,
-        description: str = None,
+        description: str | None = None,
         favourite: bool = False,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Create a saved filter.
 
         Args:
@@ -439,10 +439,10 @@ class SearchMixin:
     def update_filter(
         self,
         filter_id: str,
-        name: str = None,
-        jql: str = None,
-        description: str = None,
-    ) -> Dict[str, Any]:
+        name: str | None = None,
+        jql: str | None = None,
+        description: str | None = None,
+    ) -> dict[str, Any]:
         """Update a saved filter.
 
         Args:
@@ -487,7 +487,7 @@ class SearchMixin:
         from ...error_handler import NotFoundError
         raise NotFoundError(f"Filter {filter_id} not found")
 
-    def set_filter_favourite(self, filter_id: str, favourite: bool) -> Dict[str, Any]:
+    def set_filter_favourite(self, filter_id: str, favourite: bool) -> dict[str, Any]:
         """Set filter favourite status.
 
         Args:
@@ -512,9 +512,9 @@ class SearchMixin:
 
     def search_issues_by_keys(
         self,
-        keys: List[str],
-        fields: List[str] = None,
-    ) -> List[Dict[str, Any]]:
+        keys: list[str],
+        fields: list[str] | None = None,
+    ) -> list[dict[str, Any]]:
         """Get multiple issues by their keys.
 
         Args:
@@ -545,8 +545,8 @@ class SearchMixin:
         self,
         jql: str,
         format: str = "json",
-        fields: List[str] = None,
-    ) -> Dict[str, Any]:
+        fields: list[str] | None = None,
+    ) -> dict[str, Any]:
         """Export search results.
 
         Args:

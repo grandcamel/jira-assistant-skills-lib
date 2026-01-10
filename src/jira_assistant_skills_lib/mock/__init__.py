@@ -43,41 +43,41 @@ Available Clients:
     - (and more...)
 """
 
-from .clients import MockJiraClient
 from .base import is_mock_mode
 
 # Also export specialized clients for convenience
 from .clients import (
-    MockAgileClient,
-    MockJSMClient,
     MockAdminClient,
-    MockSearchClient,
+    MockAgileClient,
+    MockAgileSearchClient,
     MockCollaborateClient,
-    MockTimeClient,
-    MockRelationshipsClient,
     MockDevClient,
     MockFieldsClient,
-    MockAgileSearchClient,
-    MockJSMCollaborateClient,
     MockFullDevClient,
+    MockJiraClient,
+    MockJSMClient,
+    MockJSMCollaborateClient,
+    MockRelationshipsClient,
+    MockSearchClient,
+    MockTimeClient,
 )
 
 __all__ = [
-    # Primary exports
-    "MockJiraClient",
-    "is_mock_mode",
+    "MockAdminClient",
     # Specialized clients
     "MockAgileClient",
-    "MockJSMClient",
-    "MockAdminClient",
-    "MockSearchClient",
-    "MockCollaborateClient",
-    "MockTimeClient",
-    "MockRelationshipsClient",
-    "MockDevClient",
-    "MockFieldsClient",
     # Combination clients
     "MockAgileSearchClient",
-    "MockJSMCollaborateClient",
+    "MockCollaborateClient",
+    "MockDevClient",
+    "MockFieldsClient",
     "MockFullDevClient",
+    "MockJSMClient",
+    "MockJSMCollaborateClient",
+    # Primary exports
+    "MockJiraClient",
+    "MockRelationshipsClient",
+    "MockSearchClient",
+    "MockTimeClient",
+    "is_mock_mode",
 ]

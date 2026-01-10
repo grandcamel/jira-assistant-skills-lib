@@ -12,12 +12,10 @@ Features:
 - Invalidation support
 """
 
-import json
 import time
 from datetime import timedelta
-from pathlib import Path
-from typing import Dict, Any, Optional, List
-from .error_handler import JiraError
+from typing import Any
+
 from assistant_skills_lib.cache import SkillCache, get_skill_cache
 
 # Default TTL for autocomplete suggestions
@@ -40,7 +38,7 @@ class AutocompleteCache:
     TTL_AUTOCOMPLETE = timedelta(hours=24)  # 24 hours for field/function definitions
     TTL_SUGGESTIONS = timedelta(hours=1)  # 1 hour for value suggestions
 
-    def __init__(self, cache: Optional[SkillCache] = None):
+    def __init__(self, cache: SkillCache | None = None):
         """
         Initialize autocomplete cache.
 
@@ -48,12 +46,12 @@ class AutocompleteCache:
             cache: Optional SkillCache instance (creates one if not provided)
         """
         self._cache = cache or get_skill_cache("jira_autocomplete")
-        self._memory_cache: Dict[str, Any] = {}
-        self._memory_cache_time: Dict[str, float] = {}
+        self._memory_cache: dict[str, Any] = {}
+        self._memory_cache_time: dict[str, float] = {}
 
     def get_autocomplete_data(
         self, client=None, force_refresh: bool = False
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """
         Get cached JQL autocomplete data.
 
@@ -86,7 +84,7 @@ class AutocompleteCache:
 
         return None
 
-    def set_autocomplete_data(self, data: Dict[str, Any]) -> None:
+    def set_autocomplete_data(self, data: dict[str, Any]) -> None:
         """
         Cache JQL autocomplete data.
 
@@ -135,7 +133,7 @@ class AutocompleteCache:
 
     def get_fields(
         self, client=None, force_refresh: bool = False
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Get cached field definitions.
 
@@ -157,7 +155,7 @@ class AutocompleteCache:
 
     def get_functions(
         self, client=None, force_refresh: bool = False
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Get cached JQL function definitions.
 
@@ -176,7 +174,7 @@ class AutocompleteCache:
         data = self.get_autocomplete_data(client, force_refresh)
         return data.get("visibleFunctionNames", []) if data else []
 
-    def get_reserved_words(self, client=None, force_refresh: bool = False) -> List[str]:
+    def get_reserved_words(self, client=None, force_refresh: bool = False) -> list[str]:
         """
         Get cached JQL reserved words.
 
@@ -201,7 +199,7 @@ class AutocompleteCache:
         prefix: str = "",
         client=None,
         force_refresh: bool = False,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Get cached value suggestions for a field.
 
@@ -236,7 +234,7 @@ class AutocompleteCache:
 
         return []
 
-    def warm_cache(self, client) -> Dict[str, int]:
+    def warm_cache(self, client) -> dict[str, int]:
         """
         Pre-warm the autocomplete cache.
 
@@ -276,7 +274,7 @@ class AutocompleteCache:
 
         return stats
 
-    def invalidate(self, field_name: Optional[str] = None) -> int:
+    def invalidate(self, field_name: str | None = None) -> int:
         """
         Invalidate cached autocomplete data.
 
@@ -314,7 +312,7 @@ class AutocompleteCache:
 
         return count
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """
         Get cache statistics.
 
@@ -343,7 +341,7 @@ class AutocompleteCache:
 
 
 # Singleton instance for shared access
-_autocomplete_cache: Optional[AutocompleteCache] = None
+_autocomplete_cache: AutocompleteCache | None = None
 
 
 def get_autocomplete_cache() -> AutocompleteCache:

@@ -4,7 +4,7 @@ Provides mock implementations for development panel, git integration,
 branch names, and commit associations.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 class DevMixin:
@@ -19,7 +19,7 @@ class DevMixin:
     # Development Info Operations
     # =========================================================================
 
-    def get_development_info(self, issue_key: str) -> Dict[str, Any]:
+    def get_development_info(self, issue_key: str) -> dict[str, Any]:
         """Get development information for an issue.
 
         Args:
@@ -58,7 +58,7 @@ class DevMixin:
             "errors": [],
         }
 
-    def get_commits(self, issue_key: str) -> List[Dict[str, Any]]:
+    def get_commits(self, issue_key: str) -> list[dict[str, Any]]:
         """Get commits associated with an issue.
 
         Args:
@@ -84,14 +84,14 @@ class DevMixin:
                     "email": "jasonkrue@gmail.com",
                 },
                 "message": f"{issue_key}: Initial implementation",
-                "url": f"https://github.com/example/demo-project/commit/abc123def456",
+                "url": "https://github.com/example/demo-project/commit/abc123def456",
                 "files": [
                     {"path": "src/main.py", "changeType": "MODIFIED"},
                 ],
             },
         ]
 
-    def get_branches(self, issue_key: str) -> List[Dict[str, Any]]:
+    def get_branches(self, issue_key: str) -> list[dict[str, Any]]:
         """Get branches associated with an issue.
 
         Args:
@@ -122,7 +122,7 @@ class DevMixin:
             },
         ]
 
-    def get_pull_requests(self, issue_key: str) -> List[Dict[str, Any]]:
+    def get_pull_requests(self, issue_key: str) -> list[dict[str, Any]]:
         """Get pull requests associated with an issue.
 
         Args:
@@ -269,7 +269,7 @@ class DevMixin:
         else:
             return f"{issue_key}: {message}"
 
-    def parse_commit_message(self, message: str) -> Dict[str, Any]:
+    def parse_commit_message(self, message: str) -> dict[str, Any]:
         """Parse a commit message to extract issue keys.
 
         Args:
@@ -308,7 +308,7 @@ class DevMixin:
     def generate_pr_description(
         self,
         issue_key: str,
-        changes_summary: str = None,
+        changes_summary: str | None = None,
         include_checklist: bool = True,
     ) -> str:
         """Generate a pull request description for an issue.
@@ -363,7 +363,7 @@ class DevMixin:
     # Development Status Operations
     # =========================================================================
 
-    def get_development_status(self, issue_key: str) -> Dict[str, Any]:
+    def get_development_status(self, issue_key: str) -> dict[str, Any]:
         """Get development status summary for an issue.
 
         Args:
@@ -394,8 +394,8 @@ class DevMixin:
         self,
         project_key: str,
         repository_url: str,
-        repository_name: str = None,
-    ) -> Dict[str, Any]:
+        repository_name: str | None = None,
+    ) -> dict[str, Any]:
         """Link a repository to a project (mock).
 
         Args:
@@ -417,7 +417,7 @@ class DevMixin:
     # Build Integration Operations
     # =========================================================================
 
-    def get_builds(self, issue_key: str) -> List[Dict[str, Any]]:
+    def get_builds(self, issue_key: str) -> list[dict[str, Any]]:
         """Get builds associated with an issue.
 
         Args:
@@ -447,7 +447,7 @@ class DevMixin:
             },
         ]
 
-    def get_deployments(self, issue_key: str) -> List[Dict[str, Any]]:
+    def get_deployments(self, issue_key: str) -> list[dict[str, Any]]:
         """Get deployments associated with an issue.
 
         Args:

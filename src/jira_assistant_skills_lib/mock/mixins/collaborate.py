@@ -3,7 +3,7 @@
 Provides mock implementations for watchers, changelog, attachments, and notifications.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 class CollaborateMixin:
@@ -22,18 +22,18 @@ class CollaborateMixin:
     def _ensure_watchers_state(self):
         """Ensure _watchers dict exists."""
         if not hasattr(self, "_watchers"):
-            self._watchers: Dict[str, List[Dict]] = {}
+            self._watchers: dict[str, list[dict]] = {}
 
     def _ensure_attachments_state(self):
         """Ensure _attachments dict exists."""
         if not hasattr(self, "_attachments"):
-            self._attachments: Dict[str, List[Dict]] = {}
+            self._attachments: dict[str, list[dict]] = {}
 
     # =========================================================================
     # Watcher Operations
     # =========================================================================
 
-    def get_watchers(self, issue_key: str) -> Dict[str, Any]:
+    def get_watchers(self, issue_key: str) -> dict[str, Any]:
         """Get watchers for an issue.
 
         Args:
@@ -126,7 +126,7 @@ class CollaborateMixin:
         issue_key: str,
         start_at: int = 0,
         max_results: int = 100,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get changelog for an issue.
 
         Args:
@@ -191,8 +191,8 @@ class CollaborateMixin:
     def get_issue_with_changelog(
         self,
         issue_key: str,
-        fields: str = None,
-    ) -> Dict[str, Any]:
+        fields: str | None = None,
+    ) -> dict[str, Any]:
         """Get issue with full changelog.
 
         Args:
@@ -218,7 +218,7 @@ class CollaborateMixin:
     # Attachment Operations
     # =========================================================================
 
-    def get_attachments(self, issue_key: str) -> List[Dict[str, Any]]:
+    def get_attachments(self, issue_key: str) -> list[dict[str, Any]]:
         """Get attachments for an issue.
 
         Args:
@@ -242,9 +242,9 @@ class CollaborateMixin:
         self,
         issue_key: str,
         filename: str,
-        content: bytes = None,
+        content: bytes | None = None,
         content_type: str = "application/octet-stream",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Add an attachment to an issue.
 
         Args:
@@ -296,7 +296,7 @@ class CollaborateMixin:
                 if a["id"] != attachment_id
             ]
 
-    def get_attachment(self, attachment_id: str) -> Dict[str, Any]:
+    def get_attachment(self, attachment_id: str) -> dict[str, Any]:
         """Get attachment metadata.
 
         Args:
@@ -326,11 +326,11 @@ class CollaborateMixin:
         self,
         issue_key: str,
         subject: str,
-        text_body: str = None,
-        html_body: str = None,
-        to: List[str] = None,
-        restrict_groups: List[str] = None,
-        restrict_permissions: List[str] = None,
+        text_body: str | None = None,
+        html_body: str | None = None,
+        to: list[str] | None = None,
+        restrict_groups: list[str] | None = None,
+        restrict_permissions: list[str] | None = None,
     ) -> None:
         """Send notification about an issue.
 
@@ -353,7 +353,7 @@ class CollaborateMixin:
         # In mock, this is a no-op
         pass
 
-    def get_notification_scheme(self, project_key: str) -> Dict[str, Any]:
+    def get_notification_scheme(self, project_key: str) -> dict[str, Any]:
         """Get notification scheme for a project.
 
         Args:
@@ -395,7 +395,7 @@ class CollaborateMixin:
         issue_key: str,
         start_at: int = 0,
         max_results: int = 50,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get activity stream for an issue.
 
         Args:
@@ -455,9 +455,9 @@ class CollaborateMixin:
 
     def get_user_mentions(
         self,
-        issue_key: str = None,
-        project_key: str = None,
-    ) -> List[Dict[str, Any]]:
+        issue_key: str | None = None,
+        project_key: str | None = None,
+    ) -> list[dict[str, Any]]:
         """Get users that can be mentioned.
 
         Args:
@@ -473,7 +473,7 @@ class CollaborateMixin:
     # Vote Operations
     # =========================================================================
 
-    def get_votes(self, issue_key: str) -> Dict[str, Any]:
+    def get_votes(self, issue_key: str) -> dict[str, Any]:
         """Get votes for an issue.
 
         Args:

@@ -3,7 +3,7 @@
 Provides mock implementations for worklogs, time estimates, and time tracking configuration.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, ClassVar
 
 
 class TimeTrackingMixin:
@@ -20,7 +20,7 @@ class TimeTrackingMixin:
     # Time Tracking Configuration
     # =========================================================================
 
-    TIME_TRACKING_CONFIG = {
+    TIME_TRACKING_CONFIG: ClassVar[dict[str, Any]] = {
         "workingHoursPerDay": 8.0,
         "workingDaysPerWeek": 5.0,
         "timeFormat": "pretty",
@@ -31,7 +31,7 @@ class TimeTrackingMixin:
     # Time Tracking Configuration Operations
     # =========================================================================
 
-    def get_time_tracking_configuration(self) -> Dict[str, Any]:
+    def get_time_tracking_configuration(self) -> dict[str, Any]:
         """Get time tracking configuration.
 
         Returns:
@@ -41,11 +41,11 @@ class TimeTrackingMixin:
 
     def set_time_tracking_configuration(
         self,
-        working_hours_per_day: float = None,
-        working_days_per_week: float = None,
-        time_format: str = None,
-        default_unit: str = None,
-    ) -> Dict[str, Any]:
+        working_hours_per_day: float | None = None,
+        working_days_per_week: float | None = None,
+        time_format: str | None = None,
+        default_unit: str | None = None,
+    ) -> dict[str, Any]:
         """Set time tracking configuration.
 
         Args:
@@ -74,7 +74,7 @@ class TimeTrackingMixin:
     # Estimate Operations
     # =========================================================================
 
-    def get_time_tracking(self, issue_key: str) -> Dict[str, Any]:
+    def get_time_tracking(self, issue_key: str) -> dict[str, Any]:
         """Get time tracking data for an issue.
 
         Args:
@@ -113,8 +113,8 @@ class TimeTrackingMixin:
     def set_estimate(
         self,
         issue_key: str,
-        original_estimate: str = None,
-        remaining_estimate: str = None,
+        original_estimate: str | None = None,
+        remaining_estimate: str | None = None,
     ) -> None:
         """Set time estimate for an issue.
 
@@ -139,8 +139,8 @@ class TimeTrackingMixin:
     def adjust_remaining_estimate(
         self,
         issue_key: str,
-        new_estimate: str = None,
-        reduce_by: str = None,
+        new_estimate: str | None = None,
+        reduce_by: str | None = None,
     ) -> None:
         """Adjust remaining estimate for an issue.
 
@@ -167,7 +167,7 @@ class TimeTrackingMixin:
     # Worklog Operations (Extended)
     # =========================================================================
 
-    def get_worklog(self, issue_key: str, worklog_id: str) -> Dict[str, Any]:
+    def get_worklog(self, issue_key: str, worklog_id: str) -> dict[str, Any]:
         """Get a specific worklog.
 
         Args:
@@ -195,13 +195,13 @@ class TimeTrackingMixin:
         self,
         issue_key: str,
         worklog_id: str,
-        time_spent: str = None,
-        time_spent_seconds: int = None,
-        started: str = None,
-        comment: Dict[str, Any] = None,
-        adjust_estimate: str = None,
-        new_estimate: str = None,
-    ) -> Dict[str, Any]:
+        time_spent: str | None = None,
+        time_spent_seconds: int | None = None,
+        started: str | None = None,
+        comment: dict[str, Any] | None = None,
+        adjust_estimate: str | None = None,
+        new_estimate: str | None = None,
+    ) -> dict[str, Any]:
         """Update a worklog.
 
         Args:
@@ -248,9 +248,9 @@ class TimeTrackingMixin:
         self,
         issue_key: str,
         worklog_id: str,
-        adjust_estimate: str = None,
-        new_estimate: str = None,
-        increase_by: str = None,
+        adjust_estimate: str | None = None,
+        new_estimate: str | None = None,
+        increase_by: str | None = None,
     ) -> None:
         """Delete a worklog.
 
@@ -279,8 +279,8 @@ class TimeTrackingMixin:
     def get_worklog_ids_modified_since(
         self,
         since: int,
-        expand: List[str] = None,
-    ) -> Dict[str, Any]:
+        expand: list[str] | None = None,
+    ) -> dict[str, Any]:
         """Get worklog IDs modified since a timestamp.
 
         Args:
@@ -305,11 +305,11 @@ class TimeTrackingMixin:
     def get_user_worklogs(
         self,
         account_id: str,
-        start_date: str = None,
-        end_date: str = None,
+        start_date: str | None = None,
+        end_date: str | None = None,
         start_at: int = 0,
         max_results: int = 100,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get worklogs for a user across all issues.
 
         Args:
@@ -343,11 +343,11 @@ class TimeTrackingMixin:
     def get_project_worklogs(
         self,
         project_key: str,
-        start_date: str = None,
-        end_date: str = None,
+        start_date: str | None = None,
+        end_date: str | None = None,
         start_at: int = 0,
         max_results: int = 100,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get worklogs for a project.
 
         Args:
@@ -380,11 +380,11 @@ class TimeTrackingMixin:
 
     def get_time_report(
         self,
-        project_key: str = None,
-        account_id: str = None,
-        start_date: str = None,
-        end_date: str = None,
-    ) -> Dict[str, Any]:
+        project_key: str | None = None,
+        account_id: str | None = None,
+        start_date: str | None = None,
+        end_date: str | None = None,
+    ) -> dict[str, Any]:
         """Get time tracking report.
 
         Args:

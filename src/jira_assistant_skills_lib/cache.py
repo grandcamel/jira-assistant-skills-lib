@@ -13,19 +13,18 @@ Features:
 - Cache hit/miss statistics
 """
 
-import os
-import json
-import sqlite3
-import hashlib
-import threading
 import fnmatch
-import re
+import hashlib
+import json
+import os
+import sqlite3
+import threading
 import time
-from datetime import datetime, timedelta
-from pathlib import Path
-from typing import Dict, Any, Optional, NamedTuple, Tuple
 from contextlib import contextmanager
 from dataclasses import dataclass, field
+from datetime import timedelta
+from pathlib import Path
+from typing import Any
 
 
 @dataclass
@@ -36,7 +35,7 @@ class CacheStats:
     total_size_bytes: int = 0
     hits: int = 0
     misses: int = 0
-    by_category: Dict[str, Dict[str, Any]] = field(default_factory=dict)
+    by_category: dict[str, dict[str, Any]] = field(default_factory=dict)
 
     @property
     def hit_rate(self) -> float:
@@ -79,7 +78,7 @@ def is_simple_glob_pattern(pattern: str) -> bool:
     return True
 
 
-def glob_to_sql_like(pattern: str) -> Tuple[str, bool]:
+def glob_to_sql_like(pattern: str) -> tuple[str, bool]:
     """
     Convert a glob pattern to SQL LIKE pattern if possible.
 
@@ -121,7 +120,7 @@ class JiraCache:
     LRU eviction, and pattern-based invalidation.
     """
 
-    def __init__(self, cache_dir: Optional[str] = None, max_size_mb: float = 100):
+    def __init__(self, cache_dir: str | None = None, max_size_mb: float = 100):
         """
         Initialize cache.
 
@@ -205,7 +204,7 @@ class JiraCache:
         finally:
             conn.close()
 
-    def get(self, key: str, category: str = "default") -> Optional[Any]:
+    def get(self, key: str, category: str = "default") -> Any | None:
         """
         Get cached value if not expired.
 
@@ -263,7 +262,7 @@ class JiraCache:
         key: str,
         value: Any,
         category: str = "default",
-        ttl: Optional[timedelta] = None,
+        ttl: timedelta | None = None,
     ) -> None:
         """
         Set cache value with optional custom TTL.
@@ -362,9 +361,9 @@ class JiraCache:
 
     def invalidate(
         self,
-        key: Optional[str] = None,
-        pattern: Optional[str] = None,
-        category: Optional[str] = None,
+        key: str | None = None,
+        pattern: str | None = None,
+        category: str | None = None,
     ) -> int:
         """
         Invalidate cache entries.
@@ -558,7 +557,7 @@ class JiraCache:
         return False
 
 
-def get_cache(cache_dir: Optional[str] = None, max_size_mb: float = 100) -> JiraCache:
+def get_cache(cache_dir: str | None = None, max_size_mb: float = 100) -> JiraCache:
     """
     Get or create a cache instance.
 

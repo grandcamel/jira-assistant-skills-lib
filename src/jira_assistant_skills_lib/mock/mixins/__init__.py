@@ -4,24 +4,24 @@ Each mixin provides specialized functionality that can be composed
 into mock client classes.
 """
 
-from .agile import AgileMixin
-from .jsm import JSMMixin
 from .admin import AdminMixin
-from .relationships import RelationshipsMixin
+from .agile import AgileMixin
 from .collaborate import CollaborateMixin
-from .time import TimeTrackingMixin
-from .fields import FieldsMixin
 from .dev import DevMixin
+from .fields import FieldsMixin
+from .jsm import JSMMixin
+from .relationships import RelationshipsMixin
 from .search import SearchMixin
+from .time import TimeTrackingMixin
 
 __all__ = [
-    "AgileMixin",
-    "JSMMixin",
     "AdminMixin",
-    "RelationshipsMixin",
+    "AgileMixin",
     "CollaborateMixin",
-    "TimeTrackingMixin",
-    "FieldsMixin",
     "DevMixin",
+    "FieldsMixin",
+    "JSMMixin",
+    "RelationshipsMixin",
     "SearchMixin",
+    "TimeTrackingMixin",
 ]

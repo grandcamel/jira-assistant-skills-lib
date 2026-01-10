@@ -5,18 +5,16 @@ Provides functions to validate issue keys, JQL queries, project keys,
 and other inputs before making API calls.
 """
 
-import re
 import os
-from typing import Optional, List
-from pathlib import Path
+import re
 
 from assistant_skills_lib.error_handler import ValidationError
 from assistant_skills_lib.validators import (
+    validate_email as base_validate_email,
+    validate_int,
+    validate_path as base_validate_path,
     validate_required,
     validate_url as base_validate_url,
-    validate_email as base_validate_email,
-    validate_path as base_validate_path,
-    validate_int,
 )
 
 

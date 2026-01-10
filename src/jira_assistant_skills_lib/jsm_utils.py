@@ -8,11 +8,10 @@ Provides helper functions for:
 - Status icons and text
 """
 
-from datetime import datetime, timedelta
-from typing import Dict, Any, Optional
+from typing import Any
 
 
-def format_sla_time(time_dict: Dict[str, Any]) -> str:
+def format_sla_time(time_dict: dict[str, Any]) -> str:
     """
     Format SLA time from API response.
 
@@ -31,7 +30,7 @@ def format_sla_time(time_dict: Dict[str, Any]) -> str:
     return time_dict.get("friendly", time_dict.get("iso8601", "Unknown"))
 
 
-def format_duration(duration_dict: Dict[str, Any]) -> str:
+def format_duration(duration_dict: dict[str, Any]) -> str:
     """
     Format SLA duration from API response.
 
@@ -96,7 +95,7 @@ def is_sla_at_risk(
     return remaining_percentage < threshold
 
 
-def get_sla_status_emoji(sla: Dict[str, Any]) -> str:
+def get_sla_status_emoji(sla: dict[str, Any]) -> str:
     """
     Get emoji for SLA status.
 
@@ -136,7 +135,7 @@ def get_sla_status_emoji(sla: Dict[str, Any]) -> str:
     return "?"
 
 
-def get_sla_status_text(sla: Dict[str, Any]) -> str:
+def get_sla_status_text(sla: dict[str, Any]) -> str:
     """
     Get human-readable SLA status.
 

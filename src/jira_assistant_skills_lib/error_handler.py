@@ -8,24 +8,25 @@ Security Note: Error messages may contain sensitive data from JIRA responses.
 Use sanitize_error_message() before logging errors in production environments.
 """
 
+import functools
 import re
 import sys
-import functools
-from typing import Optional, Dict, Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 # Import base error classes and functions from the consolidated library
 from assistant_skills_lib.error_handler import (
-    BaseAPIError,
     AuthenticationError as BaseAuthenticationError,
-    PermissionError as BasePermissionError,
-    ValidationError as BaseValidationError,
-    NotFoundError as BaseNotFoundError,
-    RateLimitError as BaseRateLimitError,
+    BaseAPIError,
     ConflictError as BaseConflictError,
+    NotFoundError as BaseNotFoundError,
+    PermissionError as BasePermissionError,
+    RateLimitError as BaseRateLimitError,
     ServerError as BaseServerError,
-    sanitize_error_message as base_sanitize_error_message,
-    print_error as base_print_error,
+    ValidationError as BaseValidationError,
     handle_errors as base_handle_errors,
+    print_error as base_print_error,
+    sanitize_error_message as base_sanitize_error_message,
 )
 
 
@@ -35,8 +36,8 @@ class JiraError(BaseAPIError):
     def __init__(
         self,
         message: str,
-        status_code: Optional[int] = None,
-        response_data: Optional[Dict[str, Any]] = None,
+        status_code: int | None = None,
+        response_data: dict[str, Any] | None = None,
         **kwargs: Any,
     ):
         super().__init__(
@@ -80,7 +81,7 @@ class ValidationError(BaseValidationError):
     def __init__(
         self,
         message: str = "Validation failed",
-        field: Optional[str] = None,
+        field: str | None = None,
         **kwargs: Any,
     ):
         # Remove 'message' from kwargs if present to avoid duplicate argument
@@ -108,7 +109,7 @@ class NotFoundError(BaseNotFoundError):
 class RateLimitError(BaseRateLimitError):
     """Raised when API rate limit is exceeded."""
 
-    def __init__(self, retry_after: Optional[int] = None, **kwargs: Any):
+    def __init__(self, retry_after: int | None = None, **kwargs: Any):
         # Remove 'message' from kwargs if present to avoid duplicate argument
         kwargs.pop("message", None)
         message = "API rate limit exceeded"
@@ -190,7 +191,7 @@ class AutomationValidationError(AutomationError):
     def __init__(
         self,
         message: str = "Automation validation failed",
-        field: Optional[str] = None,
+        field: str | None = None,
         **kwargs: Any,
     ):
         # Remove 'message' from kwargs if present to avoid duplicate argument
@@ -349,7 +350,7 @@ def handle_errors(func: Callable) -> Callable:
         except JiraError as e:
             print_error(e)
             sys.exit(1)
-        except Exception as e:
+        except Exception:
             # Re-raise unexpected exceptions to be caught by base_handle_errors
             raise
 

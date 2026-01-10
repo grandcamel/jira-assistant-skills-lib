@@ -3,7 +3,7 @@
 Provides mock implementations for permissions, roles, groups, and project administration.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, ClassVar
 
 
 class AdminMixin:
@@ -19,7 +19,7 @@ class AdminMixin:
     # Class Constants - Roles
     # =========================================================================
 
-    ROLES = [
+    ROLES: ClassVar[list[dict[str, Any]]] = [
         {
             "id": 10002,
             "name": "Administrators",
@@ -44,7 +44,7 @@ class AdminMixin:
     # Class Constants - Groups
     # =========================================================================
 
-    GROUPS = [
+    GROUPS: ClassVar[list[dict[str, str]]] = [
         {"name": "jira-administrators", "groupId": "group-1"},
         {"name": "jira-software-users", "groupId": "group-2"},
         {"name": "jira-servicedesk-users", "groupId": "group-3"},
@@ -55,7 +55,7 @@ class AdminMixin:
     # Class Constants - Permission Schemes
     # =========================================================================
 
-    PERMISSION_SCHEMES = [
+    PERMISSION_SCHEMES: ClassVar[list[dict[str, str]]] = [
         {
             "id": "10000",
             "name": "Default Permission Scheme",
@@ -74,7 +74,7 @@ class AdminMixin:
     # Class Constants - Issue Types
     # =========================================================================
 
-    ISSUE_TYPES = [
+    ISSUE_TYPES: ClassVar[list[dict[str, str]]] = [
         {"id": "10000", "name": "Epic", "description": "A big user story"},
         {"id": "10001", "name": "Story", "description": "A user story"},
         {"id": "10002", "name": "Bug", "description": "A bug"},
@@ -86,7 +86,7 @@ class AdminMixin:
     # Class Constants - Priorities
     # =========================================================================
 
-    PRIORITIES = [
+    PRIORITIES: ClassVar[list[dict[str, str]]] = [
         {"id": "1", "name": "Highest", "description": "Critical", "iconUrl": "icons/priorities/highest.svg"},
         {"id": "2", "name": "High", "description": "Important", "iconUrl": "icons/priorities/high.svg"},
         {"id": "3", "name": "Medium", "description": "Normal", "iconUrl": "icons/priorities/medium.svg"},
@@ -98,7 +98,7 @@ class AdminMixin:
     # Role Operations
     # =========================================================================
 
-    def get_all_project_roles(self) -> List[Dict[str, Any]]:
+    def get_all_project_roles(self) -> list[dict[str, Any]]:
         """Get all project roles.
 
         Returns:
@@ -106,7 +106,7 @@ class AdminMixin:
         """
         return self.ROLES
 
-    def get_project_role(self, project_key: str, role_id: int) -> Dict[str, Any]:
+    def get_project_role(self, project_key: str, role_id: int) -> dict[str, Any]:
         """Get a project role with actors.
 
         Args:
@@ -136,7 +136,7 @@ class AdminMixin:
         from ...error_handler import NotFoundError
         raise NotFoundError(f"Role {role_id} not found")
 
-    def get_project_roles(self, project_key: str) -> Dict[str, str]:
+    def get_project_roles(self, project_key: str) -> dict[str, str]:
         """Get roles for a project.
 
         Args:
@@ -156,7 +156,7 @@ class AdminMixin:
         role_id: int,
         actor_type: str,
         actor_value: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Add an actor to a project role.
 
         Args:
@@ -194,10 +194,10 @@ class AdminMixin:
 
     def get_groups(
         self,
-        query: str = None,
-        exclude: List[str] = None,
+        query: str | None = None,
+        exclude: list[str] | None = None,
         max_results: int = 50,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get all groups.
 
         Args:
@@ -223,7 +223,7 @@ class AdminMixin:
             "groups": groups[:max_results],
         }
 
-    def get_group(self, group_name: str) -> Dict[str, Any]:
+    def get_group(self, group_name: str) -> dict[str, Any]:
         """Get a group by name.
 
         Args:
@@ -242,7 +242,7 @@ class AdminMixin:
         from ...error_handler import NotFoundError
         raise NotFoundError(f"Group {group_name} not found")
 
-    def create_group(self, name: str) -> Dict[str, Any]:
+    def create_group(self, name: str) -> dict[str, Any]:
         """Create a new group.
 
         Args:
@@ -271,7 +271,7 @@ class AdminMixin:
         start_at: int = 0,
         max_results: int = 50,
         include_inactive: bool = False,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get members of a group.
 
         Args:
@@ -295,7 +295,7 @@ class AdminMixin:
             "values": members[start_at : start_at + max_results],
         }
 
-    def add_user_to_group(self, group_name: str, account_id: str) -> Dict[str, Any]:
+    def add_user_to_group(self, group_name: str, account_id: str) -> dict[str, Any]:
         """Add a user to a group.
 
         Args:
@@ -323,10 +323,10 @@ class AdminMixin:
 
     def get_my_permissions(
         self,
-        project_key: str = None,
-        issue_key: str = None,
-        permissions: List[str] = None,
-    ) -> Dict[str, Any]:
+        project_key: str | None = None,
+        issue_key: str | None = None,
+        permissions: list[str] | None = None,
+    ) -> dict[str, Any]:
         """Get current user's permissions.
 
         Args:
@@ -370,7 +370,7 @@ class AdminMixin:
             }
         }
 
-    def get_permission_schemes(self) -> Dict[str, Any]:
+    def get_permission_schemes(self) -> dict[str, Any]:
         """Get all permission schemes.
 
         Returns:
@@ -380,7 +380,7 @@ class AdminMixin:
             "permissionSchemes": self.PERMISSION_SCHEMES,
         }
 
-    def get_permission_scheme(self, scheme_id: str) -> Dict[str, Any]:
+    def get_permission_scheme(self, scheme_id: str) -> dict[str, Any]:
         """Get a permission scheme by ID.
 
         Args:
@@ -403,7 +403,7 @@ class AdminMixin:
     # Issue Type Operations
     # =========================================================================
 
-    def get_issue_types(self) -> List[Dict[str, Any]]:
+    def get_issue_types(self) -> list[dict[str, Any]]:
         """Get all issue types.
 
         Returns:
@@ -411,7 +411,7 @@ class AdminMixin:
         """
         return self.ISSUE_TYPES
 
-    def get_issue_type(self, issue_type_id: str) -> Dict[str, Any]:
+    def get_issue_type(self, issue_type_id: str) -> dict[str, Any]:
         """Get an issue type by ID.
 
         Args:
@@ -430,7 +430,7 @@ class AdminMixin:
         from ...error_handler import NotFoundError
         raise NotFoundError(f"Issue type {issue_type_id} not found")
 
-    def get_issue_types_for_project(self, project_key: str) -> List[Dict[str, Any]]:
+    def get_issue_types_for_project(self, project_key: str) -> list[dict[str, Any]]:
         """Get issue types available for a project.
 
         Args:
@@ -445,7 +445,7 @@ class AdminMixin:
     # Priority Operations
     # =========================================================================
 
-    def get_priorities(self) -> List[Dict[str, Any]]:
+    def get_priorities(self) -> list[dict[str, Any]]:
         """Get all priorities.
 
         Returns:
@@ -453,7 +453,7 @@ class AdminMixin:
         """
         return self.PRIORITIES
 
-    def get_priority(self, priority_id: str) -> Dict[str, Any]:
+    def get_priority(self, priority_id: str) -> dict[str, Any]:
         """Get a priority by ID.
 
         Args:
@@ -480,8 +480,8 @@ class AdminMixin:
         self,
         start_at: int = 0,
         max_results: int = 50,
-        expand: str = None,
-    ) -> List[Dict[str, Any]]:
+        expand: str | None = None,
+    ) -> list[dict[str, Any]]:
         """Get all projects.
 
         Args:
@@ -499,9 +499,9 @@ class AdminMixin:
         key: str,
         name: str,
         project_type_key: str = "software",
-        lead_account_id: str = None,
-        description: str = None,
-    ) -> Dict[str, Any]:
+        lead_account_id: str | None = None,
+        description: str | None = None,
+    ) -> dict[str, Any]:
         """Create a new project.
 
         Args:
@@ -535,10 +535,10 @@ class AdminMixin:
     def update_project(
         self,
         project_key: str,
-        name: str = None,
-        description: str = None,
-        lead_account_id: str = None,
-    ) -> Dict[str, Any]:
+        name: str | None = None,
+        description: str | None = None,
+        lead_account_id: str | None = None,
+    ) -> dict[str, Any]:
         """Update a project.
 
         Args:
@@ -568,8 +568,8 @@ class AdminMixin:
         self,
         start_at: int = 0,
         max_results: int = 50,
-        workflow_name: str = None,
-    ) -> Dict[str, Any]:
+        workflow_name: str | None = None,
+    ) -> dict[str, Any]:
         """Get all workflows.
 
         Args:
@@ -604,7 +604,7 @@ class AdminMixin:
             "values": workflows,
         }
 
-    def get_workflow_scheme(self, project_key: str) -> Dict[str, Any]:
+    def get_workflow_scheme(self, project_key: str) -> dict[str, Any]:
         """Get workflow scheme for a project.
 
         Args:
