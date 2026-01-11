@@ -3,10 +3,17 @@
 Provides mock implementations for issue links, dependencies, and cloning.
 """
 
-from typing import Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
+
+if TYPE_CHECKING:
+    from ..protocols import MockClientProtocol
+
+    _Base = MockClientProtocol
+else:
+    _Base = object
 
 
-class RelationshipsMixin:
+class RelationshipsMixin(_Base):
     """Mixin providing issue relationship functionality.
 
     Assumes base class provides:

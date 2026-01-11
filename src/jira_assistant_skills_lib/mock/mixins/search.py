@@ -4,10 +4,17 @@ Provides mock implementations for advanced JQL parsing, filters, and search oper
 """
 
 import re
-from typing import Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
+
+if TYPE_CHECKING:
+    from ..protocols import MockClientProtocol
+
+    _Base = MockClientProtocol
+else:
+    _Base = object
 
 
-class SearchMixin:
+class SearchMixin(_Base):
     """Mixin providing advanced search functionality.
 
     Assumes base class provides:

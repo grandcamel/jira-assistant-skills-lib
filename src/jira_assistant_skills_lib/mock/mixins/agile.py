@@ -3,10 +3,17 @@
 Provides mock implementations for boards, sprints, and backlog operations.
 """
 
-from typing import Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
+
+if TYPE_CHECKING:
+    from ..protocols import MockClientProtocol
+
+    _Base = MockClientProtocol
+else:
+    _Base = object
 
 
-class AgileMixin:
+class AgileMixin(_Base):
     """Mixin providing agile board and sprint functionality.
 
     Assumes base class provides:

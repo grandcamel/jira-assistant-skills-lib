@@ -4,10 +4,17 @@ Provides mock implementations for development panel, git integration,
 branch names, and commit associations.
 """
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from ..protocols import MockClientProtocol
+
+    _Base = MockClientProtocol
+else:
+    _Base = object
 
 
-class DevMixin:
+class DevMixin(_Base):
     """Mixin providing development integration functionality.
 
     Assumes base class provides:

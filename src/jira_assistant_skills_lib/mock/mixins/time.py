@@ -3,10 +3,17 @@
 Provides mock implementations for worklogs, time estimates, and time tracking configuration.
 """
 
-from typing import Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
+
+if TYPE_CHECKING:
+    from ..protocols import MockClientProtocol
+
+    _Base = MockClientProtocol
+else:
+    _Base = object
 
 
-class TimeTrackingMixin:
+class TimeTrackingMixin(_Base):
     """Mixin providing time tracking functionality.
 
     Assumes base class provides:

@@ -3,10 +3,17 @@
 Provides mock implementations for watchers, changelog, attachments, and notifications.
 """
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from ..protocols import MockClientProtocol
+
+    _Base = MockClientProtocol
+else:
+    _Base = object
 
 
-class CollaborateMixin:
+class CollaborateMixin(_Base):
     """Mixin providing collaboration functionality.
 
     Assumes base class provides:

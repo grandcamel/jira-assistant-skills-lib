@@ -132,7 +132,10 @@ class MockJiraClientBase:
         Raises:
             NotFoundError: If the issue is not found.
         """
-        self._verify_issue_exists(issue_key)
+        if issue_key not in self._issues:
+            from ..error_handler import NotFoundError
+
+            raise NotFoundError(f"Issue {issue_key} not found")
         return self._issues[issue_key]
 
     def _verify_project_exists(self, project_key: str) -> dict[str, Any]:

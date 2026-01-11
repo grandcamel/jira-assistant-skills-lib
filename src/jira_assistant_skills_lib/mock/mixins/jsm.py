@@ -3,10 +3,17 @@
 Provides mock implementations for service desk, request, SLA, and queue operations.
 """
 
-from typing import Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
+
+if TYPE_CHECKING:
+    from ..protocols import MockClientProtocol
+
+    _Base = MockClientProtocol
+else:
+    _Base = object
 
 
-class JSMMixin:
+class JSMMixin(_Base):
     """Mixin providing JSM service desk functionality.
 
     Assumes base class provides:

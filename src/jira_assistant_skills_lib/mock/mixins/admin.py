@@ -3,10 +3,17 @@
 Provides mock implementations for permissions, roles, groups, and project administration.
 """
 
-from typing import Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
+
+if TYPE_CHECKING:
+    from ..protocols import MockClientProtocol
+
+    _Base = MockClientProtocol
+else:
+    _Base = object
 
 
-class AdminMixin:
+class AdminMixin(_Base):
     """Mixin providing administration functionality.
 
     Assumes base class provides:

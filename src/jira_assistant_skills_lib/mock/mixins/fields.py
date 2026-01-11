@@ -3,10 +3,17 @@
 Provides mock implementations for field metadata, screens, and custom fields.
 """
 
-from typing import Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
+
+if TYPE_CHECKING:
+    from ..protocols import MockClientProtocol
+
+    _Base = MockClientProtocol
+else:
+    _Base = object
 
 
-class FieldsMixin:
+class FieldsMixin(_Base):
     """Mixin providing field metadata functionality.
 
     Assumes base class provides:
