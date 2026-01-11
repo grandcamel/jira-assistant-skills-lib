@@ -125,15 +125,9 @@ class AgileMixin:
             name_lower = name.lower()
             boards = [b for b in boards if name_lower in b["name"].lower()]
 
-        paginated = boards[start_at : start_at + max_results]
+        from ..factories import ResponseFactory
 
-        return {
-            "maxResults": max_results,
-            "startAt": start_at,
-            "total": len(boards),
-            "isLast": start_at + max_results >= len(boards),
-            "values": paginated,
-        }
+        return ResponseFactory.paginated(boards, start_at, max_results)
 
     def get_board(self, board_id: int) -> dict[str, Any]:
         """Get a specific board.
@@ -212,15 +206,9 @@ class AgileMixin:
         if state:
             sprints = [s for s in sprints if s["state"] == state]
 
-        paginated = sprints[start_at : start_at + max_results]
+        from ..factories import ResponseFactory
 
-        return {
-            "maxResults": max_results,
-            "startAt": start_at,
-            "total": len(sprints),
-            "isLast": start_at + max_results >= len(sprints),
-            "values": paginated,
-        }
+        return ResponseFactory.paginated(sprints, start_at, max_results)
 
     def get_sprint(self, sprint_id: int) -> dict[str, Any]:
         """Get a specific sprint.
@@ -349,14 +337,9 @@ class AgileMixin:
             if i["key"].startswith("DEMO-") and not i["key"].startswith("DEMOSD-")
         ]
 
-        paginated = demo_issues[start_at : start_at + max_results]
+        from ..factories import ResponseFactory
 
-        return {
-            "maxResults": max_results,
-            "startAt": start_at,
-            "total": len(demo_issues),
-            "issues": paginated,
-        }
+        return ResponseFactory.paginated_issues(demo_issues, start_at, max_results)
 
     def move_issues_to_sprint(self, sprint_id: int, issue_keys: list[str]) -> None:
         """Move issues to a sprint.
@@ -399,14 +382,9 @@ class AgileMixin:
             if i["key"].startswith("DEMO-") and not i["key"].startswith("DEMOSD-")
         ]
 
-        paginated = demo_issues[start_at : start_at + max_results]
+        from ..factories import ResponseFactory
 
-        return {
-            "maxResults": max_results,
-            "startAt": start_at,
-            "total": len(demo_issues),
-            "issues": paginated,
-        }
+        return ResponseFactory.paginated_issues(demo_issues, start_at, max_results)
 
     def move_issues_to_backlog(self, issue_keys: list[str]) -> None:
         """Move issues to backlog (remove from sprint).
@@ -468,15 +446,9 @@ class AgileMixin:
             else:
                 epics = [e for e in epics if e["fields"]["status"]["name"] != "Done"]
 
-        paginated = epics[start_at : start_at + max_results]
+        from ..factories import ResponseFactory
 
-        return {
-            "maxResults": max_results,
-            "startAt": start_at,
-            "total": len(epics),
-            "isLast": start_at + max_results >= len(epics),
-            "values": paginated,
-        }
+        return ResponseFactory.paginated(epics, start_at, max_results)
 
     def get_epic_issues(
         self,
@@ -508,14 +480,9 @@ class AgileMixin:
             and i["fields"]["issuetype"]["name"] != "Epic"
         ]
 
-        paginated = demo_issues[start_at : start_at + max_results]
+        from ..factories import ResponseFactory
 
-        return {
-            "maxResults": max_results,
-            "startAt": start_at,
-            "total": len(demo_issues),
-            "issues": paginated,
-        }
+        return ResponseFactory.paginated_issues(demo_issues, start_at, max_results)
 
     def move_issues_to_epic(self, epic_id_or_key: str, issue_keys: list[str]) -> None:
         """Move issues to an epic.

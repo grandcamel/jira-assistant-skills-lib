@@ -105,13 +105,9 @@ class JSMMixin:
         Returns:
             A paginated list of all service desks available to the user.
         """
-        return {
-            "size": len(self.SERVICE_DESKS),
-            "start": start,
-            "limit": limit,
-            "isLastPage": True,
-            "values": self.SERVICE_DESKS,
-        }
+        from ..factories import ResponseFactory
+
+        return ResponseFactory.paginated(self.SERVICE_DESKS, start, limit, format="jsm")
 
     def get_service_desk(self, service_desk_id: str) -> dict[str, Any]:
         """Get service desk by ID.
@@ -174,13 +170,10 @@ class JSMMixin:
             A paginated list of queues for the service desk.
         """
         queues = self.QUEUES.get(str(service_desk_id), [])
-        return {
-            "size": len(queues),
-            "start": start,
-            "limit": limit,
-            "isLastPage": True,
-            "values": queues,
-        }
+
+        from ..factories import ResponseFactory
+
+        return ResponseFactory.paginated(queues, start, limit, format="jsm")
 
     def get_queues(
         self,
@@ -265,14 +258,9 @@ class JSMMixin:
                 if i["fields"].get("assignee", {}).get("accountId") == "abc123"
             ]
 
-        paginated = demosd_issues[start : start + limit]
-        return {
-            "size": len(paginated),
-            "start": start,
-            "limit": limit,
-            "isLastPage": start + limit >= len(demosd_issues),
-            "values": paginated,
-        }
+        from ..factories import ResponseFactory
+
+        return ResponseFactory.paginated(demosd_issues, start, limit, format="jsm")
 
     # =========================================================================
     # Request Type Operations
@@ -295,13 +283,10 @@ class JSMMixin:
             A paginated list of request types.
         """
         types = self.REQUEST_TYPES.get(service_desk_id, [])
-        return {
-            "size": len(types),
-            "start": start,
-            "limit": limit,
-            "isLastPage": True,
-            "values": types,
-        }
+
+        from ..factories import ResponseFactory
+
+        return ResponseFactory.paginated(types, start, limit, format="jsm")
 
     # =========================================================================
     # Request Operations
@@ -599,13 +584,9 @@ class JSMMixin:
         if public is not None:
             comments = [c for c in comments if c.get("public") == public]
 
-        return {
-            "size": len(comments),
-            "start": start,
-            "limit": limit,
-            "isLastPage": True,
-            "values": comments[start : start + limit],
-        }
+        from ..factories import ResponseFactory
+
+        return ResponseFactory.paginated(comments, start, limit, format="jsm")
 
     # =========================================================================
     # Request Transition Operations
@@ -697,13 +678,9 @@ class JSMMixin:
                 or query_lower in c.get("emailAddress", "").lower()
             ]
 
-        return {
-            "size": len(customers),
-            "start": start,
-            "limit": limit,
-            "isLastPage": True,
-            "values": customers,
-        }
+        from ..factories import ResponseFactory
+
+        return ResponseFactory.paginated(customers, start, limit, format="jsm")
 
     def add_customers(
         self,
@@ -774,13 +751,9 @@ class JSMMixin:
             },
         ]
 
-        return {
-            "size": len(orgs),
-            "start": start,
-            "limit": limit,
-            "isLastPage": True,
-            "values": orgs,
-        }
+        from ..factories import ResponseFactory
+
+        return ResponseFactory.paginated(orgs, start, limit, format="jsm")
 
     def create_organization(self, name: str) -> dict[str, Any]:
         """Create an organization.

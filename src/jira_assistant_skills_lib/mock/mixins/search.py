@@ -85,17 +85,12 @@ class SearchMixin:
         # Apply ordering
         issues = self._apply_jql_order(issues, jql)
 
-        total = len(issues)
-        paginated = issues[start_at : start_at + max_results]
+        from ..factories import ResponseFactory
 
-        return {
-            "expand": ",".join(expand) if expand else "",
-            "startAt": start_at,
-            "maxResults": max_results,
-            "total": total,
-            "issues": paginated,
-            "warningMessages": [],
-        }
+        result = ResponseFactory.paginated_issues(issues, start_at, max_results)
+        result["expand"] = ",".join(expand) if expand else ""
+        result["warningMessages"] = []
+        return result
 
     def _apply_jql_filters(self, issues: list[dict], jql: str) -> list[dict]:
         """Apply JQL filters to issue list.
@@ -472,15 +467,9 @@ class SearchMixin:
         if account_id:
             filters = [f for f in filters if f["owner"]["accountId"] == account_id]
 
-        paginated = filters[start_at : start_at + max_results]
+        from ..factories import ResponseFactory
 
-        return {
-            "startAt": start_at,
-            "maxResults": max_results,
-            "total": len(filters),
-            "isLast": start_at + max_results >= len(filters),
-            "values": paginated,
-        }
+        return ResponseFactory.paginated(filters, start_at, max_results)
 
     def create_filter(
         self,

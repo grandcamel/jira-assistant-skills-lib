@@ -47,10 +47,7 @@ class CollaborateMixin:
         """
         self._ensure_watchers_state()
 
-        if issue_key not in self._issues:
-            from ...error_handler import NotFoundError
-
-            raise NotFoundError(f"Issue {issue_key} not found")
+        self._verify_issue_exists(issue_key)
 
         watchers = self._watchers.get(issue_key, [])
 
@@ -79,10 +76,7 @@ class CollaborateMixin:
         """
         self._ensure_watchers_state()
 
-        if issue_key not in self._issues:
-            from ...error_handler import NotFoundError
-
-            raise NotFoundError(f"Issue {issue_key} not found")
+        self._verify_issue_exists(issue_key)
 
         if issue_key not in self._watchers:
             self._watchers[issue_key] = []
@@ -112,10 +106,7 @@ class CollaborateMixin:
         """
         self._ensure_watchers_state()
 
-        if issue_key not in self._issues:
-            from ...error_handler import NotFoundError
-
-            raise NotFoundError(f"Issue {issue_key} not found")
+        self._verify_issue_exists(issue_key)
 
         if issue_key in self._watchers:
             self._watchers[issue_key] = [
@@ -145,10 +136,7 @@ class CollaborateMixin:
         Raises:
             NotFoundError: If the issue is not found.
         """
-        if issue_key not in self._issues:
-            from ...error_handler import NotFoundError
-
-            raise NotFoundError(f"Issue {issue_key} not found")
+        self._verify_issue_exists(issue_key)
 
         # Return mock changelog
         changelog = [
@@ -184,15 +172,9 @@ class CollaborateMixin:
             },
         ]
 
-        paginated = changelog[start_at : start_at + max_results]
+        from ..factories import ResponseFactory
 
-        return {
-            "startAt": start_at,
-            "maxResults": max_results,
-            "total": len(changelog),
-            "isLast": start_at + max_results >= len(changelog),
-            "values": paginated,
-        }
+        return ResponseFactory.paginated(changelog, start_at, max_results)
 
     def get_issue_with_changelog(
         self,
@@ -211,10 +193,7 @@ class CollaborateMixin:
         Raises:
             NotFoundError: If the issue is not found.
         """
-        if issue_key not in self._issues:
-            from ...error_handler import NotFoundError
-
-            raise NotFoundError(f"Issue {issue_key} not found")
+        self._verify_issue_exists(issue_key)
 
         issue = dict(self._issues[issue_key])
         issue["changelog"] = self.get_changelog(issue_key)
@@ -239,10 +218,7 @@ class CollaborateMixin:
         """
         self._ensure_attachments_state()
 
-        if issue_key not in self._issues:
-            from ...error_handler import NotFoundError
-
-            raise NotFoundError(f"Issue {issue_key} not found")
+        self._verify_issue_exists(issue_key)
 
         return self._attachments.get(issue_key, [])
 
@@ -269,10 +245,7 @@ class CollaborateMixin:
         """
         self._ensure_attachments_state()
 
-        if issue_key not in self._issues:
-            from ...error_handler import NotFoundError
-
-            raise NotFoundError(f"Issue {issue_key} not found")
+        self._verify_issue_exists(issue_key)
 
         if issue_key not in self._attachments:
             self._attachments[issue_key] = []
@@ -355,10 +328,7 @@ class CollaborateMixin:
         Raises:
             NotFoundError: If the issue is not found.
         """
-        if issue_key not in self._issues:
-            from ...error_handler import NotFoundError
-
-            raise NotFoundError(f"Issue {issue_key} not found")
+        self._verify_issue_exists(issue_key)
 
         # In mock, this is a no-op
         pass
@@ -419,10 +389,7 @@ class CollaborateMixin:
         Raises:
             NotFoundError: If the issue is not found.
         """
-        if issue_key not in self._issues:
-            from ...error_handler import NotFoundError
-
-            raise NotFoundError(f"Issue {issue_key} not found")
+        self._verify_issue_exists(issue_key)
 
         # Combine changelog and comments into activity
         activities = []
@@ -502,10 +469,7 @@ class CollaborateMixin:
         Raises:
             NotFoundError: If the issue is not found.
         """
-        if issue_key not in self._issues:
-            from ...error_handler import NotFoundError
-
-            raise NotFoundError(f"Issue {issue_key} not found")
+        self._verify_issue_exists(issue_key)
 
         return {
             "self": f"{self.base_url}/rest/api/3/issue/{issue_key}/votes",
@@ -523,10 +487,7 @@ class CollaborateMixin:
         Raises:
             NotFoundError: If the issue is not found.
         """
-        if issue_key not in self._issues:
-            from ...error_handler import NotFoundError
-
-            raise NotFoundError(f"Issue {issue_key} not found")
+        self._verify_issue_exists(issue_key)
         # In mock, this is a no-op
 
     def remove_vote(self, issue_key: str) -> None:
@@ -538,8 +499,5 @@ class CollaborateMixin:
         Raises:
             NotFoundError: If the issue is not found.
         """
-        if issue_key not in self._issues:
-            from ...error_handler import NotFoundError
-
-            raise NotFoundError(f"Issue {issue_key} not found")
+        self._verify_issue_exists(issue_key)
         # In mock, this is a no-op
