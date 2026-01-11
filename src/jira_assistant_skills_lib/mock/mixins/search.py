@@ -108,7 +108,6 @@ class SearchMixin:
             Filtered list of issues.
         """
         jql_upper = jql.upper()
-        jql.lower()
 
         # Project filter
         project_match = re.search(r"PROJECT\s*=\s*(\w+)", jql_upper)

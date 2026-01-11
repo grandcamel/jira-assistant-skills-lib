@@ -68,12 +68,8 @@ def parse_grant_string(grant_string: str) -> tuple[str, str, str | None]:
     holder_type = parts[1]
     holder_parameter = ":".join(parts[2:]) if len(parts) > 2 else None
 
-    # Validate holder type
-    if holder_type not in VALID_HOLDER_TYPES:
-        raise ValidationError(
-            f"Invalid holder type: '{holder_type}'. "
-            f"Valid types are: {', '.join(VALID_HOLDER_TYPES)}"
-        )
+    # Validate holder type (reuse shared validation function)
+    validate_holder_type(holder_type)
 
     # Check if holder type requires parameter
     if holder_type in HOLDER_TYPES_WITH_PARAMETER and not holder_parameter:
