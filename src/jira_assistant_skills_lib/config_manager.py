@@ -12,7 +12,17 @@ Supports configurable Agile field IDs with automatic discovery fallback.
 """
 
 import os
+import warnings
 from typing import Any
+
+# Emit deprecation warning if JIRA_PROFILE is set
+if os.environ.get("JIRA_PROFILE"):
+    warnings.warn(
+        "JIRA_PROFILE environment variable is deprecated and will be ignored. "
+        "Use JIRA_API_TOKEN, JIRA_EMAIL, and JIRA_SITE_URL instead.",
+        DeprecationWarning,
+        stacklevel=1,
+    )
 
 from assistant_skills_lib.config_manager import BaseConfigManager
 from assistant_skills_lib.error_handler import (
@@ -49,17 +59,14 @@ DEFAULT_AGILE_FIELDS = {
 
 class ConfigManager(BaseConfigManager):
     """
-    Manages JIRA configuration from multiple sources with profile support.
+    Manages JIRA configuration from multiple sources.
     """
 
-    def __init__(self, profile: str | None = None):
+    def __init__(self):
         """
         Initialize configuration manager.
-
-        Args:
-            profile: Profile name to use (default: from config or 'production')
         """
-        super().__init__(profile=profile)  # Call BaseConfigManager's init
+        super().__init__()  # Call BaseConfigManager's init
 
     def get_service_name(self) -> str:
         """
@@ -105,9 +112,9 @@ class ConfigManager(BaseConfigManager):
 
         return profiles[profile_name]
 
-    def get_credentials(self, profile: str | None = None) -> tuple:
+    def get_credentials(self) -> tuple:
         """
-        Get JIRA credentials (URL, email, API token) for a profile.
+        Get JIRA credentials (URL, email, API token).
 
         Checks in priority order:
         1. Environment variables (highest priority)
@@ -115,41 +122,26 @@ class ConfigManager(BaseConfigManager):
         3. settings.local.json
         4. settings.json (for URL only)
 
-        Args:
-            profile: Profile name (default: self.profile)
-
         Returns:
             Tuple of (url, email, api_token)
 
         Raises:
             ValidationError: If required credentials are missing
         """
-        profile = profile or self.profile
-
-        # Get profile config (may raise ValidationError if profile doesn't exist)
-        try:
-            profile_config = self.get_profile_config(profile)
-        except ValidationError:
-            profile_config = {}
-
         # Initialize credential variables
         url, email, api_token = None, None, None
 
         # Priority 1: Environment variables (highest priority)
         url = self.get_credential_from_env("SITE_URL")
         email = self.get_credential_from_env("EMAIL")
-        api_token = self.get_credential_from_env(
-            f"API_TOKEN_{profile.upper()}"
-        ) or self.get_credential_from_env("API_TOKEN")
+        api_token = self.get_credential_from_env("API_TOKEN")
 
         # Priority 2: System keychain (if available and we're missing any credential)
         if CREDENTIAL_MANAGER_AVAILABLE and is_keychain_available():
             if not (url and email and api_token):
                 try:
-                    cred_mgr = CredentialManager(profile)
-                    kc_url, kc_email, kc_token = cred_mgr.get_credentials_from_keychain(
-                        profile
-                    )
+                    cred_mgr = CredentialManager()
+                    kc_url, kc_email, kc_token = cred_mgr.get_credentials_from_keychain()
                     url = url or kc_url
                     email = email or kc_email
                     api_token = api_token or kc_token
@@ -159,31 +151,27 @@ class ConfigManager(BaseConfigManager):
         # Priority 3: settings.local.json credentials
         if not (url and email and api_token):
             credentials = self.config.get("jira", {}).get("credentials", {})
-            profile_creds = credentials.get(profile, {})
-            email = email or profile_creds.get("email")
-            api_token = api_token or profile_creds.get("api_token")
-
-        # Priority 4: settings.json for URL (from profile config)
-        if not url:
-            url = profile_config.get("url")
+            email = email or credentials.get("email")
+            api_token = api_token or credentials.get("api_token")
+            url = url or credentials.get("url")
 
         # Validate we have all required credentials
         if not url:
             raise ValidationError(
-                f"JIRA URL not configured for profile '{profile}'. "
+                "JIRA URL not configured. "
                 "Set JIRA_SITE_URL environment variable, run setup.py, or configure in .claude/settings.json"
             )
 
         if not api_token:
             raise ValidationError(
-                f"JIRA API token not configured for profile '{profile}'. "
+                "JIRA API token not configured. "
                 "Set JIRA_API_TOKEN environment variable, run setup.py, or configure in .claude/settings.local.json\n"
                 "Get a token at: https://id.atlassian.com/manage-profile/security/api-tokens"
             )
 
         if not email:
             raise ValidationError(
-                f"JIRA email not configured for profile '{profile}'. "
+                "JIRA email not configured. "
                 "Set JIRA_EMAIL environment variable, run setup.py, or configure in .claude/settings.local.json"
             )
 
@@ -363,12 +351,9 @@ class ConfigManager(BaseConfigManager):
         )
 
 
-def get_jira_client(profile: str | None = None) -> JiraClient:
+def get_jira_client() -> JiraClient:
     """
     Convenience function to get a configured JIRA client.
-
-    Args:
-        profile: Profile name (default: from config or environment)
 
     Returns:
         Configured JiraClient instance (or MockJiraClient if JIRA_MOCK_MODE=true)
@@ -381,16 +366,13 @@ def get_jira_client(profile: str | None = None) -> JiraClient:
     if is_mock_mode():
         return MockJiraClient()
 
-    config_manager = ConfigManager.get_instance(profile=profile)
+    config_manager = ConfigManager.get_instance()
     return config_manager.get_client()
 
 
-def get_automation_client(profile: str | None = None) -> AutomationClient:
+def get_automation_client() -> AutomationClient:
     """
     Convenience function to get a configured Automation API client.
-
-    Args:
-        profile: Profile name (default: from config or environment)
 
     Returns:
         Configured AutomationClient instance
@@ -398,31 +380,27 @@ def get_automation_client(profile: str | None = None) -> AutomationClient:
     Raises:
         ValidationError: If configuration is invalid or incomplete
     """
-    config_manager = ConfigManager.get_instance(profile=profile)
+    config_manager = ConfigManager.get_instance()
     return config_manager.get_automation_client()
 
 
-def get_agile_fields(profile: str | None = None) -> dict[str, str]:
+def get_agile_fields() -> dict[str, str]:
     """
     Convenience function to get Agile field IDs.
-
-    Args:
-        profile: Profile name (default: from config or environment)
 
     Returns:
         Dictionary of field names to field IDs
     """
-    config_manager = ConfigManager.get_instance(profile=profile)
+    config_manager = ConfigManager.get_instance()
     return config_manager.get_agile_fields()
 
 
-def get_agile_field(field_name: str, profile: str | None = None) -> str:
+def get_agile_field(field_name: str) -> str:
     """
     Convenience function to get a specific Agile field ID.
 
     Args:
         field_name: Field name (epic_link, story_points, epic_name, epic_color, sprint)
-        profile: Profile name (default: from config or environment)
 
     Returns:
         Field ID string
@@ -430,12 +408,12 @@ def get_agile_field(field_name: str, profile: str | None = None) -> str:
     Raises:
         ValidationError: If field_name is not a valid Agile field
     """
-    config_manager = ConfigManager.get_instance(profile=profile)
+    config_manager = ConfigManager.get_instance()
     return config_manager.get_agile_field(field_name)
 
 
 # Project context functions - lazy imports to avoid circular dependencies
-def get_project_context(project_key: str, profile: str | None = None):
+def get_project_context(project_key: str):
     """
     Convenience function to get project context.
 
@@ -443,18 +421,17 @@ def get_project_context(project_key: str, profile: str | None = None):
 
     Args:
         project_key: JIRA project key (e.g., 'PROJ')
-        profile: Profile name (default: from config or environment)
 
     Returns:
         ProjectContext object with metadata, workflows, patterns, and defaults
     """
     from project_context import get_project_context as _get_project_context
 
-    return _get_project_context(project_key, profile)
+    return _get_project_context(project_key)
 
 
 def get_project_defaults(
-    project_key: str, issue_type: str | None = None, profile: str | None = None
+    project_key: str, issue_type: str | None = None
 ) -> dict[str, Any]:
     """
     Convenience function to get default values for issue creation.
@@ -463,7 +440,6 @@ def get_project_defaults(
         project_key: JIRA project key (e.g., 'PROJ')
         issue_type: Issue type name (e.g., 'Bug', 'Story') - if specified,
                     merges global defaults with type-specific defaults
-        profile: Profile name (default: from config or environment)
 
     Returns:
         Dict with default values: priority, assignee, labels, components, etc.
@@ -474,7 +450,7 @@ def get_project_defaults(
         get_project_context as _get_project_context,
     )
 
-    context = _get_project_context(project_key, profile)
+    context = _get_project_context(project_key)
 
     if not context.has_context():
         return {}
@@ -485,17 +461,16 @@ def get_project_defaults(
         return context.defaults.get("global", {})
 
 
-def has_project_context(project_key: str, profile: str | None = None) -> bool:
+def has_project_context(project_key: str) -> bool:
     """
     Convenience function to check if project context exists.
 
     Args:
         project_key: JIRA project key
-        profile: Profile name (default: from config or environment)
 
     Returns:
         True if skill directory or settings config exists for this project
     """
     from project_context import has_project_context as _has_project_context
 
-    return _has_project_context(project_key, profile)
+    return _has_project_context(project_key)

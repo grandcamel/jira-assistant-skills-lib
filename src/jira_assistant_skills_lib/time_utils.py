@@ -69,6 +69,32 @@ def parse_time_string(time_str: str) -> int:
     return total_seconds
 
 
+def _parse_time_components(seconds: int) -> tuple[int, int, int, int]:
+    """
+    Parse seconds into time components.
+
+    Args:
+        seconds: Time in seconds (must be non-negative)
+
+    Returns:
+        Tuple of (weeks, days, hours, minutes)
+    """
+    remaining = seconds
+
+    weeks = remaining // SECONDS_PER_WEEK
+    remaining %= SECONDS_PER_WEEK
+
+    days = remaining // SECONDS_PER_DAY
+    remaining %= SECONDS_PER_DAY
+
+    hours = remaining // SECONDS_PER_HOUR
+    remaining %= SECONDS_PER_HOUR
+
+    minutes = remaining // SECONDS_PER_MINUTE
+
+    return weeks, days, hours, minutes
+
+
 def format_seconds(seconds: int, compact: bool = False) -> str:
     """
     Format seconds to human-readable JIRA time format.
@@ -94,20 +120,9 @@ def format_seconds(seconds: int, compact: bool = False) -> str:
     if seconds < 0:
         return "-" + format_seconds(abs(seconds), compact)
 
+    weeks, days, hours, minutes = _parse_time_components(seconds)
+
     parts = []
-    remaining = seconds
-
-    weeks = remaining // SECONDS_PER_WEEK
-    remaining %= SECONDS_PER_WEEK
-
-    days = remaining // SECONDS_PER_DAY
-    remaining %= SECONDS_PER_DAY
-
-    hours = remaining // SECONDS_PER_HOUR
-    remaining %= SECONDS_PER_HOUR
-
-    minutes = remaining // SECONDS_PER_MINUTE
-
     if weeks:
         parts.append(f"{weeks}w")
     if days:
@@ -143,20 +158,9 @@ def format_seconds_long(seconds: int) -> str:
     if seconds < 0:
         return "-" + format_seconds_long(abs(seconds))
 
+    weeks, days, hours, minutes = _parse_time_components(seconds)
+
     parts = []
-    remaining = seconds
-
-    weeks = remaining // SECONDS_PER_WEEK
-    remaining %= SECONDS_PER_WEEK
-
-    days = remaining // SECONDS_PER_DAY
-    remaining %= SECONDS_PER_DAY
-
-    hours = remaining // SECONDS_PER_HOUR
-    remaining %= SECONDS_PER_HOUR
-
-    minutes = remaining // SECONDS_PER_MINUTE
-
     if weeks:
         parts.append(f"{weeks} {'week' if weeks == 1 else 'weeks'}")
     if days:

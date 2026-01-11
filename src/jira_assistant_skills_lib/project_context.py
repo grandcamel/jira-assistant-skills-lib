@@ -11,7 +11,6 @@ metadata, workflows, patterns, and defaults. Context is loaded from:
 """
 
 import json
-import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -119,23 +118,17 @@ def load_skill_context(project_key: str) -> dict[str, Any] | None:
     return context if context else None
 
 
-def load_settings_context(
-    project_key: str, profile: str | None = None
-) -> dict[str, Any] | None:
+def load_settings_context(project_key: str) -> dict[str, Any] | None:
     """
     Load context overrides from settings.local.json.
 
     Looks for:
     {
       "jira": {
-        "profiles": {
-          "{profile}": {
-            "projects": {
-              "{PROJECT_KEY}": {
-                "defaults": { ... },
-                "metadata": { ... }  # optional overrides
-              }
-            }
+        "projects": {
+          "{PROJECT_KEY}": {
+            "defaults": { ... },
+            "metadata": { ... }  # optional overrides
           }
         }
       }
@@ -154,15 +147,9 @@ def load_settings_context(
     if not settings:
         return None
 
-    # Get profile (default to 'production' or from environment)
-    if profile is None:
-        profile = os.environ.get("JIRA_PROFILE", "production")
-
     # Navigate to project config
     jira_config = settings.get("jira", {})
-    profiles = jira_config.get("profiles", {})
-    profile_config = profiles.get(profile, {})
-    projects = profile_config.get("projects", {})
+    projects = jira_config.get("projects", {})
     project_config = projects.get(project_key, {})
 
     if not project_config:
@@ -221,7 +208,7 @@ def _deep_merge(base: dict, override: dict) -> dict:
 
 
 def get_project_context(
-    project_key: str, profile: str | None = None, force_refresh: bool = False
+    project_key: str, force_refresh: bool = False
 ) -> ProjectContext:
     """
     Lazy-load project context with caching.
@@ -234,7 +221,6 @@ def get_project_context(
 
     Args:
         project_key: JIRA project key (e.g., 'PROJ')
-        profile: JIRA profile to use (default: from env or 'production')
         force_refresh: If True, bypass cache and reload
 
     Returns:
@@ -242,7 +228,7 @@ def get_project_context(
     """
     global _context_cache
 
-    cache_key = f"{project_key}:{profile or 'default'}"
+    cache_key = project_key
 
     # Check cache unless force refresh
     if not force_refresh and cache_key in _context_cache:
@@ -250,7 +236,7 @@ def get_project_context(
 
     # Load from sources
     skill_ctx = load_skill_context(project_key)
-    settings_ctx = load_settings_context(project_key, profile)
+    settings_ctx = load_settings_context(project_key)
 
     # Merge contexts
     merged, source = merge_contexts(skill_ctx, settings_ctx)
@@ -290,10 +276,8 @@ def clear_context_cache(project_key: str | None = None) -> None:
 
     if project_key is None:
         _context_cache.clear()
-    else:
-        keys_to_remove = [k for k in _context_cache if k.startswith(f"{project_key}:")]
-        for key in keys_to_remove:
-            del _context_cache[key]
+    elif project_key in _context_cache:
+        del _context_cache[project_key]
 
 
 def get_defaults_for_issue_type(
@@ -525,13 +509,12 @@ def format_context_summary(context: ProjectContext) -> str:
 
 
 # Convenience function for external access
-def has_project_context(project_key: str, profile: str | None = None) -> bool:
+def has_project_context(project_key: str) -> bool:
     """
     Check if project context exists without fully loading it.
 
     Args:
         project_key: JIRA project key
-        profile: JIRA profile to check
 
     Returns:
         True if skill directory or settings config exists
@@ -542,5 +525,5 @@ def has_project_context(project_key: str, profile: str | None = None) -> bool:
         return True
 
     # Check settings.local.json
-    settings_ctx = load_settings_context(project_key, profile)
+    settings_ctx = load_settings_context(project_key)
     return settings_ctx is not None

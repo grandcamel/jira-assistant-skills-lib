@@ -8,27 +8,23 @@ from typing import Any
 
 from .error_handler import ValidationError
 
-# Valid holder types for permission grants
-VALID_HOLDER_TYPES = [
-    "anyone",
-    "group",
-    "projectRole",
-    "user",
-    "projectLead",
-    "reporter",
-    "currentAssignee",
-    "applicationRole",
-]
+# Holder types and whether they require a parameter (single source of truth)
+_HOLDER_TYPE_REQUIRES_PARAM = {
+    "anyone": False,
+    "group": True,
+    "projectRole": True,
+    "user": True,
+    "projectLead": False,
+    "reporter": False,
+    "currentAssignee": False,
+    "applicationRole": True,
+}
 
-# Holder types that require a parameter
-HOLDER_TYPES_WITH_PARAMETER = ["group", "projectRole", "user", "applicationRole"]
-
-# Holder types that don't require a parameter
+# Derived constants for API compatibility
+VALID_HOLDER_TYPES = list(_HOLDER_TYPE_REQUIRES_PARAM.keys())
+HOLDER_TYPES_WITH_PARAMETER = [k for k, v in _HOLDER_TYPE_REQUIRES_PARAM.items() if v]
 HOLDER_TYPES_WITHOUT_PARAMETER = [
-    "anyone",
-    "projectLead",
-    "reporter",
-    "currentAssignee",
+    k for k, v in _HOLDER_TYPE_REQUIRES_PARAM.items() if not v
 ]
 
 
