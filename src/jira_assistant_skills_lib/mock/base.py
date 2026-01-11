@@ -117,6 +117,44 @@ class MockJiraClientBase:
         self._worklogs: dict[str, list[dict]] = {}
 
     # =========================================================================
+    # Verification Helpers
+    # =========================================================================
+
+    def _verify_issue_exists(self, issue_key: str) -> dict[str, Any]:
+        """Verify issue exists and return it, or raise NotFoundError.
+
+        Args:
+            issue_key: The issue key to verify.
+
+        Returns:
+            The issue dict if found.
+
+        Raises:
+            NotFoundError: If the issue is not found.
+        """
+        self._verify_issue_exists(issue_key)
+        return self._issues[issue_key]
+
+    def _verify_project_exists(self, project_key: str) -> dict[str, Any]:
+        """Verify project exists and return it, or raise NotFoundError.
+
+        Args:
+            project_key: The project key to verify.
+
+        Returns:
+            The project dict if found.
+
+        Raises:
+            NotFoundError: If the project is not found.
+        """
+        for project in self.PROJECTS:
+            if project["key"] == project_key:
+                return project
+        from ..error_handler import NotFoundError
+
+        raise NotFoundError(f"Project {project_key} not found")
+
+    # =========================================================================
     # Issue Factory Methods
     # =========================================================================
 
@@ -410,11 +448,7 @@ class MockJiraClientBase:
         Raises:
             NotFoundError: If the issue is not found.
         """
-        if issue_key not in self._issues:
-            from ..error_handler import NotFoundError
-
-            raise NotFoundError(f"Issue {issue_key} not found")
-        return self._issues[issue_key]
+        return self._verify_issue_exists(issue_key)
 
     def search_issues(
         self,
@@ -521,14 +555,9 @@ class MockJiraClientBase:
             ]
 
         # Pagination
-        paginated = issues[start_at : start_at + max_results]
+        from .factories import ResponseFactory
 
-        return {
-            "startAt": start_at,
-            "maxResults": max_results,
-            "total": len(issues),
-            "issues": paginated,
-        }
+        return ResponseFactory.paginated_issues(issues, start_at, max_results)
 
     def create_issue(self, fields: dict[str, Any]) -> dict[str, Any]:
         """Create a new issue.
@@ -599,11 +628,7 @@ class MockJiraClientBase:
         Raises:
             NotFoundError: If the issue is not found.
         """
-        if issue_key not in self._issues:
-            from ..error_handler import NotFoundError
-
-            raise NotFoundError(f"Issue {issue_key} not found")
-
+        self._verify_issue_exists(issue_key)
         if fields:
             self._issues[issue_key]["fields"].update(fields)
         return {}
@@ -618,10 +643,7 @@ class MockJiraClientBase:
         Raises:
             NotFoundError: If the issue is not found.
         """
-        if issue_key not in self._issues:
-            from ..error_handler import NotFoundError
-
-            raise NotFoundError(f"Issue {issue_key} not found")
+        self._verify_issue_exists(issue_key)
         del self._issues[issue_key]
 
     def assign_issue(self, issue_key: str, account_id: str | None = None) -> None:
@@ -634,10 +656,7 @@ class MockJiraClientBase:
         Raises:
             NotFoundError: If the issue is not found.
         """
-        if issue_key not in self._issues:
-            from ..error_handler import NotFoundError
-
-            raise NotFoundError(f"Issue {issue_key} not found")
+        self._verify_issue_exists(issue_key)
 
         if account_id is None:
             self._issues[issue_key]["fields"]["assignee"] = None
@@ -666,10 +685,7 @@ class MockJiraClientBase:
         Raises:
             NotFoundError: If the issue is not found.
         """
-        if issue_key not in self._issues:
-            from ..error_handler import NotFoundError
-
-            raise NotFoundError(f"Issue {issue_key} not found")
+        self._verify_issue_exists(issue_key)
         return self.TRANSITIONS
 
     def transition_issue(
@@ -692,10 +708,7 @@ class MockJiraClientBase:
         Raises:
             NotFoundError: If the issue is not found.
         """
-        if issue_key not in self._issues:
-            from ..error_handler import NotFoundError
-
-            raise NotFoundError(f"Issue {issue_key} not found")
+        self._verify_issue_exists(issue_key)
 
         # Find the transition
         for t in self.TRANSITIONS:
@@ -720,10 +733,7 @@ class MockJiraClientBase:
         Raises:
             NotFoundError: If the issue is not found.
         """
-        if issue_key not in self._issues:
-            from ..error_handler import NotFoundError
-
-            raise NotFoundError(f"Issue {issue_key} not found")
+        self._verify_issue_exists(issue_key)
 
         if issue_key not in self._comments:
             self._comments[issue_key] = []
@@ -758,18 +768,15 @@ class MockJiraClientBase:
         Raises:
             NotFoundError: If the issue is not found.
         """
-        if issue_key not in self._issues:
-            from ..error_handler import NotFoundError
-
-            raise NotFoundError(f"Issue {issue_key} not found")
-
+        self._verify_issue_exists(issue_key)
         comments = self._comments.get(issue_key, [])
-        return {
-            "startAt": start_at,
-            "maxResults": max_results,
-            "total": len(comments),
-            "comments": comments[start_at : start_at + max_results],
-        }
+
+        from .factories import ResponseFactory
+
+        result = ResponseFactory.paginated(comments, start_at, max_results)
+        # Rename 'values' to 'comments' for this endpoint
+        result["comments"] = result.pop("values")
+        return result
 
     def get_comment(self, issue_key: str, comment_id: str) -> dict[str, Any]:
         """Get a specific comment.
@@ -784,10 +791,7 @@ class MockJiraClientBase:
         Raises:
             NotFoundError: If the issue or comment is not found.
         """
-        if issue_key not in self._issues:
-            from ..error_handler import NotFoundError
-
-            raise NotFoundError(f"Issue {issue_key} not found")
+        self._verify_issue_exists(issue_key)
 
         for comment in self._comments.get(issue_key, []):
             if comment["id"] == comment_id:
@@ -816,10 +820,7 @@ class MockJiraClientBase:
         Raises:
             NotFoundError: If the issue or comment is not found.
         """
-        if issue_key not in self._issues:
-            from ..error_handler import NotFoundError
-
-            raise NotFoundError(f"Issue {issue_key} not found")
+        self._verify_issue_exists(issue_key)
 
         for comment in self._comments.get(issue_key, []):
             if comment["id"] == comment_id:
@@ -840,10 +841,7 @@ class MockJiraClientBase:
         Raises:
             NotFoundError: If the issue is not found.
         """
-        if issue_key not in self._issues:
-            from ..error_handler import NotFoundError
-
-            raise NotFoundError(f"Issue {issue_key} not found")
+        self._verify_issue_exists(issue_key)
 
         comments = self._comments.get(issue_key, [])
         self._comments[issue_key] = [c for c in comments if c["id"] != comment_id]
@@ -881,10 +879,7 @@ class MockJiraClientBase:
         Raises:
             NotFoundError: If the issue is not found.
         """
-        if issue_key not in self._issues:
-            from ..error_handler import NotFoundError
-
-            raise NotFoundError(f"Issue {issue_key} not found")
+        self._verify_issue_exists(issue_key)
 
         if issue_key not in self._worklogs:
             self._worklogs[issue_key] = []
@@ -922,10 +917,7 @@ class MockJiraClientBase:
         Raises:
             NotFoundError: If the issue is not found.
         """
-        if issue_key not in self._issues:
-            from ..error_handler import NotFoundError
-
-            raise NotFoundError(f"Issue {issue_key} not found")
+        self._verify_issue_exists(issue_key)
 
         worklogs = self._worklogs.get(issue_key, [])
         return {
