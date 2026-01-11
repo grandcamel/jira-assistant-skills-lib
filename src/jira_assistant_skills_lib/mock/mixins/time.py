@@ -86,10 +86,7 @@ class TimeTrackingMixin:
         Raises:
             NotFoundError: If the issue is not found.
         """
-        if issue_key not in self._issues:
-            from ...error_handler import NotFoundError
-
-            raise NotFoundError(f"Issue {issue_key} not found")
+        self._verify_issue_exists(issue_key)
 
         issue = self._issues[issue_key]
         fields = issue.get("fields", {})
@@ -131,10 +128,7 @@ class TimeTrackingMixin:
         Raises:
             NotFoundError: If the issue is not found.
         """
-        if issue_key not in self._issues:
-            from ...error_handler import NotFoundError
-
-            raise NotFoundError(f"Issue {issue_key} not found")
+        self._verify_issue_exists(issue_key)
 
         if original_estimate:
             self._issues[issue_key]["fields"]["timeoriginalestimate"] = (
@@ -162,10 +156,7 @@ class TimeTrackingMixin:
         Raises:
             NotFoundError: If the issue is not found.
         """
-        if issue_key not in self._issues:
-            from ...error_handler import NotFoundError
-
-            raise NotFoundError(f"Issue {issue_key} not found")
+        self._verify_issue_exists(issue_key)
 
         if new_estimate:
             self._issues[issue_key]["fields"]["timeestimate"] = self._parse_time(
@@ -195,10 +186,7 @@ class TimeTrackingMixin:
         Raises:
             NotFoundError: If the worklog is not found.
         """
-        if issue_key not in self._issues:
-            from ...error_handler import NotFoundError
-
-            raise NotFoundError(f"Issue {issue_key} not found")
+        self._verify_issue_exists(issue_key)
 
         for worklog in self._worklogs.get(issue_key, []):
             if worklog["id"] == worklog_id:
@@ -237,10 +225,7 @@ class TimeTrackingMixin:
         Raises:
             NotFoundError: If the worklog is not found.
         """
-        if issue_key not in self._issues:
-            from ...error_handler import NotFoundError
-
-            raise NotFoundError(f"Issue {issue_key} not found")
+        self._verify_issue_exists(issue_key)
 
         for worklog in self._worklogs.get(issue_key, []):
             if worklog["id"] == worklog_id:
@@ -283,10 +268,7 @@ class TimeTrackingMixin:
         Raises:
             NotFoundError: If the worklog is not found.
         """
-        if issue_key not in self._issues:
-            from ...error_handler import NotFoundError
-
-            raise NotFoundError(f"Issue {issue_key} not found")
+        self._verify_issue_exists(issue_key)
 
         worklogs = self._worklogs.get(issue_key, [])
         original_length = len(worklogs)

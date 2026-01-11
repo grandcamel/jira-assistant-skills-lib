@@ -125,15 +125,8 @@ class RelationshipsMixin:
         """
         self._ensure_links_state()
 
-        if inward_issue not in self._issues:
-            from ...error_handler import NotFoundError
-
-            raise NotFoundError(f"Issue {inward_issue} not found")
-
-        if outward_issue not in self._issues:
-            from ...error_handler import NotFoundError
-
-            raise NotFoundError(f"Issue {outward_issue} not found")
+        self._verify_issue_exists(inward_issue)
+        self._verify_issue_exists(outward_issue)
 
         # Find link type
         link_type_obj = None
@@ -225,10 +218,7 @@ class RelationshipsMixin:
         """
         self._ensure_links_state()
 
-        if issue_key not in self._issues:
-            from ...error_handler import NotFoundError
-
-            raise NotFoundError(f"Issue {issue_key} not found")
+        self._verify_issue_exists(issue_key)
 
         return self._issue_links.get(issue_key, [])
 
@@ -248,10 +238,7 @@ class RelationshipsMixin:
         Raises:
             NotFoundError: If the issue is not found.
         """
-        if issue_key not in self._issues:
-            from ...error_handler import NotFoundError
-
-            raise NotFoundError(f"Issue {issue_key} not found")
+        self._verify_issue_exists(issue_key)
 
         # Return mock remote links
         return [
@@ -296,10 +283,7 @@ class RelationshipsMixin:
         Raises:
             NotFoundError: If the issue is not found.
         """
-        if issue_key not in self._issues:
-            from ...error_handler import NotFoundError
-
-            raise NotFoundError(f"Issue {issue_key} not found")
+        self._verify_issue_exists(issue_key)
 
         return {
             "id": 10001,
@@ -316,10 +300,7 @@ class RelationshipsMixin:
         Raises:
             NotFoundError: If the issue is not found.
         """
-        if issue_key not in self._issues:
-            from ...error_handler import NotFoundError
-
-            raise NotFoundError(f"Issue {issue_key} not found")
+        self._verify_issue_exists(issue_key)
         # In mock, this is a no-op
 
     # =========================================================================
@@ -351,10 +332,7 @@ class RelationshipsMixin:
         Raises:
             NotFoundError: If the source issue is not found.
         """
-        if issue_key not in self._issues:
-            from ...error_handler import NotFoundError
-
-            raise NotFoundError(f"Issue {issue_key} not found")
+        self._verify_issue_exists(issue_key)
 
         source = self._issues[issue_key]
         source_fields = source["fields"]
@@ -403,10 +381,7 @@ class RelationshipsMixin:
         """
         self._ensure_links_state()
 
-        if issue_key not in self._issues:
-            from ...error_handler import NotFoundError
-
-            raise NotFoundError(f"Issue {issue_key} not found")
+        self._verify_issue_exists(issue_key)
 
         blockers = []
         links = self._issue_links.get(issue_key, [])
@@ -444,10 +419,7 @@ class RelationshipsMixin:
         """
         self._ensure_links_state()
 
-        if issue_key not in self._issues:
-            from ...error_handler import NotFoundError
-
-            raise NotFoundError(f"Issue {issue_key} not found")
+        self._verify_issue_exists(issue_key)
 
         blocked = []
         links = self._issue_links.get(issue_key, [])
@@ -484,10 +456,7 @@ class RelationshipsMixin:
         """
         self._ensure_links_state()
 
-        if issue_key not in self._issues:
-            from ...error_handler import NotFoundError
-
-            raise NotFoundError(f"Issue {issue_key} not found")
+        self._verify_issue_exists(issue_key)
 
         related = []
         links = self._issue_links.get(issue_key, [])

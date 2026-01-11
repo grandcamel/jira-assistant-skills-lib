@@ -368,10 +368,7 @@ class FieldsMixin:
         Raises:
             NotFoundError: If the issue is not found.
         """
-        if issue_key not in self._issues:
-            from ...error_handler import NotFoundError
-
-            raise NotFoundError(f"Issue {issue_key} not found")
+        self._verify_issue_exists(issue_key)
 
         return {
             "fields": {f["id"]: f for f in self.get_fields()},
@@ -455,15 +452,9 @@ class FieldsMixin:
         Returns:
             Paginated list of screens.
         """
-        paginated = self.SCREENS[start_at : start_at + max_results]
+        from ..factories import ResponseFactory
 
-        return {
-            "startAt": start_at,
-            "maxResults": max_results,
-            "total": len(self.SCREENS),
-            "isLast": start_at + max_results >= len(self.SCREENS),
-            "values": paginated,
-        }
+        return ResponseFactory.paginated(self.SCREENS, start_at, max_results)
 
     def get_screen(self, screen_id: str) -> dict[str, Any]:
         """Get a screen by ID.
@@ -545,13 +536,9 @@ class FieldsMixin:
             },
         ]
 
-        return {
-            "startAt": start_at,
-            "maxResults": max_results,
-            "total": len(configs),
-            "isLast": True,
-            "values": configs,
-        }
+        from ..factories import ResponseFactory
+
+        return ResponseFactory.paginated(configs, start_at, max_results)
 
     def get_field_configuration_items(
         self,
@@ -574,15 +561,9 @@ class FieldsMixin:
             for f in self.get_fields()
         ]
 
-        paginated = items[start_at : start_at + max_results]
+        from ..factories import ResponseFactory
 
-        return {
-            "startAt": start_at,
-            "maxResults": max_results,
-            "total": len(items),
-            "isLast": start_at + max_results >= len(items),
-            "values": paginated,
-        }
+        return ResponseFactory.paginated(items, start_at, max_results)
 
     # =========================================================================
     # Field Option Operations
@@ -615,15 +596,9 @@ class FieldsMixin:
         else:
             options = []
 
-        paginated = options[start_at : start_at + max_results]
+        from ..factories import ResponseFactory
 
-        return {
-            "startAt": start_at,
-            "maxResults": max_results,
-            "total": len(options),
-            "isLast": start_at + max_results >= len(options),
-            "values": paginated,
-        }
+        return ResponseFactory.paginated(options, start_at, max_results)
 
     def create_field_option(
         self,

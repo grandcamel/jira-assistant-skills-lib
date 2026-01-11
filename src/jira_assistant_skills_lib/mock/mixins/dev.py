@@ -31,10 +31,7 @@ class DevMixin:
         Raises:
             NotFoundError: If the issue is not found.
         """
-        if issue_key not in self._issues:
-            from ...error_handler import NotFoundError
-
-            raise NotFoundError(f"Issue {issue_key} not found")
+        self._verify_issue_exists(issue_key)
 
         # Return mock development data
         return {
@@ -71,10 +68,7 @@ class DevMixin:
         Raises:
             NotFoundError: If the issue is not found.
         """
-        if issue_key not in self._issues:
-            from ...error_handler import NotFoundError
-
-            raise NotFoundError(f"Issue {issue_key} not found")
+        self._verify_issue_exists(issue_key)
 
         return [
             {
@@ -105,10 +99,7 @@ class DevMixin:
         Raises:
             NotFoundError: If the issue is not found.
         """
-        if issue_key not in self._issues:
-            from ...error_handler import NotFoundError
-
-            raise NotFoundError(f"Issue {issue_key} not found")
+        self._verify_issue_exists(issue_key)
 
         return [
             {
@@ -137,10 +128,7 @@ class DevMixin:
         Raises:
             NotFoundError: If the issue is not found.
         """
-        if issue_key not in self._issues:
-            from ...error_handler import NotFoundError
-
-            raise NotFoundError(f"Issue {issue_key} not found")
+        self._verify_issue_exists(issue_key)
 
         return [
             {
@@ -190,10 +178,7 @@ class DevMixin:
         Raises:
             NotFoundError: If the issue is not found.
         """
-        if issue_key not in self._issues:
-            from ...error_handler import NotFoundError
-
-            raise NotFoundError(f"Issue {issue_key} not found")
+        self._verify_issue_exists(issue_key)
 
         issue = self._issues[issue_key]
         branch_parts = [prefix, issue_key.lower()]
@@ -261,10 +246,7 @@ class DevMixin:
         Raises:
             NotFoundError: If the issue is not found.
         """
-        if issue_key not in self._issues:
-            from ...error_handler import NotFoundError
-
-            raise NotFoundError(f"Issue {issue_key} not found")
+        self._verify_issue_exists(issue_key)
 
         issue = self._issues[issue_key]
 
@@ -335,10 +317,7 @@ class DevMixin:
         Raises:
             NotFoundError: If the issue is not found.
         """
-        if issue_key not in self._issues:
-            from ...error_handler import NotFoundError
-
-            raise NotFoundError(f"Issue {issue_key} not found")
+        self._verify_issue_exists(issue_key)
 
         issue = self._issues[issue_key]
         summary = issue["fields"].get("summary", "No summary")
@@ -391,10 +370,7 @@ class DevMixin:
         Raises:
             NotFoundError: If the issue is not found.
         """
-        if issue_key not in self._issues:
-            from ...error_handler import NotFoundError
-
-            raise NotFoundError(f"Issue {issue_key} not found")
+        self._verify_issue_exists(issue_key)
 
         return {
             "issueKey": issue_key,
@@ -446,10 +422,7 @@ class DevMixin:
         Raises:
             NotFoundError: If the issue is not found.
         """
-        if issue_key not in self._issues:
-            from ...error_handler import NotFoundError
-
-            raise NotFoundError(f"Issue {issue_key} not found")
+        self._verify_issue_exists(issue_key)
 
         return [
             {
@@ -477,10 +450,7 @@ class DevMixin:
         Raises:
             NotFoundError: If the issue is not found.
         """
-        if issue_key not in self._issues:
-            from ...error_handler import NotFoundError
-
-            raise NotFoundError(f"Issue {issue_key} not found")
+        self._verify_issue_exists(issue_key)
 
         return [
             {

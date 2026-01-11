@@ -321,13 +321,9 @@ class AdminMixin:
         if not include_inactive:
             members = [m for m in members if m.get("active", True)]
 
-        return {
-            "startAt": start_at,
-            "maxResults": max_results,
-            "total": len(members),
-            "isLast": start_at + max_results >= len(members),
-            "values": members[start_at : start_at + max_results],
-        }
+        from ..factories import ResponseFactory
+
+        return ResponseFactory.paginated(members, start_at, max_results)
 
     def add_user_to_group(self, group_name: str, account_id: str) -> dict[str, Any]:
         """Add a user to a group.
@@ -636,13 +632,9 @@ class AdminMixin:
                 w for w in workflows if workflow_name.lower() in w["name"].lower()
             ]
 
-        return {
-            "startAt": start_at,
-            "maxResults": max_results,
-            "total": len(workflows),
-            "isLast": True,
-            "values": workflows,
-        }
+        from ..factories import ResponseFactory
+
+        return ResponseFactory.paginated(workflows, start_at, max_results)
 
     def get_workflow_scheme(self, project_key: str) -> dict[str, Any]:
         """Get workflow scheme for a project.
