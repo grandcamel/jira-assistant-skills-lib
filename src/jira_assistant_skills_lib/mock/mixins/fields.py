@@ -22,6 +22,46 @@ class FieldsMixin(_Base):
     """
 
     # =========================================================================
+    # HTTP Endpoint Routing
+    # =========================================================================
+
+    def get(
+        self,
+        endpoint: str,
+        params: dict[str, Any] | None = None,
+        operation: str = "fetch data",
+        headers: dict[str, str] | None = None,
+    ) -> Any:
+        """Route GET requests to appropriate handlers.
+
+        Args:
+            endpoint: The API endpoint.
+            params: Query parameters.
+            operation: Description of the operation.
+            headers: Additional headers.
+
+        Returns:
+            Response data from the appropriate handler.
+        """
+        # Route /rest/api/3/field to get_fields()
+        if endpoint == "/rest/api/3/field":
+            return self.get_fields()
+
+        # Route /rest/api/3/screens to get_screens()
+        if endpoint == "/rest/api/3/screens":
+            start_at = int(params.get("startAt", 0)) if params else 0
+            max_results = int(params.get("maxResults", 100)) if params else 100
+            return self.get_screens(start_at, max_results)
+
+        # Route /rest/api/3/field/{fieldId} to get_field()
+        if endpoint.startswith("/rest/api/3/field/"):
+            field_id = endpoint.split("/")[-1]
+            return self.get_field(field_id)
+
+        # Delegate to parent class for other endpoints
+        return super().get(endpoint, params, operation, headers)
+
+    # =========================================================================
     # Class Constants - System Fields
     # =========================================================================
 
@@ -31,96 +71,128 @@ class FieldsMixin(_Base):
             "name": "Summary",
             "schema": {"type": "string"},
             "custom": False,
+            "searchable": True,
+            "navigable": True,
         },
         {
             "id": "description",
             "name": "Description",
             "schema": {"type": "doc"},
             "custom": False,
+            "searchable": True,
+            "navigable": True,
         },
         {
             "id": "issuetype",
             "name": "Issue Type",
             "schema": {"type": "issuetype"},
             "custom": False,
+            "searchable": True,
+            "navigable": True,
         },
         {
             "id": "status",
             "name": "Status",
             "schema": {"type": "status"},
             "custom": False,
+            "searchable": True,
+            "navigable": True,
         },
         {
             "id": "priority",
             "name": "Priority",
             "schema": {"type": "priority"},
             "custom": False,
+            "searchable": True,
+            "navigable": True,
         },
         {
             "id": "assignee",
             "name": "Assignee",
             "schema": {"type": "user"},
             "custom": False,
+            "searchable": True,
+            "navigable": True,
         },
         {
             "id": "reporter",
             "name": "Reporter",
             "schema": {"type": "user"},
             "custom": False,
+            "searchable": True,
+            "navigable": True,
         },
         {
             "id": "labels",
             "name": "Labels",
             "schema": {"type": "array", "items": "string"},
             "custom": False,
+            "searchable": True,
+            "navigable": True,
         },
         {
             "id": "created",
             "name": "Created",
             "schema": {"type": "datetime"},
             "custom": False,
+            "searchable": True,
+            "navigable": True,
         },
         {
             "id": "updated",
             "name": "Updated",
             "schema": {"type": "datetime"},
             "custom": False,
+            "searchable": True,
+            "navigable": True,
         },
         {
             "id": "duedate",
             "name": "Due Date",
             "schema": {"type": "date"},
             "custom": False,
+            "searchable": True,
+            "navigable": True,
         },
         {
             "id": "resolution",
             "name": "Resolution",
             "schema": {"type": "resolution"},
             "custom": False,
+            "searchable": True,
+            "navigable": True,
         },
         {
             "id": "components",
             "name": "Components",
             "schema": {"type": "array", "items": "component"},
             "custom": False,
+            "searchable": True,
+            "navigable": True,
         },
         {
             "id": "fixVersions",
             "name": "Fix Versions",
             "schema": {"type": "array", "items": "version"},
             "custom": False,
+            "searchable": True,
+            "navigable": True,
         },
         {
             "id": "project",
             "name": "Project",
             "schema": {"type": "project"},
             "custom": False,
+            "searchable": True,
+            "navigable": True,
         },
         {
             "id": "parent",
             "name": "Parent",
             "schema": {"type": "issuelink"},
             "custom": False,
+            "searchable": True,
+            "navigable": True,
         },
     ]
 
@@ -137,6 +209,8 @@ class FieldsMixin(_Base):
                 "custom": "com.atlassian.jira.plugin.system.customfieldtypes:float",
             },
             "custom": True,
+            "searchable": True,
+            "navigable": True,
         },
         {
             "id": "customfield_10017",
@@ -147,6 +221,8 @@ class FieldsMixin(_Base):
                 "custom": "com.pyxis.greenhopper.jira:gh-sprint",
             },
             "custom": True,
+            "searchable": True,
+            "navigable": True,
         },
         {
             "id": "customfield_10018",
@@ -156,6 +232,8 @@ class FieldsMixin(_Base):
                 "custom": "com.pyxis.greenhopper.jira:gh-epic-link",
             },
             "custom": True,
+            "searchable": True,
+            "navigable": True,
         },
         {
             "id": "customfield_10019",
@@ -165,6 +243,8 @@ class FieldsMixin(_Base):
                 "custom": "com.pyxis.greenhopper.jira:gh-lexo-rank",
             },
             "custom": True,
+            "searchable": True,
+            "navigable": True,
         },
         {
             "id": "customfield_10020",
@@ -174,6 +254,8 @@ class FieldsMixin(_Base):
                 "custom": "com.pyxis.greenhopper.jira:gh-epic-label",
             },
             "custom": True,
+            "searchable": True,
+            "navigable": True,
         },
         {
             "id": "customfield_10021",
@@ -183,6 +265,8 @@ class FieldsMixin(_Base):
                 "custom": "com.atlassian.jira.plugin.system.customfieldtypes:select",
             },
             "custom": True,
+            "searchable": True,
+            "navigable": True,
         },
         {
             "id": "customfield_10022",
@@ -192,6 +276,8 @@ class FieldsMixin(_Base):
                 "custom": "com.atlassian.jira.plugin.system.customfieldtypes:datepicker",
             },
             "custom": True,
+            "searchable": True,
+            "navigable": True,
         },
     ]
 
