@@ -96,5 +96,6 @@ line_length = 88
 
 [tool.mypy]
 python_version = "3.10"
-warn_return_any = true
+warn_return_any = false  # Too noisy for API wrapper code returning external data
 warn_unused_configs = true
+ignore_missing_imports = true  # External deps (assistant_skills_lib, etc.) lack stubs

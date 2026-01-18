@@ -149,7 +149,7 @@ class AutomationClient:
                     status_code=response.status_code,
                 )
         except requests.RequestException as e:
-            from error_handler import AutomationError
+            from .error_handler import AutomationError
 
             raise AutomationError(f"Failed to fetch cloud ID: {e!s}")
 

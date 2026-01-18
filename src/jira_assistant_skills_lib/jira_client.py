@@ -2598,7 +2598,7 @@ class JiraClient:
             if sd.get("projectKey") == project_key:
                 return sd
 
-        from error_handler import JiraError
+        from .error_handler import JiraError
 
         raise JiraError(f"No service desk found for project key: {project_key}")
 
