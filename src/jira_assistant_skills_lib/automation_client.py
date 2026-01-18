@@ -332,7 +332,7 @@ class AutomationClient:
         Returns:
             Dictionary with 'values' (rules), 'links' (pagination), 'hasMore'
         """
-        params = {"limit": min(max(1, limit), 100)}
+        params: dict[str, Any] = {"limit": min(max(1, limit), 100)}
         if cursor:
             params["cursor"] = cursor
 
@@ -369,7 +369,7 @@ class AutomationClient:
         if scope:
             filters["scope"] = scope
 
-        params = {"limit": min(max(1, limit), 100)}
+        params: dict[str, Any] = {"limit": min(max(1, limit), 100)}
         if cursor:
             params["cursor"] = cursor
 
@@ -458,7 +458,7 @@ class AutomationClient:
         Returns:
             Dictionary with manual rules
         """
-        params = {"contextType": context_type, "limit": min(max(1, limit), 100)}
+        params: dict[str, Any] = {"contextType": context_type, "limit": min(max(1, limit), 100)}
         if cursor:
             params["cursor"] = cursor
 
@@ -514,7 +514,7 @@ class AutomationClient:
         Returns:
             Dictionary with templates
         """
-        params = {"limit": min(max(1, limit), 100)}
+        params: dict[str, Any] = {"limit": min(max(1, limit), 100)}
         if cursor:
             params["cursor"] = cursor
 

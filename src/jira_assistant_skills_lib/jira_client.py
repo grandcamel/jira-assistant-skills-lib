@@ -329,7 +329,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params = {
+        params: dict[str, Any] = {
             "jql": jql,
             "maxResults": max_results,
         }
@@ -362,7 +362,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params = {}
+        params: dict[str, Any] = {}
         if fields:
             params["fields"] = ",".join(fields)
 
@@ -385,7 +385,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        data = {"fields": fields}
+        data: dict[str, Any] = {"fields": fields}
         return self.post("/rest/api/3/issue", data=data, operation="create issue")
 
     def update_issue(
@@ -402,8 +402,8 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        data = {"fields": fields}
-        params = {"notifyUsers": "true" if notify_users else "false"}
+        data: dict[str, Any] = {"fields": fields}
+        params: dict[str, Any] = {"notifyUsers": "true" if notify_users else "false"}
 
         endpoint = f"/rest/api/3/issue/{issue_key}"
         url = f"{self.base_url}{endpoint}"
@@ -421,7 +421,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params = {}
+        params: dict[str, Any] = {}
         if delete_subtasks:
             params["deleteSubtasks"] = "true"
 
@@ -466,7 +466,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        data = {"transition": {"id": transition_id}}
+        data: dict[str, Any] = {"transition": {"id": transition_id}}
 
         if fields:
             data["fields"] = fields
@@ -504,11 +504,11 @@ class JiraClient:
         if account_id == "-1":
             # Get current user's account ID
             account_id = self.get_current_user_id()
-            data = {"accountId": account_id}
+            data: dict[str, Any] = {"accountId": account_id}
         elif account_id is None:
             data = None
         else:
-            data = {"accountId": account_id}
+            data: dict[str, Any] = {"accountId": account_id}
 
         self.put(
             f"/rest/api/3/issue/{issue_key}/assignee",
@@ -530,7 +530,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        data = {"body": body}
+        data: dict[str, Any] = {"body": body}
         return self.post(
             f"/rest/api/3/issue/{issue_key}/comment",
             data=data,
@@ -591,7 +591,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params = {
+        params: dict[str, Any] = {
             "maxResults": max_results,
             "startAt": start_at,
         }
@@ -628,7 +628,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        data = {
+        data: dict[str, Any] = {
             "originBoardId": board_id,
             "name": name,
         }
@@ -655,7 +655,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        data = {}
+        data: dict[str, Any] = {}
         field_mapping = {
             "name": "name",
             "goal": "goal",
@@ -687,7 +687,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        data = {"issues": issue_keys}
+        data: dict[str, Any] = {"issues": issue_keys}
         if rank == "top":
             data["rankBeforeIssue"] = None  # Will be first
         elif rank == "bottom":
@@ -723,7 +723,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params = {
+        params: dict[str, Any] = {
             "maxResults": max_results,
             "startAt": start_at,
         }
@@ -755,7 +755,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        data = {"issues": issue_keys}
+        data: dict[str, Any] = {"issues": issue_keys}
         if rank_before:
             data["rankBeforeIssue"] = rank_before
         if rank_after:
@@ -802,7 +802,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params = {
+        params: dict[str, Any] = {
             "maxResults": max_results,
             "startAt": start_at,
         }
@@ -835,7 +835,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params = {
+        params: dict[str, Any] = {
             "maxResults": max_results,
             "startAt": start_at,
         }
@@ -899,7 +899,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        data = {
+        data: dict[str, Any] = {
             "type": {"name": link_type},
             "inwardIssue": {"key": inward_key},
             "outwardIssue": {"key": outward_key},
@@ -980,7 +980,7 @@ class JiraClient:
             Kanban: 'com.pyxis.greenhopper.jira:gh-simplified-agility-kanban'
             Basic: 'com.pyxis.greenhopper.jira:gh-simplified-basic'
         """
-        data = {
+        data: dict[str, Any] = {
             "key": key.upper(),
             "name": name,
             "projectTypeKey": project_type_key,
@@ -1016,7 +1016,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params = {}
+        params: dict[str, Any] = {}
         if expand:
             params["expand"] = ",".join(expand)
 
@@ -1041,7 +1041,7 @@ class JiraClient:
             Deleting a project also deletes all issues, boards, and sprints.
             Requires JIRA administrator permissions.
         """
-        params = {"enableUndo": "true" if enable_undo else "false"}
+        params: dict[str, Any] = {"enableUndo": "true" if enable_undo else "false"}
         endpoint = f"/rest/api/3/project/{project_key}"
         url = f"{self.base_url}{endpoint}"
         response = self.session.delete(url, params=params, timeout=self.timeout)
@@ -1130,7 +1130,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params = {"maxResults": max_results, "startAt": start_at, "orderBy": order_by}
+        params: dict[str, Any] = {"maxResults": max_results, "startAt": start_at, "orderBy": order_by}
         return self.get(
             f"/rest/api/3/issue/{issue_key}/comment",
             params=params,
@@ -1173,7 +1173,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        data = {"body": body}
+        data: dict[str, Any] = {"body": body}
         return self.put(
             f"/rest/api/3/issue/{issue_key}/comment/{comment_id}",
             data=data,
@@ -1252,7 +1252,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params = {"query": query, "maxResults": max_results, "startAt": start_at}
+        params: dict[str, Any] = {"query": query, "maxResults": max_results, "startAt": start_at}
         return self.get(
             "/rest/api/3/user/search", params=params, operation="search users"
         )
@@ -1304,7 +1304,7 @@ class JiraClient:
                 "identifier": visibility_value,
             }
 
-        params = {"adjustEstimate": adjust_estimate}
+        params: dict[str, Any] = {"adjustEstimate": adjust_estimate}
         if new_estimate and adjust_estimate == "new":
             params["newEstimate"] = new_estimate
         if reduce_by and adjust_estimate == "manual":
@@ -1335,7 +1335,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params = {"startAt": start_at, "maxResults": max_results}
+        params: dict[str, Any] = {"startAt": start_at, "maxResults": max_results}
         return self.get(
             f"/rest/api/3/issue/{issue_key}/worklog",
             params=params,
@@ -1407,7 +1407,7 @@ class JiraClient:
                 "identifier": visibility_value,
             }
 
-        params = {"adjustEstimate": adjust_estimate}
+        params: dict[str, Any] = {"adjustEstimate": adjust_estimate}
         if new_estimate and adjust_estimate == "new":
             params["newEstimate"] = new_estimate
 
@@ -1441,7 +1441,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params = {"adjustEstimate": adjust_estimate}
+        params: dict[str, Any] = {"adjustEstimate": adjust_estimate}
         if new_estimate and adjust_estimate == "new":
             params["newEstimate"] = new_estimate
         if increase_by and adjust_estimate == "manual":
@@ -1525,7 +1525,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params = {}
+        params: dict[str, Any] = {}
         if include_collapsed_fields:
             params["includeCollapsedFields"] = "true"
         return self.get(
@@ -1550,7 +1550,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params = {"fieldName": field_name}
+        params: dict[str, Any] = {"fieldName": field_name}
         if field_value:
             params["fieldValue"] = field_value
         return self.get(
@@ -1628,7 +1628,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params = {}
+        params: dict[str, Any] = {}
         if expand:
             params["expand"] = expand
         return self.get(
@@ -1703,7 +1703,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params = {}
+        params: dict[str, Any] = {}
         if expand:
             params["expand"] = expand
         result = self.get(
@@ -1726,7 +1726,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params = {}
+        params: dict[str, Any] = {}
         if expand:
             params["expand"] = expand
         result = self.get(
@@ -1762,7 +1762,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params = {"startAt": start_at, "maxResults": max_results}
+        params: dict[str, Any] = {"startAt": start_at, "maxResults": max_results}
         if filter_name:
             params["filterName"] = filter_name
         if account_id:
@@ -1891,7 +1891,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        data = {"body": body}
+        data: dict[str, Any] = {"body": body}
         if visibility_type and visibility_value:
             data["visibility"] = {
                 "type": visibility_type,
@@ -1923,7 +1923,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params = {"startAt": start_at, "maxResults": max_results}
+        params: dict[str, Any] = {"startAt": start_at, "maxResults": max_results}
         return self.get(
             f"/rest/api/3/issue/{issue_key}/changelog",
             params=params,
@@ -1955,7 +1955,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        data = {}
+        data: dict[str, Any] = {}
         if subject:
             data["subject"] = subject
         if text_body:
@@ -2009,7 +2009,7 @@ class JiraClient:
         if not project and not project_id:
             raise ValueError("Either 'project' or 'project_id' must be provided")
 
-        data = {"name": name, "released": released, "archived": archived}
+        data: dict[str, Any] = {"name": name, "released": released, "archived": archived}
         if project:
             data["project"] = project
         else:
@@ -2039,7 +2039,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params = {}
+        params: dict[str, Any] = {}
         if expand:
             params["expand"] = expand
         return self.get(
@@ -2063,7 +2063,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        data = {}
+        data: dict[str, Any] = {}
         field_mapping = {
             "name": "name",
             "description": "description",
@@ -2099,7 +2099,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params = {}
+        params: dict[str, Any] = {}
         if move_fixed_to:
             params["moveFixIssuesTo"] = move_fixed_to
         if move_affected_to:
@@ -2126,7 +2126,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params = {}
+        params: dict[str, Any] = {}
         if expand:
             params["expand"] = expand
         return self.get(
@@ -2197,7 +2197,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        data = {"project": project, "name": name, "assigneeType": assignee_type}
+        data: dict[str, Any] = {"project": project, "name": name, "assigneeType": assignee_type}
         if description:
             data["description"] = description
         if lead_account_id:
@@ -2239,7 +2239,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        data = {}
+        data: dict[str, Any] = {}
         field_mapping = {
             "name": "name",
             "description": "description",
@@ -2269,7 +2269,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params = {}
+        params: dict[str, Any] = {}
         if move_issues_to:
             params["moveIssuesTo"] = move_issues_to
 
@@ -2452,7 +2452,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params = {"start": start, "limit": limit}
+        params: dict[str, Any] = {"start": start, "limit": limit}
         return self.get(
             "/rest/servicedeskapi/servicedesk",
             params=params,
@@ -2494,7 +2494,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params = {"start": start, "limit": limit}
+        params: dict[str, Any] = {"start": start, "limit": limit}
         return self.get(
             f"/rest/servicedeskapi/servicedesk/{service_desk_id}/requesttype",
             params=params,
@@ -2569,7 +2569,7 @@ class JiraClient:
             Internal Service Desk: 'com.atlassian.servicedesk:simplified-internal-service-desk'
             External Service Desk: 'com.atlassian.servicedesk:simplified-external-service-desk'
         """
-        data = {
+        data: dict[str, Any] = {
             "name": name,
             "key": key.upper(),
             "projectTemplateKey": project_template_key,
@@ -2667,7 +2667,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params = {"start": start, "limit": limit}
+        params: dict[str, Any] = {"start": start, "limit": limit}
         if query:
             params["query"] = query
         # Customer endpoints require experimental API header
@@ -2803,7 +2803,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params = {}
+        params: dict[str, Any] = {}
         if expand:
             params["expand"] = ",".join(expand)
 
@@ -2897,7 +2897,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params = {"start": start, "limit": limit}
+        params: dict[str, Any] = {"start": start, "limit": limit}
         return self.get(
             f"/rest/servicedeskapi/request/{issue_key}/sla",
             params=params,
@@ -2953,7 +2953,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params = {
+        params: dict[str, Any] = {
             "start": start,
             "limit": limit,
             "includeCount": str(include_count).lower(),
@@ -2981,7 +2981,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params = {"includeCount": str(include_count).lower()}
+        params: dict[str, Any] = {"includeCount": str(include_count).lower()}
         return self.get(
             f"/rest/servicedeskapi/servicedesk/{service_desk_id}/queue/{queue_id}",
             params=params,
@@ -3006,7 +3006,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params = {"start": start, "limit": limit}
+        params: dict[str, Any] = {"start": start, "limit": limit}
         return self.get(
             f"/rest/servicedeskapi/servicedesk/{service_desk_id}/queue/{queue_id}/issue",
             params=params,
@@ -3029,7 +3029,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params = {"start": start, "limit": limit}
+        params: dict[str, Any] = {"start": start, "limit": limit}
         return self.get(
             "/rest/servicedeskapi/organization",
             params=params,
@@ -3147,7 +3147,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params = {"start": start, "limit": limit}
+        params: dict[str, Any] = {"start": start, "limit": limit}
         return self.get(
             f"/rest/servicedeskapi/request/{issue_key}/participant",
             params=params,
@@ -3231,7 +3231,7 @@ class JiraClient:
             Uses JSM API (/rest/servicedeskapi/) which differs from standard JIRA API.
             Public comments are visible in the customer portal.
         """
-        data = {"body": body, "public": public}
+        data: dict[str, Any] = {"body": body, "public": public}
         return self.post(
             f"/rest/servicedeskapi/request/{issue_key}/comment",
             data=data,
@@ -3262,7 +3262,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params = {"start": start, "limit": limit}
+        params: dict[str, Any] = {"start": start, "limit": limit}
 
         # Handle both 'public' and 'internal' parameters
         # 'internal' is the inverse of 'public'
@@ -3295,7 +3295,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params = {}
+        params: dict[str, Any] = {}
         if expand:
             params["expand"] = expand
 
@@ -3322,7 +3322,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params = {"start": start, "limit": limit}
+        params: dict[str, Any] = {"start": start, "limit": limit}
         return self.get(
             f"/rest/servicedeskapi/request/{issue_key}/approval",
             params=params,
@@ -3365,7 +3365,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        data = {"decision": decision}
+        data: dict[str, Any] = {"decision": decision}
         return self.post(
             f"/rest/servicedeskapi/request/{issue_key}/approval/{approval_id}",
             data=data,
@@ -4131,7 +4131,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params = {
+        params: dict[str, Any] = {
             "iql": iql,
             "page": 1,
             "resultsPerPage": min(max_results, 100),
@@ -4245,7 +4245,7 @@ class JiraClient:
         Note:
             Requires 'Administer Jira' global permission.
         """
-        params = {"startAt": start_at, "maxResults": min(max_results, 1000)}
+        params: dict[str, Any] = {"startAt": start_at, "maxResults": min(max_results, 1000)}
         return self.get(
             "/rest/api/3/workflow", params=params, operation="list workflows"
         )
@@ -4283,7 +4283,7 @@ class JiraClient:
         Note:
             Requires 'Administer Jira' global permission.
         """
-        params = {"startAt": start_at, "maxResults": max_results}
+        params: dict[str, Any] = {"startAt": start_at, "maxResults": max_results}
         if workflow_name:
             params["workflowName"] = workflow_name
         if is_active is not None:
@@ -4319,7 +4319,7 @@ class JiraClient:
         Note:
             Requires 'Administer Jira' global permission.
         """
-        params = {}
+        params: dict[str, Any] = {}
         if expand:
             params["expand"] = expand
 
@@ -4353,7 +4353,7 @@ class JiraClient:
         Note:
             Requires 'Administer Jira' global permission.
         """
-        params = {"startAt": start_at, "maxResults": max_results}
+        params: dict[str, Any] = {"startAt": start_at, "maxResults": max_results}
         return self.get(
             f"/rest/api/3/workflow/{workflow_id}/workflowSchemes",
             params=params,
@@ -4381,7 +4381,7 @@ class JiraClient:
         Note:
             Requires 'Administer Jira' global permission.
         """
-        params = {"startAt": start_at, "maxResults": max_results}
+        params: dict[str, Any] = {"startAt": start_at, "maxResults": max_results}
         return self.get(
             "/rest/api/3/workflowscheme",
             params=params,
@@ -4407,7 +4407,7 @@ class JiraClient:
         Note:
             Requires 'Administer Jira' global permission.
         """
-        params = {}
+        params: dict[str, Any] = {}
         if return_draft_if_exists:
             params["returnDraftIfExists"] = "true"
 
@@ -4430,7 +4430,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params = {"projectId": project_key_or_id}
+        params: dict[str, Any] = {"projectId": project_key_or_id}
         return self.get(
             "/rest/api/3/workflowscheme/project",
             params=params,
@@ -4556,7 +4556,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params = {"startAt": start_at, "maxResults": max_results}
+        params: dict[str, Any] = {"startAt": start_at, "maxResults": max_results}
         if project_id:
             params["projectId"] = project_id
         if search_string:
@@ -4587,7 +4587,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params = {"startAt": start_at, "maxResults": max_results}
+        params: dict[str, Any] = {"startAt": start_at, "maxResults": max_results}
         if expand:
             params["expand"] = expand
         return self.get(
@@ -4612,7 +4612,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params = {}
+        params: dict[str, Any] = {}
         if expand:
             params["expand"] = expand
         return self.get(
@@ -4643,7 +4643,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params = {"startAt": start_at, "maxResults": max_results}
+        params: dict[str, Any] = {"startAt": start_at, "maxResults": max_results}
         if notification_scheme_id:
             params["notificationSchemeId"] = notification_scheme_id
         if project_id:
@@ -4840,7 +4840,7 @@ class JiraClient:
 
             raise ValidationError("Either account_id or email must be provided")
 
-        params = {}
+        params: dict[str, Any] = {}
         if account_id:
             params["accountId"] = account_id
         if email:
@@ -4864,7 +4864,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params = {}
+        params: dict[str, Any] = {}
         if expand:
             params["expand"] = ",".join(expand)
 
@@ -4887,7 +4887,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params = {"accountId": account_id}
+        params: dict[str, Any] = {"accountId": account_id}
         result = self.get(
             "/rest/api/3/user/groups", params=params, operation="get user groups"
         )
@@ -4911,7 +4911,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params = {
+        params: dict[str, Any] = {
             "query": query,
             "project": project_key,
             "startAt": start_at,
@@ -4939,7 +4939,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params = {"startAt": start_at, "maxResults": max_results}
+        params: dict[str, Any] = {"startAt": start_at, "maxResults": max_results}
         return self.get(
             "/rest/api/3/users/search", params=params, operation="get all users"
         )
@@ -4960,7 +4960,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params = {"accountId": account_ids, "maxResults": max_results}
+        params: dict[str, Any] = {"accountId": account_ids, "maxResults": max_results}
         return self.get(
             "/rest/api/3/user/bulk", params=params, operation="get users bulk"
         )
@@ -4991,7 +4991,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params = {
+        params: dict[str, Any] = {
             "query": query,
             "maxResults": max_results,
             "caseInsensitive": str(caseInsensitive).lower(),
@@ -5025,7 +5025,7 @@ class JiraClient:
 
             raise ValidationError("Either group_name or group_id must be provided")
 
-        params = {}
+        params: dict[str, Any] = {}
         if group_id:
             params["groupId"] = group_id
         elif group_name:
@@ -5079,7 +5079,7 @@ class JiraClient:
 
             raise ValidationError("Either group_name or group_id must be provided")
 
-        params = {}
+        params: dict[str, Any] = {}
         if group_id:
             params["groupId"] = group_id
         elif group_name:
@@ -5124,7 +5124,7 @@ class JiraClient:
 
             raise ValidationError("Either group_name or group_id must be provided")
 
-        params = {
+        params: dict[str, Any] = {
             "startAt": start_at,
             "maxResults": max_results,
             "includeInactiveUsers": str(include_inactive).lower(),
@@ -5170,7 +5170,7 @@ class JiraClient:
 
             raise ValidationError("Either group_name or group_id must be provided")
 
-        params = {}
+        params: dict[str, Any] = {}
         if group_id:
             params["groupId"] = group_id
         elif group_name:
@@ -5213,7 +5213,7 @@ class JiraClient:
 
             raise ValidationError("Either group_name or group_id must be provided")
 
-        params = {"accountId": account_id}
+        params: dict[str, Any] = {"accountId": account_id}
         if group_id:
             params["groupId"] = group_id
         elif group_name:
@@ -5244,7 +5244,7 @@ class JiraClient:
         Note:
             Changing project key requires Administer Jira global permission.
         """
-        data = {}
+        data: dict[str, Any] = {}
         field_mapping = {
             "name": "name",
             "description": "description",
@@ -5294,7 +5294,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params = {
+        params: dict[str, Any] = {
             "startAt": start_at,
             "maxResults": max_results,
             "action": action,
@@ -5433,7 +5433,7 @@ class JiraClient:
         Note:
             Requires Administer Jira global permission.
         """
-        data = {"name": name}
+        data: dict[str, Any] = {"name": name}
         if description:
             data["description"] = description
 
@@ -5463,7 +5463,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        data = {}
+        data: dict[str, Any] = {}
         if name is not None:
             data["name"] = name
         if description is not None:
@@ -5581,7 +5581,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params = {"x": x, "y": y, "size": size}
+        params: dict[str, Any] = {"x": x, "y": y, "size": size}
         endpoint = f"/rest/api/3/project/{project_key}/avatar2"
         url = f"{self.base_url}{endpoint}"
 
@@ -5658,7 +5658,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params = {"startAt": start_at, "maxResults": max_results}
+        params: dict[str, Any] = {"startAt": start_at, "maxResults": max_results}
         if scope:
             params["scope"] = ",".join(scope)
         if query_string:
@@ -5770,7 +5770,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        data = {"fieldId": field_id}
+        data: dict[str, Any] = {"fieldId": field_id}
         return self.post(
             f"/rest/api/2/screens/{screen_id}/tabs/{tab_id}/fields",
             data=data,
@@ -5846,7 +5846,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params = {"startAt": start_at, "maxResults": max_results}
+        params: dict[str, Any] = {"startAt": start_at, "maxResults": max_results}
         if query_string:
             params["queryString"] = query_string
         if expand:
@@ -5940,7 +5940,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        data = {"name": name, "type": issue_type}
+        data: dict[str, Any] = {"name": name, "type": issue_type}
 
         if description:
             data["description"] = description
@@ -5974,7 +5974,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        data = {}
+        data: dict[str, Any] = {}
 
         if name:
             data["name"] = name
@@ -6002,7 +6002,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params = {}
+        params: dict[str, Any] = {}
         if alternative_issue_type_id:
             params["alternativeIssueTypeId"] = alternative_issue_type_id
 
@@ -6055,7 +6055,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params = {"startAt": start_at, "maxResults": max_results}
+        params: dict[str, Any] = {"startAt": start_at, "maxResults": max_results}
 
         if scheme_ids:
             params["id"] = scheme_ids
@@ -6088,7 +6088,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params = {"startAt": start_at, "maxResults": max_results}
+        params: dict[str, Any] = {"startAt": start_at, "maxResults": max_results}
 
         if scheme_ids:
             params["issueTypeSchemeId"] = scheme_ids
@@ -6121,7 +6121,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        data = {"name": name, "issueTypeIds": issue_type_ids}
+        data: dict[str, Any] = {"name": name, "issueTypeIds": issue_type_ids}
 
         if description:
             data["description"] = description
@@ -6156,7 +6156,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        data = {}
+        data: dict[str, Any] = {}
 
         if name:
             data["name"] = name
@@ -6209,7 +6209,7 @@ class JiraClient:
         if len(project_ids) > 100:
             raise ValidationError("Maximum 100 project IDs allowed")
 
-        params = {
+        params: dict[str, Any] = {
             "projectId": project_ids,
             "startAt": start_at,
             "maxResults": max_results,
@@ -6236,7 +6236,7 @@ class JiraClient:
             Only works for classic projects.
             Fails if issues use types not in the new scheme.
         """
-        data = {"issueTypeSchemeId": scheme_id, "projectId": project_id}
+        data: dict[str, Any] = {"issueTypeSchemeId": scheme_id, "projectId": project_id}
 
         self.put(
             "/rest/api/3/issuetypescheme/project",
@@ -6255,7 +6255,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        data = {"issueTypeIds": issue_type_ids}
+        data: dict[str, Any] = {"issueTypeIds": issue_type_ids}
 
         self.put(
             f"/rest/api/3/issuetypescheme/{scheme_id}/issuetype",
@@ -6296,7 +6296,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        data = {"issueTypeId": issue_type_id}
+        data: dict[str, Any] = {"issueTypeId": issue_type_id}
 
         if after:
             data["after"] = after
@@ -6326,7 +6326,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params = {"startAt": start_at, "maxResults": max_results}
+        params: dict[str, Any] = {"startAt": start_at, "maxResults": max_results}
         if expand:
             params["expand"] = expand
 
@@ -6380,7 +6380,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params = {"startAt": start_at, "maxResults": max_results}
+        params: dict[str, Any] = {"startAt": start_at, "maxResults": max_results}
         if scheme_ids:
             params["issueTypeScreenSchemeId"] = scheme_ids
 
@@ -6415,7 +6415,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params = {"startAt": start_at, "maxResults": max_results}
+        params: dict[str, Any] = {"startAt": start_at, "maxResults": max_results}
         if project_ids:
             params["projectId"] = project_ids
 
@@ -6440,7 +6440,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params = {}
+        params: dict[str, Any] = {}
         if expand:
             params["expand"] = expand
 
@@ -6466,7 +6466,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params = {}
+        params: dict[str, Any] = {}
         if expand:
             params["expand"] = expand
 
@@ -6499,7 +6499,7 @@ class JiraClient:
         Note:
             Requires 'Administer Jira' global permission.
         """
-        data = {"name": name}
+        data: dict[str, Any] = {"name": name}
         if description:
             data["description"] = description
         if permissions:
@@ -6535,7 +6535,7 @@ class JiraClient:
             Requires 'Administer Jira' global permission.
             To modify grants, use create_permission_grant and delete_permission_grant.
         """
-        data = {}
+        data: dict[str, Any] = {}
         if name is not None:
             data["name"] = name
         if description is not None:
@@ -6582,7 +6582,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params = {}
+        params: dict[str, Any] = {}
         if expand:
             params["expand"] = expand
 
@@ -6621,7 +6621,7 @@ class JiraClient:
         if holder_parameter:
             holder["parameter"] = holder_parameter
 
-        data = {"permission": permission, "holder": holder}
+        data: dict[str, Any] = {"permission": permission, "holder": holder}
 
         return self.post(
             f"/rest/api/3/permissionscheme/{scheme_id}/permission",
@@ -6646,7 +6646,7 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params = {}
+        params: dict[str, Any] = {}
         if expand:
             params["expand"] = expand
 
@@ -6709,7 +6709,7 @@ class JiraClient:
         Note:
             Requires 'Administer Jira' global permission or project admin permission.
         """
-        params = {}
+        params: dict[str, Any] = {}
         if expand:
             params["expand"] = expand
 
@@ -6738,7 +6738,7 @@ class JiraClient:
         Note:
             Requires 'Administer Jira' global permission.
         """
-        data = {"id": scheme_id}
+        data: dict[str, Any] = {"id": scheme_id}
         return self.put(
             f"/rest/api/3/project/{project_key_or_id}/permissionscheme",
             data=data,
