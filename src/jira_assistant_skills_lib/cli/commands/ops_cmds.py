@@ -418,7 +418,7 @@ def _discover_metadata(
     if verbose:
         click.echo(f"Discovering metadata for {project_key}...")
 
-    metadata = {
+    metadata: dict[str, Any] = {
         "project_key": project_key,
         "discovered_at": datetime.now(timezone.utc).isoformat() + "Z",
     }
@@ -537,7 +537,7 @@ def _discover_patterns(
             f"Discovering patterns (last {sample_period_days} days, up to {sample_size} issues)..."
         )
 
-    patterns = {
+    patterns: dict[str, Any] = {
         "project_key": project_key,
         "sample_size": 0,
         "sample_period_days": sample_period_days,
@@ -548,9 +548,9 @@ def _discover_patterns(
     }
 
     # Build JQL for recent issues
-    since_date = (datetime.now(timezone.utc) - timedelta(days=sample_period_days)).strftime(
-        "%Y-%m-%d"
-    )
+    since_date = (
+        datetime.now(timezone.utc) - timedelta(days=sample_period_days)
+    ).strftime("%Y-%m-%d")
     jql = (
         f'project = "{project_key}" AND created >= "{since_date}" ORDER BY created DESC'
     )

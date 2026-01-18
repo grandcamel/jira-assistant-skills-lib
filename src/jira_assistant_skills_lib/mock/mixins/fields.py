@@ -59,7 +59,7 @@ class FieldsMixin(_Base):
             return self.get_field(field_id)
 
         # Delegate to parent class for other endpoints
-        return super().get(endpoint, params, operation, headers)
+        return super().get(endpoint, params, operation, headers)  # type: ignore[safe-super]
 
     # =========================================================================
     # Class Constants - System Fields

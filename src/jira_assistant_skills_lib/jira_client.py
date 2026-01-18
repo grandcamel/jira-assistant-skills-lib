@@ -202,9 +202,7 @@ class JiraClient:
         except ValueError:
             return {}
 
-    def delete(
-        self, endpoint: str, operation: str = "delete resource"
-    ) -> Any:
+    def delete(self, endpoint: str, operation: str = "delete resource") -> Any:
         """
         Perform DELETE request.
 
@@ -1131,7 +1129,11 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params: dict[str, Any] = {"maxResults": max_results, "startAt": start_at, "orderBy": order_by}
+        params: dict[str, Any] = {
+            "maxResults": max_results,
+            "startAt": start_at,
+            "orderBy": order_by,
+        }
         return self.get(
             f"/rest/api/3/issue/{issue_key}/comment",
             params=params,
@@ -1253,7 +1255,11 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        params: dict[str, Any] = {"query": query, "maxResults": max_results, "startAt": start_at}
+        params: dict[str, Any] = {
+            "query": query,
+            "maxResults": max_results,
+            "startAt": start_at,
+        }
         return self.get(
             "/rest/api/3/user/search", params=params, operation="search users"
         )
@@ -2010,7 +2016,11 @@ class JiraClient:
         if not project and not project_id:
             raise ValueError("Either 'project' or 'project_id' must be provided")
 
-        data: dict[str, Any] = {"name": name, "released": released, "archived": archived}
+        data: dict[str, Any] = {
+            "name": name,
+            "released": released,
+            "archived": archived,
+        }
         if project:
             data["project"] = project
         else:
@@ -2198,7 +2208,11 @@ class JiraClient:
         Raises:
             JiraError or subclass on failure
         """
-        data: dict[str, Any] = {"project": project, "name": name, "assigneeType": assignee_type}
+        data: dict[str, Any] = {
+            "project": project,
+            "name": name,
+            "assigneeType": assignee_type,
+        }
         if description:
             data["description"] = description
         if lead_account_id:
@@ -4246,7 +4260,10 @@ class JiraClient:
         Note:
             Requires 'Administer Jira' global permission.
         """
-        params: dict[str, Any] = {"startAt": start_at, "maxResults": min(max_results, 1000)}
+        params: dict[str, Any] = {
+            "startAt": start_at,
+            "maxResults": min(max_results, 1000),
+        }
         return self.get(
             "/rest/api/3/workflow", params=params, operation="list workflows"
         )

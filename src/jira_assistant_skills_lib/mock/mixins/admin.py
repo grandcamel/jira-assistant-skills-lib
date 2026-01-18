@@ -81,7 +81,7 @@ class AdminMixin(_Base):
     # Class Constants - Issue Types
     # =========================================================================
 
-    ISSUE_TYPES: ClassVar[list[dict[str, str]]] = [
+    ISSUE_TYPES: ClassVar[list[dict[str, Any]]] = [
         {"id": "10000", "name": "Epic", "description": "A big user story"},
         {"id": "10001", "name": "Story", "description": "A user story"},
         {"id": "10002", "name": "Bug", "description": "A bug"},
@@ -621,7 +621,7 @@ class AdminMixin(_Base):
         Returns:
             Paginated list of workflows.
         """
-        workflows = [
+        workflows: list[dict[str, Any]] = [
             {
                 "name": "Software Simplified Workflow",
                 "description": "Simple workflow for software projects",

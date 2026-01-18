@@ -51,7 +51,7 @@ def safe_get_nested(obj: dict, path: str, default: Any = None) -> Any:
         return default
 
     keys = path.split(".")
-    current = obj
+    current: Any = obj
 
     for key in keys:
         if not isinstance(current, dict):

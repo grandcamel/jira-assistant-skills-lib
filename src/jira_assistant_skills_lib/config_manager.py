@@ -347,12 +347,13 @@ class ConfigManager(BaseConfigManager):
         )
 
 
-def get_jira_client() -> JiraClient:
+def get_jira_client() -> "JiraClient":
     """
     Convenience function to get a configured JIRA client.
 
     Returns:
-        Configured JiraClient instance (or MockJiraClient if JIRA_MOCK_MODE=true)
+        Configured JiraClient instance (or MockJiraClient if JIRA_MOCK_MODE=true).
+        MockJiraClient is API-compatible with JiraClient.
 
     Raises:
         ValidationError: If configuration is invalid or incomplete
@@ -361,7 +362,7 @@ def get_jira_client() -> JiraClient:
     from .mock import MockJiraClient, is_mock_mode
 
     if is_mock_mode():
-        return MockJiraClient()
+        return MockJiraClient()  # type: ignore[return-value]
 
     config_manager = ConfigManager.get_instance()
     return config_manager.get_client()

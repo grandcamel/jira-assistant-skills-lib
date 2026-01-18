@@ -191,9 +191,8 @@ class BatchProcessor(Generic[T]):
         # Setup checkpoint manager if enabled
         checkpoint_mgr = None
         if self.config.enable_checkpoints and self.config.operation_id:
-            checkpoint_mgr = CheckpointManager(
-                self.config.checkpoint_dir, self.config.operation_id
-            )
+            checkpoint_dir = self.config.checkpoint_dir or ".checkpoints"
+            checkpoint_mgr = CheckpointManager(checkpoint_dir, self.config.operation_id)
 
             # Try to resume from checkpoint
             if resume and checkpoint_mgr.exists():

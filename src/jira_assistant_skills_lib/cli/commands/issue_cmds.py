@@ -7,6 +7,7 @@ Provides commands for creating, reading, updating, and deleting JIRA issues.
 import json
 from importlib import resources
 from pathlib import Path
+from typing import Any
 
 import click
 
@@ -286,7 +287,7 @@ def _update_issue_impl(
     """
     issue_key = validate_issue_key(issue_key)
 
-    fields = {}
+    fields: dict[str, Any] = {}
 
     if summary is not None:
         fields["summary"] = summary

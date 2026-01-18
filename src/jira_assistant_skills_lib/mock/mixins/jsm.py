@@ -401,7 +401,9 @@ class JSMMixin(_Base):
                 "status": {"name": "Waiting for support", "id": "10100"},
                 "priority": {"name": "Medium", "id": "3"},
                 "assignee": None,
-                "reporter": self.USERS.get(raise_on_behalf_of, self.USERS["abc123"]),
+                "reporter": self.USERS.get(
+                    raise_on_behalf_of or "abc123", self.USERS["abc123"]
+                ),
                 "project": {
                     "key": "DEMOSD",
                     "name": "Demo Service Desk",

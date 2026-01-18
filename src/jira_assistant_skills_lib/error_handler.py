@@ -314,16 +314,23 @@ def sanitize_error_message(message: str) -> str:
     return sanitized
 
 
-def print_error(error: Exception, debug: bool = False) -> None:
+def print_error(error: Exception | str, debug: bool = False) -> None:
     """
     Print error message to stderr with optional debug information.
 
     Uses the base print_error function and provides Jira-specific hints.
 
     Args:
-        error: Exception to print
-        debug: If True, include full stack trace
+        error: Exception or string message to print
+        debug: If True, include full stack trace (only applies to Exceptions)
     """
+    # Handle string messages directly
+    if isinstance(error, str):
+        import click
+
+        click.echo(f"Error: {error}", err=True)
+        return
+
     extra_hints = {
         AuthenticationError: "Check your JIRA_EMAIL and JIRA_API_TOKEN. Get a token at: https://id.atlassian.com/manage-profile/security/api-tokens",
         PermissionError: "Verify your JIRA permissions for this operation or project.",

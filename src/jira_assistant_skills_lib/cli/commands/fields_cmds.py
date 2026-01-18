@@ -95,7 +95,7 @@ def _find_agile_fields(client) -> dict[str, str | None]:
     """Find Agile field IDs in the instance."""
     fields = client.get("/rest/api/3/field")
 
-    agile_fields = {
+    agile_fields: dict[str, str | None] = {
         "story_points": None,
         "epic_link": None,
         "sprint": None,
@@ -402,7 +402,7 @@ def _configure_agile_fields_impl(
                 "Field configuration must be done in the project settings UI."
             )
 
-        result = {
+        result: dict[str, Any] = {
             "project": project_key,
             "dry_run": dry_run,
             "fields_found": {},

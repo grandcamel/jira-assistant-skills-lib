@@ -154,7 +154,7 @@ def _get_blockers_recursive(
     links = client.get_issue_links(issue_key)
     direct_blockers = _extract_blockers(links, direction)
 
-    result = {"key": issue_key, "blockers": []}
+    result: dict[str, Any] = {"key": issue_key, "blockers": []}
 
     for blocker in direct_blockers:
         blocker_info = _get_blockers_recursive(
@@ -188,7 +188,7 @@ def _extract_cloneable_fields(
 ) -> dict[str, Any]:
     """Extract fields from an issue that can be cloned."""
     original_fields = issue.get("fields", {})
-    new_fields = {}
+    new_fields: dict[str, Any] = {}
 
     # Project - either original or target
     if to_project:
@@ -536,7 +536,7 @@ def _unlink_issue_impl(
                 raise ValidationError(f"No '{link_type}' links found for {issue_key}")
 
         if dry_run:
-            result = {"issue_key": issue_key, "links_to_delete": []}
+            result: dict[str, Any] = {"issue_key": issue_key, "links_to_delete": []}
             for link in links_to_delete:
                 if "outwardIssue" in link:
                     target = link["outwardIssue"]["key"]
@@ -782,6 +782,8 @@ def _bulk_link_impl(
     skip_existing: bool = False,
 ) -> dict[str, Any]:
     """Bulk link multiple issues to a target."""
+    if not target:
+        raise ValidationError("target is required")
     target = validate_issue_key(target)
 
     with get_jira_client() as client:
@@ -864,8 +866,10 @@ def _get_link_stats_impl(
     else:
         if project:
             jql = f"project = {project}"
-        else:
+        elif jql:
             jql = validate_jql(jql)
+        else:
+            raise ValidationError("Either issue_key, jql, or project is required")
         return _get_project_stats(jql, max_results)
 
 
@@ -874,7 +878,7 @@ def _get_single_issue_stats(issue_key: str) -> dict[str, Any]:
     with get_jira_client() as client:
         links = client.get_issue_links(issue_key)
 
-    stats = {
+    stats: dict[str, Any] = {
         "issue_key": issue_key,
         "total_links": len(links),
         "by_type": defaultdict(int),

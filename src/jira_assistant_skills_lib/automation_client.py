@@ -458,7 +458,10 @@ class AutomationClient:
         Returns:
             Dictionary with manual rules
         """
-        params: dict[str, Any] = {"contextType": context_type, "limit": min(max(1, limit), 100)}
+        params: dict[str, Any] = {
+            "contextType": context_type,
+            "limit": min(max(1, limit), 100),
+        }
         if cursor:
             params["cursor"] = cursor
 

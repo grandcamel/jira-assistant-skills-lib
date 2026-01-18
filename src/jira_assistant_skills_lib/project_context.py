@@ -173,6 +173,8 @@ def merge_contexts(
         return {}, "none"
 
     if not skill_ctx:
+        # settings_ctx must be truthy since we passed the first check
+        assert settings_ctx is not None
         return settings_ctx, "settings"
 
     if not settings_ctx:

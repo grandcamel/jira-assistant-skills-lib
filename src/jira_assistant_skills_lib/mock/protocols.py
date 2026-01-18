@@ -34,6 +34,17 @@ class MockClientProtocol(Protocol):
         """Verify project exists and return it."""
         ...
 
+    # HTTP operations (used by mixins that route/extend requests)
+    def get(
+        self,
+        endpoint: str,
+        params: dict[str, Any] | None = None,
+        operation: str = "fetch data",
+        headers: dict[str, str] | None = None,
+    ) -> Any:
+        """Make a GET request."""
+        ...
+
     # Issue operations (used by relationships.py clone_issue)
     def create_issue(self, fields: dict[str, Any]) -> dict[str, Any]:
         """Create a new issue."""

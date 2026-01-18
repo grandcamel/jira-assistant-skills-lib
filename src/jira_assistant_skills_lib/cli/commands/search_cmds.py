@@ -193,6 +193,8 @@ def _search_issues_impl(
             actual_jql = filter_data.get("jql", "")
             filter_name = filter_data.get("name", f"Filter {filter_id}")
 
+        if not actual_jql:
+            raise ValidationError("JQL query is required")
         actual_jql = validate_jql(actual_jql)
 
         if fields is None:
@@ -369,7 +371,7 @@ def _build_jql_impl(
     else:
         raise ValidationError("Either clauses or template is required")
 
-    result = {"jql": jql}
+    result: dict[str, Any] = {"jql": jql}
 
     if validate:
         with get_jira_client() as client:
@@ -507,7 +509,7 @@ def _bulk_update_impl(
         for issue in issues:
             try:
                 issue_key = issue["key"]
-                fields = {}
+                fields: dict[str, Any] = {}
 
                 if add_labels or remove_labels:
                     current_labels = set(issue.get("fields", {}).get("labels", []))

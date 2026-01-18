@@ -89,7 +89,7 @@ def _get_comments_impl(
     limit: int = 50,
     offset: int = 0,
     order: str = "desc",
-) -> dict[str, Any] | list:
+) -> dict[str, Any]:
     """
     Get comments on an issue.
 
@@ -101,7 +101,7 @@ def _get_comments_impl(
         order: Sort order ('asc' or 'desc')
 
     Returns:
-        Comment data or list of comments
+        Single comment dict if comment_id provided, else paginated comments response.
     """
     issue_key = validate_issue_key(issue_key)
     order_by = "+created" if order == "asc" else "-created"

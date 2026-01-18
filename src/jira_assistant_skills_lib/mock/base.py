@@ -560,7 +560,7 @@ class MockJiraClientBase:
         # Pagination
         from .factories import ResponseFactory
 
-        return ResponseFactory.paginated_issues(issues, start_at, max_results)
+        return ResponseFactory.paginated_issues(issues, start_at or 0, max_results)
 
     def create_issue(self, fields: dict[str, Any]) -> dict[str, Any]:
         """Create a new issue.

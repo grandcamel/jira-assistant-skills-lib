@@ -58,7 +58,7 @@ def markdown_to_adf(markdown: str) -> dict[str, Any]:
         return text_to_adf("")
 
     lines = markdown.split("\n")
-    content = []
+    content: list[dict[str, Any]] = []
     i = 0
 
     while i < len(lines):
@@ -164,7 +164,7 @@ def _parse_inline_formatting(text: str) -> list[dict[str, Any]]:
     if not text:
         return [{"type": "text", "text": ""}]
 
-    result = []
+    result: list[dict[str, Any]] = []
     remaining = text
 
     link_pattern = r"\[([^\]]+)\]\(([^)]+)\)"
@@ -178,13 +178,16 @@ def _parse_inline_formatting(text: str) -> list[dict[str, Any]]:
         italic_match = re.search(italic_pattern, remaining)
         code_match = re.search(code_pattern, remaining)
 
-        matches = [
+        # Build list of matches and filter out None
+        all_matches: list[tuple[re.Match[str], str] | None] = [
             (link_match, "link") if link_match else None,
             (bold_match, "bold") if bold_match else None,
             (italic_match, "italic") if italic_match else None,
             (code_match, "code") if code_match else None,
         ]
-        matches = [m for m in matches if m is not None]
+        matches: list[tuple[re.Match[str], str]] = [
+            m for m in all_matches if m is not None
+        ]
 
         if not matches:
             if remaining:
@@ -304,7 +307,7 @@ def create_adf_paragraph(text: str, **marks) -> dict[str, Any]:
     Returns:
         ADF paragraph node
     """
-    text_marks = []
+    text_marks: list[dict[str, Any]] = []
     if marks.get("bold"):
         text_marks.append({"type": "strong"})
     if marks.get("italic"):
@@ -314,7 +317,7 @@ def create_adf_paragraph(text: str, **marks) -> dict[str, Any]:
     if marks.get("link"):
         text_marks.append({"type": "link", "attrs": {"href": marks["link"]}})
 
-    text_node = {"type": "text", "text": text}
+    text_node: dict[str, Any] = {"type": "text", "text": text}
     if text_marks:
         text_node["marks"] = text_marks
 
@@ -350,11 +353,14 @@ def create_adf_code_block(code: str, language: str = "") -> dict[str, Any]:
     Returns:
         ADF code block node
     """
-    attrs = {}
+    attrs: dict[str, str] = {}
     if language:
         attrs["language"] = language
 
-    node = {"type": "codeBlock", "content": [{"type": "text", "text": code}]}
+    node: dict[str, Any] = {
+        "type": "codeBlock",
+        "content": [{"type": "text", "text": code}],
+    }
 
     if attrs:
         node["attrs"] = attrs
@@ -424,7 +430,7 @@ def _parse_wiki_inline(text: str) -> list[dict[str, Any]]:
     if not text:
         return [{"type": "text", "text": ""}]
 
-    result = []
+    result: list[dict[str, Any]] = []
     remaining = text
 
     # Patterns for wiki markup
@@ -438,7 +444,7 @@ def _parse_wiki_inline(text: str) -> list[dict[str, Any]]:
         link_match = re.search(link_pattern, remaining)
 
         # Collect valid matches
-        matches = []
+        matches: list[tuple[re.Match[str], str]] = []
         if bold_match:
             matches.append((bold_match, "bold"))
         if link_match:

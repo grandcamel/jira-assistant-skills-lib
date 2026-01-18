@@ -134,6 +134,8 @@ def _transition_issue_impl(
             transition = find_transition_by_name(transitions, transition_name)
             transition_id = transition["id"]
         else:
+            # transition_id must be set since we checked at line 107
+            assert transition_id is not None
             transition_id = validate_transition_id(transition_id)
             matching = [t for t in transitions if t["id"] == transition_id]
             if not matching:
@@ -246,6 +248,7 @@ def _assign_issue_impl(
         raise ValidationError("Specify exactly one of: --user, --self, or --unassign")
 
     with get_jira_client() as client:
+        account_id: str | None
         if unassign:
             account_id = None
             action = "unassign"
@@ -257,7 +260,7 @@ def _assign_issue_impl(
         else:
             account_id = user
             action = f"assign to {user}"
-            target_display = user
+            target_display = user or "Unknown"
 
         # Get current assignee for dry-run display
         issue = client.get_issue(issue_key, fields=["assignee"])

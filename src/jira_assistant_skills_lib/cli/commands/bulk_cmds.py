@@ -295,6 +295,8 @@ def _bulk_assign_impl(
         account_id = None
         action = "unassign"
         if not unassign:
+            # assignee must be set since we checked at line 291
+            assert assignee is not None
             account_id = _resolve_user_id(client, assignee)
             if account_id is None and assignee.lower() != "self":
                 raise ValidationError(f"Could not resolve user: {assignee}")
@@ -487,7 +489,7 @@ def _clone_issue(
     source_fields = source_issue.get("fields", {})
 
     # Build new issue fields
-    fields = {}
+    fields: dict[str, Any] = {}
 
     # Project
     if target_project:
@@ -543,7 +545,8 @@ def _clone_issue(
     new_key = created.get("key")
 
     # Track mapping
-    created_mapping[source_key] = new_key
+    if source_key and new_key:
+        created_mapping[source_key] = new_key
 
     # Clone subtasks if requested
     cloned_subtasks = []

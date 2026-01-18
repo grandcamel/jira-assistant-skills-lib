@@ -490,10 +490,13 @@ def _invoke_manual_rule_impl(
 ) -> dict[str, Any]:
     """Invoke a manual automation rule."""
     client = get_automation_client()
-    return client.invoke_rule(rule_id, issue_key=issue_key)
+    context: dict[str, Any] = {}
+    if issue_key:
+        context["issue"] = {"key": issue_key}
+    return client.invoke_manual_rule(rule_id, context)
 
 
-def _list_automation_templates_impl() -> list[dict[str, Any]]:
+def _list_automation_templates_impl() -> dict[str, Any]:
     """List automation templates."""
     client = get_automation_client()
     return client.get_templates()

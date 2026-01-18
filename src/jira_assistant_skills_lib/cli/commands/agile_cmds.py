@@ -276,7 +276,7 @@ def _add_to_epic_impl(
         raise ValidationError("At least one issue key is required")
 
     with get_jira_client() as client:
-        result = {"added": 0, "removed": 0, "failed": 0, "failures": []}
+        result: dict[str, Any] = {"added": 0, "removed": 0, "failed": 0, "failures": []}
 
         if not remove:
             epic_key = validate_issue_key(epic_key)
@@ -463,7 +463,7 @@ def _start_sprint_impl(
         raise ValidationError("Sprint ID is required")
 
     with get_jira_client() as client:
-        update_data = {"state": "active"}
+        update_data: dict[str, Any] = {"state": "active"}
         if start_date:
             update_data["start_date"] = _parse_date_safe(start_date)
         if end_date:
@@ -505,7 +505,7 @@ def _update_sprint_impl(
     if not sprint_id:
         raise ValidationError("Sprint ID is required")
 
-    update_data = {}
+    update_data: dict[str, Any] = {}
     if name:
         update_data["name"] = name
     if goal:
@@ -757,6 +757,8 @@ def _get_estimates_impl(
             result = client.get_sprint_issues(sprint_id)
             issues = result.get("issues", [])
         else:
+            # epic_key must be set since we checked at line 726
+            assert epic_key is not None
             epic_key = validate_issue_key(epic_key)
             jql = f'"Epic Link" = {epic_key}'
             result = client.search_issues(

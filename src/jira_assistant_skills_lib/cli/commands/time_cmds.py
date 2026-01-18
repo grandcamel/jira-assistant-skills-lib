@@ -596,6 +596,9 @@ def _bulk_log_time_impl(
     Returns:
         Result dict with success/failure counts
     """
+    if not time_spent:
+        raise ValidationError("time_spent is required")
+
     if not validate_time_format(time_spent):
         raise ValidationError(
             f"Invalid time format: '{time_spent}'. Use format like '2h', '1d 4h', '30m'"
@@ -774,14 +777,14 @@ def _resolve_period_dates(period: str) -> tuple[str, str]:
         last_month_start = last_month_end.replace(day=1)
         return str(last_month_start), str(last_month_end)
     elif "-" in period and len(period) == 7:
-        year, month = period.split("-")
-        year = int(year)
-        month = int(month)
-        start = datetime(year, month, 1).date()
-        if month == 12:
-            end = datetime(year + 1, 1, 1).date() - timedelta(days=1)
+        year_str, month_str = period.split("-")
+        year_int = int(year_str)
+        month_int = int(month_str)
+        start = datetime(year_int, month_int, 1).date()
+        if month_int == 12:
+            end = datetime(year_int + 1, 1, 1).date() - timedelta(days=1)
         else:
-            end = datetime(year, month + 1, 1).date() - timedelta(days=1)
+            end = datetime(year_int, month_int + 1, 1).date() - timedelta(days=1)
         return str(start), str(end)
     else:
         return period, period

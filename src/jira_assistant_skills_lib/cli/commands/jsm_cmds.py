@@ -2421,9 +2421,10 @@ def asset_create(ctx, type_id: int, attr: tuple, dry_run: bool):
 
     result = _create_asset_impl(type_id, attributes)
 
-    print_success("Asset created successfully!")
-    click.echo(f"Asset ID: {result.get('id')}")
-    click.echo(f"Asset Key: {result.get('objectKey')}")
+    if result:
+        print_success("Asset created successfully!")
+        click.echo(f"Asset ID: {result.get('id')}")
+        click.echo(f"Asset Key: {result.get('objectKey')}")
 
 
 @asset.command(name="update")
