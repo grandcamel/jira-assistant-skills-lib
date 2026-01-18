@@ -102,7 +102,7 @@ class JiraClient:
         params: dict[str, Any] | None = None,
         operation: str = "fetch data",
         headers: dict[str, str] | None = None,
-    ) -> dict[str, Any]:
+    ) -> Any:
         """
         Perform GET request.
 
@@ -131,7 +131,7 @@ class JiraClient:
         data: dict[str, Any] | None = None,
         operation: str = "create resource",
         headers: dict[str, str] | None = None,
-    ) -> dict[str, Any]:
+    ) -> Any:
         """
         Perform POST request.
 
@@ -175,7 +175,7 @@ class JiraClient:
         endpoint: str,
         data: dict[str, Any] | None = None,
         operation: str = "update resource",
-    ) -> dict[str, Any]:
+    ) -> Any:
         """
         Perform PUT request.
 
@@ -204,7 +204,7 @@ class JiraClient:
 
     def delete(
         self, endpoint: str, operation: str = "delete resource"
-    ) -> dict[str, Any]:
+    ) -> Any:
         """
         Perform DELETE request.
 
