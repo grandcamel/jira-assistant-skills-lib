@@ -6,7 +6,7 @@ All implementation functions are inlined for direct CLI usage.
 """
 
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import click
@@ -420,7 +420,7 @@ def _discover_metadata(
 
     metadata = {
         "project_key": project_key,
-        "discovered_at": datetime.utcnow().isoformat() + "Z",
+        "discovered_at": datetime.now(timezone.utc).isoformat() + "Z",
     }
 
     # Get project info
@@ -541,14 +541,14 @@ def _discover_patterns(
         "project_key": project_key,
         "sample_size": 0,
         "sample_period_days": sample_period_days,
-        "discovered_at": datetime.utcnow().isoformat() + "Z",
+        "discovered_at": datetime.now(timezone.utc).isoformat() + "Z",
         "by_issue_type": {},
         "common_labels": [],
         "top_assignees": [],
     }
 
     # Build JQL for recent issues
-    since_date = (datetime.utcnow() - timedelta(days=sample_period_days)).strftime(
+    since_date = (datetime.now(timezone.utc) - timedelta(days=sample_period_days)).strftime(
         "%Y-%m-%d"
     )
     jql = (

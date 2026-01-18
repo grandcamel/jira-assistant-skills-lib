@@ -79,27 +79,18 @@ FIBONACCI_SEQUENCE = [0, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89]
 
 def _get_board_for_project(project_key: str, client=None) -> dict | None:
     """Find the first Scrum board for a project."""
-    if client:
-        # Use provided client directly (caller manages lifecycle)
-        result = client.get_all_boards(project_key=project_key)
-        boards = result.get("values", [])
-        scrum_boards = [b for b in boards if b.get("type") == "scrum"]
-        if scrum_boards:
-            return scrum_boards[0]
-        if boards:
-            return boards[0]
-        return None
 
-    # Create and manage our own client
-    with get_jira_client() as new_client:
-        result = new_client.get_all_boards(project_key=project_key)
+    def _find_board(c) -> dict | None:
+        result = c.get_all_boards(project_key=project_key)
         boards = result.get("values", [])
         scrum_boards = [b for b in boards if b.get("type") == "scrum"]
-        if scrum_boards:
-            return scrum_boards[0]
-        if boards:
-            return boards[0]
-        return None
+        return scrum_boards[0] if scrum_boards else (boards[0] if boards else None)
+
+    if client:
+        return _find_board(client)
+
+    with get_jira_client() as new_client:
+        return _find_board(new_client)
 
 
 def _get_board_id_for_project(project_key: str, client=None) -> int:
