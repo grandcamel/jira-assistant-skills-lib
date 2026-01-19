@@ -16,6 +16,7 @@ to provide JIRA-specific credential handling.
 
 from __future__ import annotations
 
+import threading
 from typing import Any
 
 from assistant_skills_lib import (
@@ -260,6 +261,24 @@ class CredentialManager(BaseCredentialManager):
         return self.validate_credentials(credentials)
 
 
+# Singleton instance with thread-safe initialization
+_credential_manager: CredentialManager | None = None
+_credential_manager_lock = threading.Lock()
+
+
+def get_credential_manager() -> CredentialManager:
+    """Get or create global CredentialManager instance.
+
+    Thread-safe singleton access using double-checked locking pattern.
+    """
+    global _credential_manager
+    if _credential_manager is None:
+        with _credential_manager_lock:
+            if _credential_manager is None:
+                _credential_manager = CredentialManager()
+    return _credential_manager
+
+
 # Convenience functions (match config_manager.py pattern)
 
 
@@ -275,7 +294,7 @@ def get_credentials() -> tuple[str, str, str]:
     Returns:
         Tuple of (url, email, api_token)
     """
-    manager = CredentialManager()
+    manager = get_credential_manager()
     return manager.get_credentials_tuple()
 
 
@@ -297,7 +316,7 @@ def store_credentials(
     Returns:
         The backend where credentials were stored
     """
-    manager = CredentialManager()
+    manager = get_credential_manager()
     return manager.store_credentials_tuple(url, email, api_token, backend)
 
 
@@ -313,5 +332,5 @@ def validate_credentials(url: str, email: str, api_token: str) -> dict[str, Any]
     Returns:
         User info dict on success
     """
-    manager = CredentialManager()
+    manager = get_credential_manager()
     return manager.validate_credentials_tuple(url, email, api_token)
