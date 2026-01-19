@@ -11,7 +11,7 @@ from typing import Any
 
 import requests
 from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.util.retry import Retry
+from urllib3.util.retry import Retry
 
 from .error_handler import handle_jira_error
 

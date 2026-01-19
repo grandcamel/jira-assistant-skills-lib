@@ -13,7 +13,6 @@ from __future__ import annotations
 
 import functools
 import json
-import sys
 from collections.abc import Callable
 from functools import wraps
 from typing import TYPE_CHECKING, Any, TypeVar, cast
@@ -147,34 +146,34 @@ def handle_jira_errors(func: F) -> F:
             raise
         except ValidationError as e:
             print_error(e)
-            sys.exit(1)
+            raise click.exceptions.Exit(1)
         except AuthenticationError as e:
             print_error(e)
-            sys.exit(2)
+            raise click.exceptions.Exit(2)
         except PermissionError as e:
             print_error(e)
-            sys.exit(3)
+            raise click.exceptions.Exit(3)
         except NotFoundError as e:
             print_error(e)
-            sys.exit(4)
+            raise click.exceptions.Exit(4)
         except RateLimitError as e:
             print_error(e)
-            sys.exit(5)
+            raise click.exceptions.Exit(5)
         except ConflictError as e:
             print_error(e)
-            sys.exit(6)
+            raise click.exceptions.Exit(6)
         except ServerError as e:
             print_error(e)
-            sys.exit(7)
+            raise click.exceptions.Exit(7)
         except JiraError as e:
             print_error(e)
-            sys.exit(1)
+            raise click.exceptions.Exit(1)
         except KeyboardInterrupt:
             click.echo("\nOperation cancelled", err=True)
-            sys.exit(130)
+            raise click.exceptions.Exit(130)
         except Exception as e:
             print_error(e, debug=True)
-            sys.exit(1)
+            raise click.exceptions.Exit(1)
 
     return wrapper  # type: ignore[return-value]
 

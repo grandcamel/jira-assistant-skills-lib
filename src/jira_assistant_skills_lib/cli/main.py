@@ -44,6 +44,15 @@ def cli(ctx, output: str, verbose: bool, quiet: bool):
     if quiet:
         os.environ[f"{env_prefix}_QUIET"] = "true"
 
+    # Register cleanup callback to close HTTP client on exit
+    def cleanup():
+        if ctx.obj and "_client" in ctx.obj:
+            client = ctx.obj["_client"]
+            if hasattr(client, "close"):
+                client.close()
+
+    ctx.call_on_close(cleanup)
+
     if ctx.invoked_subcommand is None:
         click.echo(ctx.get_help())
 
