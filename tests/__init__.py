@@ -1,1 +1,1 @@
-"""Unit tests for jira-as-lib."""
+"""Unit tests for jira-as."""

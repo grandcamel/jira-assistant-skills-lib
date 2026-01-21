@@ -4,9 +4,9 @@
 
 This document outlines refactoring opportunities and patterns that can be standardized across the four Assistant Skills libraries:
 - `assistant-skills-lib` (base library)
-- `jira-as-lib`
-- `confluence-assistant-skills-lib`
-- `splunk-assistant-skills-lib`
+- `jira-as`
+- `confluence-as`
+- `splunk-as`
 
 ## Current State Summary
 
@@ -70,9 +70,9 @@ class BaseConfigManager:
 
 **Files to update**:
 - `assistant-skills-lib/src/assistant_skills_lib/__init__.py` - export BaseConfigManager
-- `jira-as-lib/.../config_manager.py` - extend BaseConfigManager
-- `confluence-assistant-skills-lib/.../config_manager.py` - extend BaseConfigManager
-- `splunk-assistant-skills-lib/.../config_manager.py` - extend BaseConfigManager
+- `jira-as/.../config_manager.py` - extend BaseConfigManager
+- `confluence-as/.../config_manager.py` - extend BaseConfigManager
+- `splunk-as/.../config_manager.py` - extend BaseConfigManager
 
 **Priority**: High
 **Effort**: Medium
@@ -170,8 +170,8 @@ def create_mock_mode_checker(env_var_name: str) -> Callable[[], bool]:
 - Graceful interruption handling
 
 **Files to create**:
-- `confluence-assistant-skills-lib/.../batch_processor.py` (copy from base library)
-- `splunk-assistant-skills-lib/.../batch_processor.py` (copy from base library)
+- `confluence-as/.../batch_processor.py` (copy from base library)
+- `splunk-as/.../batch_processor.py` (copy from base library)
 
 **Update __init__.py** in both libraries to export:
 - `BatchConfig`, `BatchProcessor`, `BatchProgress`, `CheckpointManager`
@@ -192,8 +192,8 @@ def create_mock_mode_checker(env_var_name: str) -> Callable[[], bool]:
 - Thread-safe result aggregation
 
 **Files to create**:
-- `confluence-assistant-skills-lib/.../request_batcher.py` (copy from base library)
-- `splunk-assistant-skills-lib/.../request_batcher.py` (copy from base library)
+- `confluence-as/.../request_batcher.py` (copy from base library)
+- `splunk-as/.../request_batcher.py` (copy from base library)
 
 **Priority**: Medium
 **Effort**: Low (base library already has it)
@@ -210,8 +210,8 @@ def create_mock_mode_checker(env_var_name: str) -> Callable[[], bool]:
 **Target**: Full keychain integration matching JIRA's pattern.
 
 **Files to update**:
-- `confluence-assistant-skills-lib/.../credential_manager.py` - add keychain functions
-- `splunk-assistant-skills-lib/.../credential_manager.py` - add keychain functions
+- `confluence-as/.../credential_manager.py` - add keychain functions
+- `splunk-as/.../credential_manager.py` - add keychain functions
 
 **Functions to add**:
 ```python
@@ -247,8 +247,8 @@ def validate_credentials(site_url: str, email: str, api_token: str) -> bool:
 - CLI shell completion integration
 
 **Files to create**:
-- `confluence-assistant-skills-lib/.../autocomplete_cache.py`
-- `splunk-assistant-skills-lib/.../autocomplete_cache.py`
+- `confluence-as/.../autocomplete_cache.py`
+- `splunk-as/.../autocomplete_cache.py`
 
 **Priority**: Low
 **Effort**: Medium
@@ -277,7 +277,7 @@ def my_command(ctx):
 ```
 
 **Files to update**:
-- `confluence-assistant-skills-lib/cli/cli_utils.py` - add `get_client_from_context()`
+- `confluence-as/cli/cli_utils.py` - add `get_client_from_context()`
 - Ensure all command files use shared context
 
 **Priority**: Medium
@@ -347,8 +347,8 @@ def handle_cli_errors(f):
 - Automatic cleanup with `reset_splunk_connection()`
 
 **Files to create**:
-- `splunk-assistant-skills-lib/tests/live_integration/__init__.py`
-- `splunk-assistant-skills-lib/tests/live_integration/splunk_container.py`
+- `splunk-as/tests/live_integration/__init__.py`
+- `splunk-as/tests/live_integration/splunk_container.py`
 
 **Priority**: Low
 **Effort**: High (requires Splunk Docker image setup)
@@ -401,7 +401,7 @@ def mock_config(monkeypatch):
 - Test Markers list
 
 **Files to update**:
-- `confluence-assistant-skills-lib/CLAUDE.md` - expand significantly
+- `confluence-as/CLAUDE.md` - expand significantly
 
 **Priority**: Medium
 **Effort**: Medium
@@ -469,19 +469,19 @@ def mock_config(monkeypatch):
 - `src/assistant_skills_lib/mock/base.py` (new)
 - `src/assistant_skills_lib/__init__.py` (update exports)
 
-### confluence-assistant-skills-lib
-- `src/confluence_assistant_skills/credential_manager.py` (add keychain)
-- `src/confluence_assistant_skills/batch_processor.py` (new)
-- `src/confluence_assistant_skills/request_batcher.py` (new)
-- `src/confluence_assistant_skills/autocomplete_cache.py` (new)
-- `src/confluence_assistant_skills/cli/cli_utils.py` (add context sharing)
+### confluence-as
+- `src/confluence_as/credential_manager.py` (add keychain)
+- `src/confluence_as/batch_processor.py` (new)
+- `src/confluence_as/request_batcher.py` (new)
+- `src/confluence_as/autocomplete_cache.py` (new)
+- `src/confluence_as/cli/cli_utils.py` (add context sharing)
 - `CLAUDE.md` (expand)
 
-### splunk-assistant-skills-lib
-- `src/splunk_assistant_skills_lib/credential_manager.py` (add keychain)
-- `src/splunk_assistant_skills_lib/batch_processor.py` (new)
-- `src/splunk_assistant_skills_lib/request_batcher.py` (new)
-- `src/splunk_assistant_skills_lib/autocomplete_cache.py` (new)
+### splunk-as
+- `src/splunk_as/credential_manager.py` (add keychain)
+- `src/splunk_as/batch_processor.py` (new)
+- `src/splunk_as/request_batcher.py` (new)
+- `src/splunk_as/autocomplete_cache.py` (new)
 - `tests/live_integration/splunk_container.py` (new)
 
 ---

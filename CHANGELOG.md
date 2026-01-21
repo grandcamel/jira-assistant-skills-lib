@@ -57,7 +57,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Shared factories for mock response building
 
 ### Changed
-- **BREAKING**: Package renamed from `jira-as-lib` to `jira-as`
+- **BREAKING**: Package renamed from `jira-as` to `jira-as`
 - **BREAKING**: Requires Python 3.10+ (dropped 3.8/3.9 support)
 - Refactored to use `assistant-skills-lib` base library
 
@@ -98,10 +98,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - SQLite-based caching with TTL support
 - Credential manager with keychain support
 
-[1.2.0]: https://github.com/grandcamel/jira-as-lib/compare/v1.1.0...v1.2.0
-[1.1.0]: https://github.com/grandcamel/jira-as-lib/compare/v1.0.0...v1.1.0
-[1.0.0]: https://github.com/grandcamel/jira-as-lib/compare/v0.2.2...v1.0.0
-[0.2.2]: https://github.com/grandcamel/jira-as-lib/compare/v0.2.1...v0.2.2
-[0.2.1]: https://github.com/grandcamel/jira-as-lib/compare/v0.1.5...v0.2.1
-[0.1.5]: https://github.com/grandcamel/jira-as-lib/compare/v0.1.0...v0.1.5
-[0.1.0]: https://github.com/grandcamel/jira-as-lib/releases/tag/v0.1.0
+[1.2.0]: https://github.com/grandcamel/jira-as/compare/v1.1.0...v1.2.0
+[1.1.0]: https://github.com/grandcamel/jira-as/compare/v1.0.0...v1.1.0
+[1.0.0]: https://github.com/grandcamel/jira-as/compare/v0.2.2...v1.0.0
+[0.2.2]: https://github.com/grandcamel/jira-as/compare/v0.2.1...v0.2.2
+[0.2.1]: https://github.com/grandcamel/jira-as/compare/v0.1.5...v0.2.1
+[0.1.5]: https://github.com/grandcamel/jira-as/compare/v0.1.0...v0.1.5
+[0.1.0]: https://github.com/grandcamel/jira-as/releases/tag/v0.1.0

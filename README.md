@@ -214,8 +214,8 @@ with get_jira_client() as client:  # Returns MockJiraClient
 
 ```bash
 # Clone the repository
-git clone https://github.com/grandcamel/jira-as-lib.git
-cd jira-as-lib
+git clone https://github.com/grandcamel/jira-as.git
+cd jira-as
 
 # Install development dependencies
 pip install -e ".[dev]"

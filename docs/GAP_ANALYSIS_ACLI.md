@@ -1,11 +1,11 @@
-# Gap Analysis: jira-as-lib vs Atlassian ACLI
+# Gap Analysis: jira-as vs Atlassian ACLI
 
 **Date:** 2026-01-17
 **Reference:** https://developer.atlassian.com/cloud/acli/reference/commands/#acli
 
 ## Executive Summary
 
-| Metric | Atlassian ACLI | jira-as-lib |
+| Metric | Atlassian ACLI | jira-as |
 |--------|----------------|---------------------------|
 | Total JIRA Commands | ~41 | **165+** |
 | Command Categories | 8 | **13** |

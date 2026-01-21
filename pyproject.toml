@@ -65,10 +65,10 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/grandcamel/jira-as-lib"
-Repository = "https://github.com/grandcamel/jira-as-lib"
-Issues = "https://github.com/grandcamel/jira-as-lib/issues"
-Changelog = "https://github.com/grandcamel/jira-as-lib/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/grandcamel/jira-as"
+Repository = "https://github.com/grandcamel/jira-as"
+Issues = "https://github.com/grandcamel/jira-as/issues"
+Changelog = "https://github.com/grandcamel/jira-as/blob/main/CHANGELOG.md"
 
 [tool.hatch.build.targets.sdist]
 include = [
