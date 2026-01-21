@@ -17,9 +17,12 @@ import json
 import sys
 from datetime import datetime
 from io import StringIO
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import click
+
+if TYPE_CHECKING:
+    from jira_assistant_skills_lib import JiraClient
 
 from jira_assistant_skills_lib import (
     JiraError,
@@ -31,7 +34,7 @@ from jira_assistant_skills_lib import (
     print_success,
 )
 
-from ..cli_utils import handle_jira_errors
+from ..cli_utils import get_client_from_context, handle_jira_errors
 
 # =============================================================================
 # Helper Functions
@@ -93,11 +96,15 @@ def _is_sla_breached(sla: dict[str, Any]) -> bool:
 
 
 def _list_service_desks_impl(
-    start: int = 0, limit: int = 50, project_key_filter: str | None = None
+    start: int = 0,
+    limit: int = 50,
+    project_key_filter: str | None = None,
+    client: "JiraClient | None" = None,
 ) -> dict[str, Any]:
     """List all JSM service desks."""
-    with get_jira_client() as client:
-        service_desks = client.get_service_desks(start=start, limit=limit)
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
+        service_desks = c.get_service_desks(start=start, limit=limit)
 
         # Apply filter if specified
         if project_key_filter:
@@ -106,29 +113,56 @@ def _list_service_desks_impl(
                 for sd in service_desks.get("values", [])
                 if project_key_filter.upper() in sd.get("projectKey", "").upper()
             ]
-            service_desks = {
+            service_desks_result = {
                 **service_desks,
                 "values": filtered,
                 "size": len(filtered),
             }
+            return service_desks_result
 
         return service_desks
 
+    if client is not None:
+        return _do_work(client)
 
-def _get_service_desk_impl(service_desk_id: str) -> dict[str, Any]:
+    with get_jira_client() as c:
+        return _do_work(c)
+
+
+def _get_service_desk_impl(
+    service_desk_id: str,
+    client: "JiraClient | None" = None,
+) -> dict[str, Any]:
     """Get service desk details by ID."""
-    with get_jira_client() as client:
-        return client.get_service_desk(service_desk_id)
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
+        return c.get_service_desk(service_desk_id)
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
 def _create_service_desk_impl(
-    project_key: str, name: str, description: str | None = None
+    project_key: str,
+    name: str,
+    description: str | None = None,
+    client: "JiraClient | None" = None,
 ) -> dict[str, Any]:
     """Create a new service desk."""
-    with get_jira_client() as client:
-        return client.create_service_desk(
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
+        return c.create_service_desk(
             project_key=project_key, name=name, description=description
         )
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
 def _format_service_desks(service_desks: dict[str, Any]) -> str:
@@ -180,12 +214,12 @@ def _list_request_types_impl(
     start: int = 0,
     limit: int = 50,
     name_filter: str | None = None,
+    client: "JiraClient | None" = None,
 ) -> dict[str, Any]:
     """List request types for a service desk."""
-    with get_jira_client() as client:
-        request_types = client.get_request_types(
-            service_desk_id, start=start, limit=limit
-        )
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
+        request_types = c.get_request_types(service_desk_id, start=start, limit=limit)
 
         if name_filter:
             filtered = [
@@ -193,7 +227,7 @@ def _list_request_types_impl(
                 for rt in request_types.get("values", [])
                 if name_filter.lower() in rt.get("name", "").lower()
             ]
-            request_types = {
+            return {
                 **request_types,
                 "values": filtered,
                 "size": len(filtered),
@@ -201,21 +235,45 @@ def _list_request_types_impl(
 
         return request_types
 
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
+
 
 def _get_request_type_impl(
-    service_desk_id: str, request_type_id: str
+    service_desk_id: str,
+    request_type_id: str,
+    client: "JiraClient | None" = None,
 ) -> dict[str, Any]:
     """Get request type details."""
-    with get_jira_client() as client:
-        return client.get_request_type(service_desk_id, request_type_id)
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
+        return c.get_request_type(service_desk_id, request_type_id)
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
 def _get_request_type_fields_impl(
-    service_desk_id: str, request_type_id: str
+    service_desk_id: str,
+    request_type_id: str,
+    client: "JiraClient | None" = None,
 ) -> list[dict[str, Any]]:
     """Get fields for a request type."""
-    with get_jira_client() as client:
-        return client.get_request_type_fields(service_desk_id, request_type_id)
+
+    def _do_work(c: "JiraClient") -> list[dict[str, Any]]:
+        return c.get_request_type_fields(service_desk_id, request_type_id)
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
 def _format_request_types(
@@ -307,6 +365,7 @@ def _list_requests_impl(
     jql: str | None = None,
     max_results: int = 50,
     start_at: int = 0,
+    client: "JiraClient | None" = None,
 ) -> dict[str, Any]:
     """List service requests for a service desk."""
     # Build JQL query
@@ -320,10 +379,16 @@ def _list_requests_impl(
 
     final_jql = " AND ".join(jql_parts)
 
-    with get_jira_client() as client:
-        return client.search_issues(
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
+        return c.search_issues(
             jql=final_jql, max_results=max_results, start_at=start_at
         )
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
 def _create_request_impl(
@@ -333,10 +398,12 @@ def _create_request_impl(
     description: str | None = None,
     fields: dict[str, Any] | None = None,
     on_behalf_of: str | None = None,
+    client: "JiraClient | None" = None,
 ) -> dict[str, Any]:
     """Create a new service request."""
-    with get_jira_client() as client:
-        return client.create_request(
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
+        return c.create_request(
             service_desk_id=service_desk_id,
             request_type_id=request_type_id,
             summary=summary,
@@ -345,9 +412,18 @@ def _create_request_impl(
             raise_on_behalf_of=on_behalf_of,
         )
 
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
+
 
 def _get_request_impl(
-    issue_key: str, show_sla: bool = False, show_participants: bool = False
+    issue_key: str,
+    show_sla: bool = False,
+    show_participants: bool = False,
+    client: "JiraClient | None" = None,
 ) -> dict[str, Any]:
     """Get service request details."""
     expand = []
@@ -356,14 +432,30 @@ def _get_request_impl(
     if show_participants:
         expand.append("participant")
 
-    with get_jira_client() as client:
-        return client.get_request(issue_key, expand=expand if expand else None)
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
+        return c.get_request(issue_key, expand=expand if expand else None)
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
-def _get_request_status_impl(issue_key: str) -> dict[str, Any]:
+def _get_request_status_impl(
+    issue_key: str,
+    client: "JiraClient | None" = None,
+) -> dict[str, Any]:
     """Get request status."""
-    with get_jira_client() as client:
-        return client.get_request_status(issue_key)
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
+        return c.get_request_status(issue_key)
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
 def _transition_request_impl(
@@ -372,11 +464,14 @@ def _transition_request_impl(
     transition_name: str | None = None,
     comment: str | None = None,
     public: bool = True,
+    client: "JiraClient | None" = None,
 ) -> None:
     """Transition a service request."""
-    with get_jira_client() as client:
+
+    def _do_work(c: "JiraClient") -> None:
+        nonlocal transition_id
         if transition_name and not transition_id:
-            transitions = client.get_request_transitions(issue_key)
+            transitions = c.get_request_transitions(issue_key)
             matching = [t for t in transitions if t["name"] == transition_name]
 
             if not matching:
@@ -391,35 +486,68 @@ def _transition_request_impl(
         if not transition_id:
             raise ValueError("Either transition_id or transition_name must be provided")
 
-        client.transition_request(
-            issue_key, transition_id, comment=comment, public=public
-        )
+        c.transition_request(issue_key, transition_id, comment=comment, public=public)
+
+    if client is not None:
+        _do_work(client)
+        return
+
+    with get_jira_client() as c:
+        _do_work(c)
 
 
-def _list_request_transitions_impl(issue_key: str) -> list[dict[str, Any]]:
+def _list_request_transitions_impl(
+    issue_key: str,
+    client: "JiraClient | None" = None,
+) -> list[dict[str, Any]]:
     """List available transitions for a request."""
-    with get_jira_client() as client:
-        return client.get_request_transitions(issue_key)
+
+    def _do_work(c: "JiraClient") -> list[dict[str, Any]]:
+        return c.get_request_transitions(issue_key)
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
 def _add_request_comment_impl(
-    issue_key: str, body: str, public: bool = True
+    issue_key: str,
+    body: str,
+    public: bool = True,
+    client: "JiraClient | None" = None,
 ) -> dict[str, Any]:
     """Add a comment to a service request."""
-    with get_jira_client() as client:
-        return client.add_request_comment(issue_key, body, public=public)
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
+        return c.add_request_comment(issue_key, body, public=public)
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
 def _get_request_comments_impl(
     issue_key: str,
     public_only: bool = False,
     internal_only: bool = False,
+    client: "JiraClient | None" = None,
 ) -> list[dict[str, Any]]:
     """Get comments for a request."""
-    with get_jira_client() as client:
-        return client.get_request_comments(
+
+    def _do_work(c: "JiraClient") -> list[dict[str, Any]]:
+        return c.get_request_comments(
             issue_key, public=public_only if public_only else None
         )
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
 def _format_requests(issues: list[dict[str, Any]]) -> str:
@@ -540,28 +668,58 @@ def _format_transitions(transitions: list[dict[str, Any]]) -> str:
 # =============================================================================
 
 
-def _get_participants_impl(issue_key: str) -> list[dict[str, Any]]:
+def _get_participants_impl(
+    issue_key: str,
+    client: "JiraClient | None" = None,
+) -> list[dict[str, Any]]:
     """Get participants for a request."""
-    with get_jira_client() as client:
-        return client.get_request_participants(issue_key)
+
+    def _do_work(c: "JiraClient") -> list[dict[str, Any]]:
+        return c.get_request_participants(issue_key)
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
 def _add_participants_impl(
     issue_key: str,
     account_ids: list[str] | None = None,
     usernames: list[str] | None = None,
+    client: "JiraClient | None" = None,
 ) -> dict[str, Any]:
     """Add participants to a request."""
-    with get_jira_client() as client:
-        return client.add_request_participants(
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
+        return c.add_request_participants(
             issue_key, account_ids=account_ids, usernames=usernames
         )
 
+    if client is not None:
+        return _do_work(client)
 
-def _remove_participant_impl(issue_key: str, account_id: str) -> None:
+    with get_jira_client() as c:
+        return _do_work(c)
+
+
+def _remove_participant_impl(
+    issue_key: str,
+    account_id: str,
+    client: "JiraClient | None" = None,
+) -> None:
     """Remove a participant from a request."""
-    with get_jira_client() as client:
-        client.remove_request_participant(issue_key, account_id)
+
+    def _do_work(c: "JiraClient") -> None:
+        c.remove_request_participant(issue_key, account_id)
+
+    if client is not None:
+        _do_work(client)
+        return
+
+    with get_jira_client() as c:
+        _do_work(c)
 
 
 def _format_participants(participants: list[dict[str, Any]]) -> str:
@@ -595,34 +753,76 @@ def _list_customers_impl(
     query: str | None = None,
     start: int = 0,
     limit: int = 50,
+    client: "JiraClient | None" = None,
 ) -> dict[str, Any]:
     """List customers for a service desk."""
-    with get_jira_client() as client:
-        return client.get_service_desk_customers(
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
+        return c.get_service_desk_customers(
             service_desk_id, query=query, start=start, limit=limit
         )
 
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
+
 
 def _create_customer_impl(
-    service_desk_id: str, email: str, display_name: str | None = None
+    service_desk_id: str,
+    email: str,
+    display_name: str | None = None,
+    client: "JiraClient | None" = None,
 ) -> dict[str, Any]:
     """Create a new customer."""
-    with get_jira_client() as client:
-        return client.create_customer(
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
+        return c.create_customer(
             service_desk_id, email=email, display_name=display_name
         )
 
+    if client is not None:
+        return _do_work(client)
 
-def _add_customer_impl(service_desk_id: str, account_ids: list[str]) -> None:
+    with get_jira_client() as c:
+        return _do_work(c)
+
+
+def _add_customer_impl(
+    service_desk_id: str,
+    account_ids: list[str],
+    client: "JiraClient | None" = None,
+) -> None:
     """Add existing users as customers to a service desk."""
-    with get_jira_client() as client:
-        client.add_customers_to_service_desk(service_desk_id, account_ids)
+
+    def _do_work(c: "JiraClient") -> None:
+        c.add_customers_to_service_desk(service_desk_id, account_ids)
+
+    if client is not None:
+        _do_work(client)
+        return
+
+    with get_jira_client() as c:
+        _do_work(c)
 
 
-def _remove_customer_impl(service_desk_id: str, account_ids: list[str]) -> None:
+def _remove_customer_impl(
+    service_desk_id: str,
+    account_ids: list[str],
+    client: "JiraClient | None" = None,
+) -> None:
     """Remove customers from a service desk."""
-    with get_jira_client() as client:
-        client.remove_customers_from_service_desk(service_desk_id, account_ids)
+
+    def _do_work(c: "JiraClient") -> None:
+        c.remove_customers_from_service_desk(service_desk_id, account_ids)
+
+    if client is not None:
+        _do_work(client)
+        return
+
+    with get_jira_client() as c:
+        _do_work(c)
 
 
 def _format_customers(customers_data: dict[str, Any]) -> str:
@@ -660,42 +860,106 @@ def _format_customers(customers_data: dict[str, Any]) -> str:
 # =============================================================================
 
 
-def _list_organizations_impl(start: int = 0, limit: int = 50) -> dict[str, Any]:
+def _list_organizations_impl(
+    start: int = 0,
+    limit: int = 50,
+    client: "JiraClient | None" = None,
+) -> dict[str, Any]:
     """List all organizations."""
-    with get_jira_client() as client:
-        return client.get_organizations(start=start, limit=limit)
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
+        return c.get_organizations(start=start, limit=limit)
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
-def _get_organization_impl(organization_id: int) -> dict[str, Any]:
+def _get_organization_impl(
+    organization_id: int,
+    client: "JiraClient | None" = None,
+) -> dict[str, Any]:
     """Get organization details."""
-    with get_jira_client() as client:
-        return client.get_organization(organization_id)
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
+        return c.get_organization(organization_id)
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
-def _create_organization_impl(name: str) -> dict[str, Any]:
+def _create_organization_impl(
+    name: str,
+    client: "JiraClient | None" = None,
+) -> dict[str, Any]:
     """Create a new organization."""
-    with get_jira_client() as client:
-        return client.create_organization(name)
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
+        return c.create_organization(name)
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
-def _delete_organization_impl(organization_id: int) -> None:
+def _delete_organization_impl(
+    organization_id: int,
+    client: "JiraClient | None" = None,
+) -> None:
     """Delete an organization."""
-    with get_jira_client() as client:
-        client.delete_organization(organization_id)
+
+    def _do_work(c: "JiraClient") -> None:
+        c.delete_organization(organization_id)
+
+    if client is not None:
+        _do_work(client)
+        return
+
+    with get_jira_client() as c:
+        _do_work(c)
 
 
-def _add_to_organization_impl(organization_id: int, account_ids: list[str]) -> None:
+def _add_to_organization_impl(
+    organization_id: int,
+    account_ids: list[str],
+    client: "JiraClient | None" = None,
+) -> None:
     """Add users to an organization."""
-    with get_jira_client() as client:
-        client.add_users_to_organization(organization_id, account_ids)
+
+    def _do_work(c: "JiraClient") -> None:
+        c.add_users_to_organization(organization_id, account_ids)
+
+    if client is not None:
+        _do_work(client)
+        return
+
+    with get_jira_client() as c:
+        _do_work(c)
 
 
 def _remove_from_organization_impl(
-    organization_id: int, account_ids: list[str]
+    organization_id: int,
+    account_ids: list[str],
+    client: "JiraClient | None" = None,
 ) -> None:
     """Remove users from an organization."""
-    with get_jira_client() as client:
-        client.remove_users_from_organization(organization_id, account_ids)
+
+    def _do_work(c: "JiraClient") -> None:
+        c.remove_users_from_organization(organization_id, account_ids)
+
+    if client is not None:
+        _do_work(client)
+        return
+
+    with get_jira_client() as c:
+        _do_work(c)
 
 
 def _format_organizations(organizations_data: dict[str, Any]) -> str:
@@ -737,24 +1001,55 @@ def _format_organization(organization: dict[str, Any]) -> str:
 # =============================================================================
 
 
-def _list_queues_impl(service_desk_id: int) -> dict[str, Any]:
+def _list_queues_impl(
+    service_desk_id: int,
+    client: "JiraClient | None" = None,
+) -> dict[str, Any]:
     """List queues for a service desk."""
-    with get_jira_client() as client:
-        return client.get_service_desk_queues(service_desk_id)
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
+        return c.get_service_desk_queues(service_desk_id)
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
-def _get_queue_impl(service_desk_id: int, queue_id: int) -> dict[str, Any]:
+def _get_queue_impl(
+    service_desk_id: int,
+    queue_id: int,
+    client: "JiraClient | None" = None,
+) -> dict[str, Any]:
     """Get queue details."""
-    with get_jira_client() as client:
-        return client.get_queue(service_desk_id, queue_id)
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
+        return c.get_queue(service_desk_id, queue_id)
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
 def _get_queue_issues_impl(
-    service_desk_id: int, queue_id: int, max_results: int = 50
+    service_desk_id: int,
+    queue_id: int,
+    max_results: int = 50,
+    client: "JiraClient | None" = None,
 ) -> dict[str, Any]:
     """Get issues in a queue."""
-    with get_jira_client() as client:
-        return client.get_queue_issues(service_desk_id, queue_id, limit=max_results)
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
+        return c.get_queue_issues(service_desk_id, queue_id, limit=max_results)
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
 def _format_queues(queues_data: dict[str, Any], show_jql: bool = False) -> str:
@@ -791,16 +1086,30 @@ def _format_queue(queue: dict[str, Any]) -> str:
 # =============================================================================
 
 
-def _get_sla_impl(issue_key: str) -> dict[str, Any]:
+def _get_sla_impl(
+    issue_key: str,
+    client: "JiraClient | None" = None,
+) -> dict[str, Any]:
     """Get SLA information for an issue."""
-    with get_jira_client() as client:
-        return client.get_request_slas(issue_key)
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
+        return c.get_request_slas(issue_key)
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
-def _check_sla_breach_impl(issue_key: str) -> dict[str, Any]:
+def _check_sla_breach_impl(
+    issue_key: str,
+    client: "JiraClient | None" = None,
+) -> dict[str, Any]:
     """Check if an issue is breaching SLA."""
-    with get_jira_client() as client:
-        sla_data = client.get_request_slas(issue_key)
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
+        sla_data = c.get_request_slas(issue_key)
         slas = sla_data.get("values", [])
 
         breached = []
@@ -827,6 +1136,12 @@ def _check_sla_breach_impl(issue_key: str) -> dict[str, Any]:
             "total": len(slas),
         }
 
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
+
 
 def _generate_sla_report_impl(
     project: str | None = None,
@@ -834,29 +1149,31 @@ def _generate_sla_report_impl(
     jql: str | None = None,
     sla_name: str | None = None,
     breached_only: bool = False,
+    client: "JiraClient | None" = None,
 ) -> dict[str, Any]:
     """Generate SLA compliance report."""
-    with get_jira_client() as client:
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
         # Build JQL query
         if jql:
             query = jql
         elif project:
             query = f"project = {project}"
         elif service_desk_id:
-            sd = client.get_service_desk(str(service_desk_id))
+            sd = c.get_service_desk(str(service_desk_id))
             project_key = sd.get("projectKey")
             query = f"project = {project_key}"
         else:
             raise ValueError("Must specify --project, --service-desk, or --jql")
 
-        results = client.search_issues(query, max_results=1000)
+        results = c.search_issues(query, max_results=1000)
         issues = results.get("issues", [])
 
         report_data = []
         for issue in issues:
-            issue_key = issue.get("key")
+            iss_key = issue.get("key")
             try:
-                sla_data = client.get_request_slas(issue_key)
+                sla_data = c.get_request_slas(iss_key)
                 slas = sla_data.get("values", [])
 
                 if sla_name:
@@ -869,7 +1186,7 @@ def _generate_sla_report_impl(
                     for sla in slas:
                         report_data.append(
                             {
-                                "issue_key": issue_key,
+                                "issue_key": iss_key,
                                 "summary": issue.get("fields", {}).get("summary"),
                                 "sla": sla,
                             }
@@ -877,11 +1194,17 @@ def _generate_sla_report_impl(
             except Exception:
                 pass
 
-    return {
-        "total_issues": len(issues),
-        "total_slas": len(report_data),
-        "report_data": report_data,
-    }
+        return {
+            "total_issues": len(issues),
+            "total_slas": len(report_data),
+            "report_data": report_data,
+        }
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
 def _format_sla(sla_data: dict[str, Any]) -> str:
@@ -982,34 +1305,71 @@ def _format_sla_report_csv(report: dict[str, Any]) -> str:
 # =============================================================================
 
 
-def _get_approvals_impl(issue_key: str) -> list[dict[str, Any]]:
+def _get_approvals_impl(
+    issue_key: str,
+    client: "JiraClient | None" = None,
+) -> list[dict[str, Any]]:
     """Get approvals for an issue."""
-    with get_jira_client() as client:
-        return client.get_request_approvals(issue_key)
+
+    def _do_work(c: "JiraClient") -> list[dict[str, Any]]:
+        return c.get_request_approvals(issue_key)
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
 def _list_pending_approvals_impl(
     service_desk_id: int | None = None,
+    client: "JiraClient | None" = None,
 ) -> list[dict[str, Any]]:
     """List pending approvals."""
-    with get_jira_client() as client:
-        return client.get_pending_approvals(service_desk_id=service_desk_id)
+
+    def _do_work(c: "JiraClient") -> list[dict[str, Any]]:
+        return c.get_pending_approvals(service_desk_id=service_desk_id)
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
 def _answer_approval_impl(
     issue_key: str,
     approval_id: str,
     decision: str,
+    client: "JiraClient | None" = None,
 ) -> dict[str, Any]:
     """Approve or decline an approval request."""
-    with get_jira_client() as client:
-        return client.answer_approval(issue_key, approval_id, decision)
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
+        return c.answer_approval(issue_key, approval_id, decision)
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
-def _get_approval_details_impl(issue_key: str, approval_id: str) -> dict[str, Any]:
+def _get_approval_details_impl(
+    issue_key: str,
+    approval_id: str,
+    client: "JiraClient | None" = None,
+) -> dict[str, Any]:
     """Get approval details."""
-    with get_jira_client() as client:
-        return client.get_request_approval(issue_key, approval_id)
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
+        return c.get_request_approval(issue_key, approval_id)
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
 def _format_approvals(approvals: list[dict[str, Any]], issue_key: str) -> str:
@@ -1059,23 +1419,54 @@ def _format_pending_approvals(approvals: list[dict[str, Any]]) -> str:
 
 
 def _search_kb_impl(
-    service_desk_id: int, query: str, max_results: int = 50
+    service_desk_id: int,
+    query: str,
+    max_results: int = 50,
+    client: "JiraClient | None" = None,
 ) -> list[dict[str, Any]]:
     """Search KB articles."""
-    with get_jira_client() as client:
-        return client.search_kb_articles(service_desk_id, query, max_results)
+
+    def _do_work(c: "JiraClient") -> list[dict[str, Any]]:
+        return c.search_kb_articles(service_desk_id, query, max_results)
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
-def _get_kb_article_impl(article_id: str) -> dict[str, Any]:
+def _get_kb_article_impl(
+    article_id: str,
+    client: "JiraClient | None" = None,
+) -> dict[str, Any]:
     """Get a KB article."""
-    with get_jira_client() as client:
-        return client.get_kb_article(article_id)
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
+        return c.get_kb_article(article_id)
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
-def _suggest_kb_impl(issue_key: str, max_results: int = 5) -> list[dict[str, Any]]:
+def _suggest_kb_impl(
+    issue_key: str,
+    max_results: int = 5,
+    client: "JiraClient | None" = None,
+) -> list[dict[str, Any]]:
     """Suggest KB articles for an issue."""
-    with get_jira_client() as client:
-        return client.suggest_kb_articles(issue_key, max_results)
+
+    def _do_work(c: "JiraClient") -> list[dict[str, Any]]:
+        return c.suggest_kb_articles(issue_key, max_results)
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
 def _format_kb_search_results(articles: list[dict[str, Any]]) -> str:
@@ -1124,56 +1515,120 @@ def _check_assets_license(client) -> None:
 
 
 def _list_assets_impl(
-    object_type: str | None = None, iql: str | None = None, max_results: int = 100
+    object_type: str | None = None,
+    iql: str | None = None,
+    max_results: int = 100,
+    client: "JiraClient | None" = None,
 ) -> list[dict[str, Any]]:
     """List assets with optional filtering."""
-    with get_jira_client() as client:
-        _check_assets_license(client)
-        return client.list_assets(object_type, iql, max_results)
+
+    def _do_work(c: "JiraClient") -> list[dict[str, Any]]:
+        _check_assets_license(c)
+        return c.list_assets(object_type, iql, max_results)
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
-def _get_asset_impl(asset_id: int) -> dict[str, Any]:
+def _get_asset_impl(
+    asset_id: int,
+    client: "JiraClient | None" = None,
+) -> dict[str, Any]:
     """Get asset details."""
-    with get_jira_client() as client:
-        _check_assets_license(client)
-        return client.get_asset(asset_id)
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
+        _check_assets_license(c)
+        return c.get_asset(asset_id)
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
 def _create_asset_impl(
-    object_type_id: int, attributes: dict[str, str], dry_run: bool = False
+    object_type_id: int,
+    attributes: dict[str, str],
+    dry_run: bool = False,
+    client: "JiraClient | None" = None,
 ) -> dict[str, Any] | None:
     """Create a new asset."""
-    with get_jira_client() as client:
-        _check_assets_license(client)
+
+    def _do_work(c: "JiraClient") -> dict[str, Any] | None:
+        _check_assets_license(c)
 
         if dry_run:
             return None
 
-        return client.create_asset(object_type_id, attributes)
+        return c.create_asset(object_type_id, attributes)
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
-def _update_asset_impl(asset_id: int, attributes: dict[str, str]) -> dict[str, Any]:
+def _update_asset_impl(
+    asset_id: int,
+    attributes: dict[str, str],
+    client: "JiraClient | None" = None,
+) -> dict[str, Any]:
     """Update an asset."""
-    with get_jira_client() as client:
-        _check_assets_license(client)
-        return client.update_asset(asset_id, attributes)
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
+        _check_assets_license(c)
+        return c.update_asset(asset_id, attributes)
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
-def _link_asset_impl(asset_id: int, issue_key: str, comment: str | None = None) -> None:
+def _link_asset_impl(
+    asset_id: int,
+    issue_key: str,
+    comment: str | None = None,
+    client: "JiraClient | None" = None,
+) -> None:
     """Link an asset to an issue."""
-    with get_jira_client() as client:
-        _check_assets_license(client)
-        client.link_asset_to_request(asset_id, issue_key)
+
+    def _do_work(c: "JiraClient") -> None:
+        _check_assets_license(c)
+        c.link_asset_to_request(asset_id, issue_key)
 
         if comment:
-            client.add_request_comment(issue_key, comment, public=False)
+            c.add_request_comment(issue_key, comment, public=False)
+
+    if client is not None:
+        _do_work(client)
+        return
+
+    with get_jira_client() as c:
+        _do_work(c)
 
 
-def _find_affected_assets_impl(issue_key: str) -> list[dict[str, Any]]:
+def _find_affected_assets_impl(
+    issue_key: str,
+    client: "JiraClient | None" = None,
+) -> list[dict[str, Any]]:
     """Find assets affected by an issue."""
-    with get_jira_client() as client:
-        _check_assets_license(client)
-        return client.find_affected_assets(issue_key)
+
+    def _do_work(c: "JiraClient") -> list[dict[str, Any]]:
+        _check_assets_license(c)
+        return c.find_affected_assets(issue_key)
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
 def _format_assets(assets: list[dict[str, Any]]) -> str:

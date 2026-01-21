@@ -24,9 +24,12 @@ Filter Group:
 
 import json
 from difflib import get_close_matches
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import click
+
+if TYPE_CHECKING:
+    from jira_assistant_skills_lib import JiraClient
 
 from jira_assistant_skills_lib import (
     EPIC_LINK_FIELD,
@@ -40,7 +43,12 @@ from jira_assistant_skills_lib import (
     validate_jql,
 )
 
-from ..cli_utils import format_json, handle_jira_errors, parse_comma_list
+from ..cli_utils import (
+    format_json,
+    get_client_from_context,
+    handle_jira_errors,
+    parse_comma_list,
+)
 
 # Common JQL fields for suggestions
 COMMON_FIELDS = [
@@ -179,26 +187,28 @@ def _search_issues_impl(
     save_as: str | None = None,
     save_description: str | None = None,
     save_favourite: bool = False,
+    client: JiraClient | None = None,
 ) -> dict[str, Any]:
     """Search for issues using JQL."""
     if not jql and not filter_id:
         raise ValidationError("Either JQL query or filter_id is required")
 
-    with get_jira_client() as client:
+    def _do_work(c: JiraClient) -> dict[str, Any]:
         actual_jql = jql
         filter_name = None
 
         if filter_id:
-            filter_data = client.get_filter(filter_id)
+            filter_data = c.get_filter(filter_id)
             actual_jql = filter_data.get("jql", "")
             filter_name = filter_data.get("name", f"Filter {filter_id}")
 
         if not actual_jql:
             raise ValidationError("JQL query is required")
-        actual_jql = validate_jql(actual_jql)
+        validated_jql = validate_jql(actual_jql)
 
-        if fields is None:
-            fields = [
+        search_fields = fields
+        if search_fields is None:
+            search_fields = [
                 "key",
                 "summary",
                 "status",
@@ -208,33 +218,39 @@ def _search_issues_impl(
                 "reporter",
             ]
             if include_agile:
-                fields.extend([EPIC_LINK_FIELD, STORY_POINTS_FIELD, "sprint"])
+                search_fields.extend([EPIC_LINK_FIELD, STORY_POINTS_FIELD, "sprint"])
             if include_links:
-                fields.append("issuelinks")
+                search_fields.append("issuelinks")
             if include_time:
-                fields.append("timetracking")
+                search_fields.append("timetracking")
 
-        results = client.search_issues(
-            actual_jql,
-            fields=fields,
+        results = c.search_issues(
+            validated_jql,
+            fields=search_fields,
             max_results=max_results,
             next_page_token=page_token,
         )
 
         saved_filter = None
         if save_as:
-            saved_filter = client.create_filter(
+            saved_filter = c.create_filter(
                 save_as,
-                actual_jql,
+                validated_jql,
                 description=save_description,
                 favourite=save_favourite,
             )
             results["savedFilter"] = saved_filter
 
         results["_filter_name"] = filter_name
-        results["_jql"] = actual_jql
+        results["_jql"] = validated_jql
 
         return results
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
 def _export_results_impl(
@@ -243,6 +259,7 @@ def _export_results_impl(
     format_type: str = "csv",
     fields: list[str] | None = None,
     max_results: int = 1000,
+    client: JiraClient | None = None,
 ) -> dict[str, Any]:
     """Export search results to file."""
     jql = validate_jql(jql)
@@ -260,8 +277,8 @@ def _export_results_impl(
             "updated",
         ]
 
-    with get_jira_client() as client:
-        results = client.search_issues(
+    def _do_work(c: JiraClient) -> dict[str, Any]:
+        results = c.search_issues(
             jql, fields=fields, max_results=max_results, start_at=0
         )
         issues = results.get("issues", [])
@@ -274,7 +291,7 @@ def _export_results_impl(
             row = {"key": issue.get("key", "")}
             issue_fields = issue.get("fields", {})
 
-            for field in fields:
+            for field in fields:  # type: ignore[union-attr]
                 if field == "key":
                     continue
 
@@ -305,7 +322,7 @@ def _export_results_impl(
             export_csv(
                 export_data,
                 output_file,
-                columns=["key"] + [f for f in fields if f != "key"],
+                columns=["key"] + [f for f in fields if f != "key"],  # type: ignore[union-attr]
             )
         else:
             with open(output_file, "w") as f:
@@ -319,16 +336,24 @@ def _export_results_impl(
             "format": format_type,
         }
 
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
+
 
 def _validate_jql_impl(
-    queries: list[str], show_structure: bool = False
+    queries: list[str],
+    show_structure: bool = False,
+    client: JiraClient | None = None,
 ) -> list[dict[str, Any]]:
     """Validate JQL queries."""
     if not queries:
         raise ValidationError("At least one query is required")
 
-    with get_jira_client() as client:
-        result = client.parse_jql(queries)
+    def _do_work(c: JiraClient) -> list[dict[str, Any]]:
+        result = c.parse_jql(queries)
         results = []
 
         for i, parsed in enumerate(result.get("queries", [])):
@@ -347,6 +372,12 @@ def _validate_jql_impl(
 
         return results
 
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
+
 
 def _build_jql_impl(
     clauses: list[str] | None = None,
@@ -355,6 +386,7 @@ def _build_jql_impl(
     order_by: str | None = None,
     order_desc: bool = False,
     validate: bool = False,
+    client: JiraClient | None = None,
 ) -> dict[str, Any]:
     """Build JQL from clauses or template."""
     if template:
@@ -374,12 +406,19 @@ def _build_jql_impl(
     result: dict[str, Any] = {"jql": jql}
 
     if validate:
-        with get_jira_client() as client:
-            parse_result = client.parse_jql([jql])
+
+        def _do_validate(c: JiraClient) -> None:
+            parse_result = c.parse_jql([jql])
             parsed = parse_result.get("queries", [{}])[0]
             errors = parsed.get("errors", [])
             result["valid"] = len(errors) == 0
             result["errors"] = errors
+
+        if client is not None:
+            _do_validate(client)
+        else:
+            with get_jira_client() as c:
+                _do_validate(c)
 
     return result
 
@@ -389,17 +428,25 @@ def _get_suggestions_impl(
     prefix: str = "",
     use_cache: bool = True,
     refresh_cache: bool = False,
+    client: JiraClient | None = None,
 ) -> list[dict[str, Any]]:
     """Get autocomplete suggestions for a field value."""
-    with get_jira_client() as client:
+
+    def _do_work(c: JiraClient) -> list[dict[str, Any]]:
         if use_cache:
             cache = get_autocomplete_cache()
             return cache.get_suggestions(
-                field_name, prefix, client, force_refresh=refresh_cache
+                field_name, prefix, c, force_refresh=refresh_cache
             )
         else:
-            result = client.get_jql_suggestions(field_name, prefix)
+            result = c.get_jql_suggestions(field_name, prefix)
             return result.get("results", [])
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
 def _get_fields_impl(
@@ -408,14 +455,16 @@ def _get_fields_impl(
     system_only: bool = False,
     use_cache: bool = True,
     refresh_cache: bool = False,
+    client: JiraClient | None = None,
 ) -> list[dict[str, Any]]:
     """Get JQL searchable fields."""
-    with get_jira_client() as client:
+
+    def _do_work(c: JiraClient) -> list[dict[str, Any]]:
         if use_cache:
             cache = get_autocomplete_cache()
-            fields = cache.get_fields(client, force_refresh=refresh_cache)
+            fields = cache.get_fields(c, force_refresh=refresh_cache)
         else:
-            data = client.get_jql_autocomplete()
+            data = c.get_jql_autocomplete()
             fields = data.get("visibleFieldNames", [])
 
         if name_filter:
@@ -434,15 +483,23 @@ def _get_fields_impl(
 
         return fields
 
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
+
 
 def _get_functions_impl(
     name_filter: str | None = None,
     list_only: bool = False,
     type_filter: str | None = None,
+    client: JiraClient | None = None,
 ) -> list[dict[str, Any]]:
     """Get JQL functions."""
-    with get_jira_client() as client:
-        data = client.get_jql_autocomplete()
+
+    def _do_work(c: JiraClient) -> list[dict[str, Any]]:
+        data = c.get_jql_autocomplete()
         functions = data.get("visibleFunctionNames", [])
 
         if name_filter:
@@ -467,6 +524,12 @@ def _get_functions_impl(
 
         return functions
 
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
+
 
 def _bulk_update_impl(
     jql: str,
@@ -475,12 +538,13 @@ def _bulk_update_impl(
     priority: str | None = None,
     max_issues: int = 100,
     dry_run: bool = False,
+    client: JiraClient | None = None,
 ) -> dict[str, Any]:
     """Bulk update issues from search results."""
     jql = validate_jql(jql)
 
-    with get_jira_client() as client:
-        results = client.search_issues(
+    def _do_work(c: JiraClient) -> dict[str, Any]:
+        results = c.search_issues(
             jql, fields=["key", "summary", "labels"], max_results=max_issues
         )
 
@@ -523,7 +587,7 @@ def _bulk_update_impl(
                     fields["priority"] = {"name": priority}
 
                 if fields:
-                    client.update_issue(issue_key, fields, notify_users=False)
+                    c.update_issue(issue_key, fields, notify_users=False)
                     updated += 1
 
             except Exception as e:
@@ -531,6 +595,12 @@ def _bulk_update_impl(
                 failures.append({"issue": issue["key"], "error": str(e)})
 
         return {"updated": updated, "failed": failed, "failures": failures}
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
 # =============================================================================
@@ -545,30 +615,32 @@ def _get_filters_impl(
     filter_id: str | None = None,
     owner: str | None = None,
     project: str | None = None,
+    client: JiraClient | None = None,
 ) -> dict[str, Any]:
     """Get saved filters."""
-    with get_jira_client() as client:
+
+    def _do_work(c: JiraClient) -> dict[str, Any]:
         if filter_id:
-            filter_data = client.get_filter(filter_id)
+            filter_data = c.get_filter(filter_id)
             return {"type": "single", "filter": filter_data}
 
         if my_filters:
-            filters = client.get_my_filters()
+            filters = c.get_my_filters()
             return {"type": "my", "filters": filters}
 
         if favourites:
-            filters = client.get_favourite_filters()
+            filters = c.get_favourite_filters()
             return {"type": "favourites", "filters": filters}
 
         if search_name:
             account_id = None
             if owner:
                 if owner.lower() == "self":
-                    account_id = client.get_current_user_id()
+                    account_id = c.get_current_user_id()
                 else:
                     account_id = owner
 
-            result = client.search_filters(
+            result = c.search_filters(
                 filter_name=search_name if search_name != "*" else None,
                 account_id=account_id,
                 project_key=project,
@@ -576,6 +648,12 @@ def _get_filters_impl(
             return {"type": "search", "filters": result.get("values", [])}
 
         raise ValidationError("Specify --my, --favourites, --search, or --id")
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
 def _create_filter_impl(
@@ -586,6 +664,7 @@ def _create_filter_impl(
     share_project: str | None = None,
     share_group: str | None = None,
     share_global: bool = False,
+    client: JiraClient | None = None,
 ) -> dict[str, Any]:
     """Create a new filter."""
     if not name:
@@ -601,8 +680,8 @@ def _create_filter_impl(
     if share_global:
         permissions.append({"type": "global"})
 
-    with get_jira_client() as client:
-        return client.create_filter(
+    def _do_work(c: JiraClient) -> dict[str, Any]:
+        return c.create_filter(
             name=name,
             jql=jql,
             description=description,
@@ -610,19 +689,27 @@ def _create_filter_impl(
             share_permissions=permissions if permissions else None,
         )
 
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
+
 
 def _run_filter_impl(
     filter_id: str | None = None,
     filter_name: str | None = None,
     max_results: int = 50,
+    client: JiraClient | None = None,
 ) -> dict[str, Any]:
     """Run a saved filter."""
     if not filter_id and not filter_name:
         raise ValidationError("Either filter_id or filter_name is required")
 
-    with get_jira_client() as client:
+    def _do_work(c: JiraClient) -> dict[str, Any]:
+        nonlocal filter_id
         if filter_name:
-            filters = client.get("/rest/api/3/filter/my", operation="get filters")
+            filters = c.get("/rest/api/3/filter/my", operation="get filters")
             if isinstance(filters, list):
                 matching = [
                     f
@@ -635,16 +722,22 @@ def _run_filter_impl(
             else:
                 raise ValidationError("Could not retrieve filters")
 
-        filter_data = client.get_filter(filter_id)
+        filter_data = c.get_filter(filter_id)
         jql = filter_data.get("jql", "")
 
         if not jql:
             raise ValidationError(f"Filter {filter_id} has no JQL query")
 
-        results = client.search_issues(jql, max_results=max_results)
+        results = c.search_issues(jql, max_results=max_results)
         results["_filter"] = filter_data
 
         return results
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
 def _update_filter_impl(
@@ -652,21 +745,31 @@ def _update_filter_impl(
     name: str | None = None,
     jql: str | None = None,
     description: str | None = None,
+    client: JiraClient | None = None,
 ) -> dict[str, Any]:
     """Update a filter."""
     if not any([name, jql, description]):
         raise ValidationError("At least one of name, jql, or description is required")
 
-    with get_jira_client() as client:
-        return client.update_filter(
-            filter_id, name=name, jql=jql, description=description
-        )
+    def _do_work(c: JiraClient) -> dict[str, Any]:
+        return c.update_filter(filter_id, name=name, jql=jql, description=description)
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
-def _delete_filter_impl(filter_id: str, dry_run: bool = False) -> dict[str, Any]:
+def _delete_filter_impl(
+    filter_id: str,
+    dry_run: bool = False,
+    client: JiraClient | None = None,
+) -> dict[str, Any]:
     """Delete a filter."""
-    with get_jira_client() as client:
-        filter_data = client.get_filter(filter_id)
+
+    def _do_work(c: JiraClient) -> dict[str, Any]:
+        filter_data = c.get_filter(filter_id)
 
         if dry_run:
             return {
@@ -676,12 +779,18 @@ def _delete_filter_impl(filter_id: str, dry_run: bool = False) -> dict[str, Any]
                 "jql": filter_data.get("jql"),
             }
 
-        client.delete_filter(filter_id)
+        c.delete_filter(filter_id)
         return {
             "deleted": True,
             "filter_id": filter_id,
             "filter_name": filter_data.get("name"),
         }
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
 def _share_filter_impl(
@@ -693,20 +802,22 @@ def _share_filter_impl(
     user: str | None = None,
     list_permissions: bool = False,
     unshare: str | None = None,
+    client: JiraClient | None = None,
 ) -> dict[str, Any]:
     """Manage filter sharing permissions."""
-    with get_jira_client() as client:
+
+    def _do_work(c: JiraClient) -> dict[str, Any]:
         if list_permissions:
-            permissions = client.get_filter_permissions(filter_id)
+            permissions = c.get_filter_permissions(filter_id)
             return {"action": "list", "permissions": permissions}
 
         if unshare:
-            client.delete_filter_permission(filter_id, unshare)
+            c.delete_filter_permission(filter_id, unshare)
             return {"action": "removed", "permission_id": unshare}
 
         if project:
             if role:
-                roles = client.get(f"/rest/api/3/project/{project}/role")
+                roles = c.get(f"/rest/api/3/project/{project}/role")
                 role_id = None
                 for name, url in roles.items():
                     if name.lower() == role.lower():
@@ -723,55 +834,69 @@ def _share_filter_impl(
                 }
             else:
                 permission = {"type": "project", "projectId": project}
-            result = client.add_filter_permission(filter_id, permission)
+            result = c.add_filter_permission(filter_id, permission)
             return {"action": "shared", "type": "project", "permission": result}
 
         if group:
             permission = {"type": "group", "groupname": group}
-            result = client.add_filter_permission(filter_id, permission)
+            result = c.add_filter_permission(filter_id, permission)
             return {"action": "shared", "type": "group", "permission": result}
 
         if share_global:
             permission = {"type": "global"}
-            result = client.add_filter_permission(filter_id, permission)
+            result = c.add_filter_permission(filter_id, permission)
             return {"action": "shared", "type": "global", "permission": result}
 
         if user:
             permission = {"type": "user", "accountId": user}
-            result = client.add_filter_permission(filter_id, permission)
+            result = c.add_filter_permission(filter_id, permission)
             return {"action": "shared", "type": "user", "permission": result}
 
         raise ValidationError(
             "Specify --project, --group, --global, --user, --list, or --unshare"
         )
 
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
+
 
 def _favourite_filter_impl(
     filter_id: str,
     add: bool = False,
     remove: bool = False,
+    client: JiraClient | None = None,
 ) -> dict[str, Any]:
     """Manage filter favourite status."""
-    with get_jira_client() as client:
+
+    def _do_work(c: JiraClient) -> dict[str, Any]:
         if add:
-            result = client.add_filter_favourite(filter_id)
+            result = c.add_filter_favourite(filter_id)
             return {"action": "added", "filter": result}
 
         if remove:
-            filter_data = client.get_filter(filter_id)
-            client.remove_filter_favourite(filter_id)
+            filter_data = c.get_filter(filter_id)
+            c.remove_filter_favourite(filter_id)
             return {"action": "removed", "filter_name": filter_data.get("name")}
 
         # Toggle
-        filter_data = client.get_filter(filter_id)
+        filter_data = c.get_filter(filter_id)
         is_favourite = filter_data.get("favourite", False)
 
         if is_favourite:
-            client.remove_filter_favourite(filter_id)
+            c.remove_filter_favourite(filter_id)
             return {"action": "removed", "filter": filter_data}
         else:
-            result = client.add_filter_favourite(filter_id)
+            result = c.add_filter_favourite(filter_id)
             return {"action": "added", "filter": result}
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
 # =============================================================================
@@ -1086,6 +1211,7 @@ def search_query(
         raise click.UsageError("Either JQL query or --filter is required")
 
     field_list = parse_comma_list(fields)
+    client = get_client_from_context(ctx)
 
     result = _search_issues_impl(
         jql=jql,
@@ -1097,6 +1223,7 @@ def search_query(
         include_links=show_links,
         include_time=show_time,
         save_as=save_as,
+        client=client,
     )
 
     if output == "json":
@@ -1126,6 +1253,7 @@ def search_query(
 def search_export(ctx, jql, output_format, output_file, fields, max_results):
     """Export search results to CSV or JSON."""
     field_list = parse_comma_list(fields)
+    client = get_client_from_context(ctx)
 
     result = _export_results_impl(
         jql=jql,
@@ -1133,6 +1261,7 @@ def search_export(ctx, jql, output_format, output_file, fields, max_results):
         format_type=output_format,
         fields=field_list,
         max_results=max_results,
+        client=client,
     )
 
     click.echo(f"Exported {result['exported']} issues to {result['output_file']}")
@@ -1155,7 +1284,8 @@ def search_export(ctx, jql, output_format, output_file, fields, max_results):
 def search_validate(ctx, jql, show_structure, output):
     """Validate JQL query syntax."""
     queries = list(jql)
-    results = _validate_jql_impl(queries, show_structure=show_structure)
+    client = get_client_from_context(ctx)
+    results = _validate_jql_impl(queries, show_structure=show_structure, client=client)
 
     if output == "json":
         click.echo(format_json(results))
@@ -1208,6 +1338,7 @@ def search_build(
     if not clause and not template:
         raise click.UsageError("Provide --clause or --template to build a query")
 
+    client = get_client_from_context(ctx)
     result = _build_jql_impl(
         clauses=list(clause) if clause else None,
         template=template,
@@ -1215,6 +1346,7 @@ def search_build(
         order_by=order_by,
         order_desc=desc,
         validate=validate,
+        client=client,
     )
 
     if output == "json":
@@ -1251,11 +1383,13 @@ def search_build(
 @handle_jira_errors
 def search_suggest(ctx, field, prefix, no_cache, refresh, output):
     """Get JQL field value suggestions for autocomplete."""
+    client = get_client_from_context(ctx)
     suggestions = _get_suggestions_impl(
         field_name=field,
         prefix=prefix,
         use_cache=not no_cache,
         refresh_cache=refresh,
+        client=client,
     )
 
     if output == "json":
@@ -1286,12 +1420,14 @@ def search_fields(
     if custom_only and system_only:
         raise click.UsageError("--custom-only and --system-only are mutually exclusive")
 
+    client = get_client_from_context(ctx)
     fields = _get_fields_impl(
         name_filter=name_filter,
         custom_only=custom_only,
         system_only=system_only,
         use_cache=not no_cache,
         refresh_cache=refresh,
+        client=client,
     )
 
     if output == "json":
@@ -1316,10 +1452,12 @@ def search_fields(
 @handle_jira_errors
 def search_functions(ctx, name_filter, list_only, type_filter, with_examples, output):
     """List available JQL functions."""
+    client = get_client_from_context(ctx)
     functions = _get_functions_impl(
         name_filter=name_filter,
         list_only=list_only,
         type_filter=type_filter,
+        client=client,
     )
 
     if output == "json":
@@ -1356,6 +1494,7 @@ def search_bulk_update(
 
     add_list = parse_comma_list(add_labels)
     remove_list = parse_comma_list(remove_labels)
+    client = get_client_from_context(ctx)
 
     result = _bulk_update_impl(
         jql=jql,
@@ -1364,6 +1503,7 @@ def search_bulk_update(
         priority=priority,
         max_issues=max_issues,
         dry_run=dry_run or not yes,  # Require --yes for actual updates
+        client=client,
     )
 
     if output == "json":
@@ -1411,6 +1551,7 @@ def filter_list(ctx, my_filters, favourites, search, filter_id, owner, project, 
     if not any([my_filters, favourites, search, filter_id]):
         my_filters = True  # Default to showing user's filters
 
+    client = get_client_from_context(ctx)
     result = _get_filters_impl(
         my_filters=my_filters,
         favourites=favourites,
@@ -1418,6 +1559,7 @@ def filter_list(ctx, my_filters, favourites, search, filter_id, owner, project, 
         filter_id=filter_id,
         owner=owner,
         project=project,
+        client=client,
     )
 
     if output == "json":
@@ -1468,6 +1610,7 @@ def filter_create(
     output,
 ):
     """Create a new saved filter."""
+    client = get_client_from_context(ctx)
     result = _create_filter_impl(
         name=name,
         jql=jql,
@@ -1476,6 +1619,7 @@ def filter_create(
         share_project=share_project,
         share_group=share_group,
         share_global=share_global,
+        client=client,
     )
 
     if output == "json":
@@ -1507,10 +1651,12 @@ def filter_run(ctx, filter_id, filter_name, max_results, output):
     if not filter_id and not filter_name:
         raise click.UsageError("Either --id or --name is required")
 
+    client = get_client_from_context(ctx)
     result = _run_filter_impl(
         filter_id=filter_id,
         filter_name=filter_name,
         max_results=max_results,
+        client=client,
     )
 
     issues = result.get("issues", [])
@@ -1549,11 +1695,13 @@ def filter_update(ctx, filter_id, name, jql, description, output):
             "At least one of --name, --jql, or --description is required"
         )
 
+    client = get_client_from_context(ctx)
     result = _update_filter_impl(
         filter_id=filter_id,
         name=name,
         jql=jql,
         description=description,
+        client=client,
     )
 
     if output == "json":
@@ -1580,7 +1728,8 @@ def filter_update(ctx, filter_id, name, jql, description, output):
 @handle_jira_errors
 def filter_delete(ctx, filter_id, yes, dry_run, output):
     """Delete a saved filter."""
-    result = _delete_filter_impl(filter_id, dry_run=dry_run or not yes)
+    client = get_client_from_context(ctx)
+    result = _delete_filter_impl(filter_id, dry_run=dry_run or not yes, client=client)
 
     if output == "json":
         click.echo(format_json(result))
@@ -1631,6 +1780,7 @@ def filter_share(
             "Specify --project, --group, --global, --user, --list, or --unshare"
         )
 
+    client = get_client_from_context(ctx)
     result = _share_filter_impl(
         filter_id=filter_id,
         project=project,
@@ -1640,6 +1790,7 @@ def filter_share(
         user=user,
         list_permissions=list_perms,
         unshare=unshare,
+        client=client,
     )
 
     if output == "json":
@@ -1684,7 +1835,8 @@ def filter_favourite(ctx, filter_id, add, remove, output):
     if add and remove:
         raise click.UsageError("--add and --remove are mutually exclusive")
 
-    result = _favourite_filter_impl(filter_id, add=add, remove=remove)
+    client = get_client_from_context(ctx)
+    result = _favourite_filter_impl(filter_id, add=add, remove=remove, client=client)
 
     if output == "json":
         click.echo(format_json(result))

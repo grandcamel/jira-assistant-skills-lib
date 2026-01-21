@@ -596,7 +596,7 @@ class TestBranchNameCommand:
         mock_jira_client.get_issue.return_value = deepcopy(sample_issue)
 
         with patch(
-            "jira_assistant_skills_lib.cli.commands.dev_cmds.get_jira_client",
+            "jira_assistant_skills_lib.cli.commands.dev_cmds.get_client_from_context",
             return_value=mock_jira_client,
         ):
             result = cli_runner.invoke(dev, ["branch-name", "PROJ-123"])
@@ -609,7 +609,7 @@ class TestBranchNameCommand:
         mock_jira_client.get_issue.return_value = deepcopy(sample_issue)
 
         with patch(
-            "jira_assistant_skills_lib.cli.commands.dev_cmds.get_jira_client",
+            "jira_assistant_skills_lib.cli.commands.dev_cmds.get_client_from_context",
             return_value=mock_jira_client,
         ):
             result = cli_runner.invoke(dev, ["branch-name", "PROJ-123", "-o", "json"])
@@ -624,7 +624,7 @@ class TestBranchNameCommand:
         mock_jira_client.get_issue.return_value = deepcopy(sample_issue)
 
         with patch(
-            "jira_assistant_skills_lib.cli.commands.dev_cmds.get_jira_client",
+            "jira_assistant_skills_lib.cli.commands.dev_cmds.get_client_from_context",
             return_value=mock_jira_client,
         ):
             result = cli_runner.invoke(dev, ["branch-name", "PROJ-123", "-o", "git"])
@@ -642,7 +642,7 @@ class TestPrDescriptionCommand:
         mock_jira_client.get_issue.return_value = deepcopy(sample_issue)
 
         with patch(
-            "jira_assistant_skills_lib.cli.commands.dev_cmds.get_jira_client",
+            "jira_assistant_skills_lib.cli.commands.dev_cmds.get_client_from_context",
             return_value=mock_jira_client,
         ):
             result = cli_runner.invoke(dev, ["pr-description", "PROJ-123"])
@@ -687,7 +687,7 @@ class TestLinkCommitCommand:
         mock_jira_client.post.return_value = {"id": "10001"}
 
         with patch(
-            "jira_assistant_skills_lib.cli.commands.dev_cmds.get_jira_client",
+            "jira_assistant_skills_lib.cli.commands.dev_cmds.get_client_from_context",
             return_value=mock_jira_client,
         ):
             result = cli_runner.invoke(
@@ -707,7 +707,7 @@ class TestLinkPrCommand:
         mock_jira_client.post.return_value = {"id": "10001"}
 
         with patch(
-            "jira_assistant_skills_lib.cli.commands.dev_cmds.get_jira_client",
+            "jira_assistant_skills_lib.cli.commands.dev_cmds.get_client_from_context",
             return_value=mock_jira_client,
         ):
             result = cli_runner.invoke(
@@ -729,7 +729,7 @@ class TestGetCommitsCommand:
         mock_jira_client.get.return_value = {"detail": []}
 
         with patch(
-            "jira_assistant_skills_lib.cli.commands.dev_cmds.get_jira_client",
+            "jira_assistant_skills_lib.cli.commands.dev_cmds.get_client_from_context",
             return_value=mock_jira_client,
         ):
             result = cli_runner.invoke(dev, ["get-commits", "PROJ-123"])
@@ -756,7 +756,7 @@ class TestGetCommitsCommand:
         }
 
         with patch(
-            "jira_assistant_skills_lib.cli.commands.dev_cmds.get_jira_client",
+            "jira_assistant_skills_lib.cli.commands.dev_cmds.get_client_from_context",
             return_value=mock_jira_client,
         ):
             result = cli_runner.invoke(dev, ["get-commits", "PROJ-123"])

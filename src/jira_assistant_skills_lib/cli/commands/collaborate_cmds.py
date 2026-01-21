@@ -14,9 +14,12 @@ import contextlib
 import json
 import os
 from datetime import datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import click
+
+if TYPE_CHECKING:
+    from jira_assistant_skills_lib import JiraClient
 
 from jira_assistant_skills_lib import (
     UserNotFoundError,
@@ -34,7 +37,7 @@ from jira_assistant_skills_lib import (
     validate_issue_key,
 )
 
-from ..cli_utils import handle_jira_errors
+from ..cli_utils import get_client_from_context, handle_jira_errors
 
 # =============================================================================
 # Comment Implementation Functions
@@ -47,6 +50,7 @@ def _add_comment_impl(
     body_format: str = "text",
     visibility_type: str | None = None,
     visibility_value: str | None = None,
+    client: JiraClient | None = None,
 ) -> dict:
     """
     Add a comment to an issue.
@@ -57,6 +61,7 @@ def _add_comment_impl(
         body_format: Format ('text', 'markdown', or 'adf')
         visibility_type: 'role' or 'group' (None for public)
         visibility_value: Role or group name
+        client: Optional JiraClient instance
 
     Returns:
         Created comment data
@@ -70,17 +75,23 @@ def _add_comment_impl(
     else:
         comment_body = text_to_adf(body)
 
-    with get_jira_client() as client:
+    def _do_work(c: JiraClient) -> dict:
         if visibility_type:
-            result = client.add_comment_with_visibility(
+            result = c.add_comment_with_visibility(
                 issue_key,
                 comment_body,
                 visibility_type=visibility_type,
                 visibility_value=visibility_value,
             )
         else:
-            result = client.add_comment(issue_key, comment_body)
+            result = c.add_comment(issue_key, comment_body)
         return result
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
 def _get_comments_impl(
@@ -89,6 +100,7 @@ def _get_comments_impl(
     limit: int = 50,
     offset: int = 0,
     order: str = "desc",
+    client: JiraClient | None = None,
 ) -> dict[str, Any]:
     """
     Get comments on an issue.
@@ -99,6 +111,7 @@ def _get_comments_impl(
         limit: Maximum number of comments
         offset: Starting index
         order: Sort order ('asc' or 'desc')
+        client: Optional JiraClient instance
 
     Returns:
         Single comment dict if comment_id provided, else paginated comments response.
@@ -106,12 +119,18 @@ def _get_comments_impl(
     issue_key = validate_issue_key(issue_key)
     order_by = "+created" if order == "asc" else "-created"
 
-    with get_jira_client() as client:
+    def _do_work(c: JiraClient) -> dict[str, Any]:
         if comment_id:
-            return client.get_comment(issue_key, comment_id)
-        return client.get_comments(
+            return c.get_comment(issue_key, comment_id)
+        return c.get_comments(
             issue_key, max_results=limit, start_at=offset, order_by=order_by
         )
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
 def _update_comment_impl(
@@ -119,6 +138,7 @@ def _update_comment_impl(
     comment_id: str,
     body: str,
     body_format: str = "text",
+    client: JiraClient | None = None,
 ) -> dict[str, Any]:
     """
     Update a comment.
@@ -128,6 +148,7 @@ def _update_comment_impl(
         comment_id: Comment ID to update
         body: New comment body
         body_format: Format ('text', 'markdown', or 'adf')
+        client: Optional JiraClient instance
 
     Returns:
         Updated comment data
@@ -141,8 +162,14 @@ def _update_comment_impl(
     else:
         comment_body = text_to_adf(body)
 
-    with get_jira_client() as client:
-        return client.update_comment(issue_key, comment_id, comment_body)
+    def _do_work(c: JiraClient) -> dict[str, Any]:
+        return c.update_comment(issue_key, comment_id, comment_body)
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
 def _delete_comment_impl(
@@ -150,6 +177,7 @@ def _delete_comment_impl(
     comment_id: str,
     force: bool = False,
     dry_run: bool = False,
+    client: JiraClient | None = None,
 ) -> dict[str, Any] | None:
     """
     Delete a comment.
@@ -159,15 +187,16 @@ def _delete_comment_impl(
         comment_id: Comment ID to delete
         force: Skip confirmation
         dry_run: Preview without deleting
+        client: Optional JiraClient instance
 
     Returns:
         Comment info if not force (for confirmation), None otherwise
     """
     issue_key = validate_issue_key(issue_key)
 
-    with get_jira_client() as client:
+    def _do_work(c: JiraClient) -> dict[str, Any] | None:
         if dry_run or not force:
-            comment = client.get_comment(issue_key, comment_id)
+            comment = c.get_comment(issue_key, comment_id)
 
             if dry_run:
                 return {
@@ -186,8 +215,14 @@ def _delete_comment_impl(
                 "body": adf_to_text(comment.get("body", {}))[:100],
             }
 
-        client.delete_comment(issue_key, comment_id)
+        c.delete_comment(issue_key, comment_id)
         return None
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
 def _format_comment_body(body: dict[str, Any], max_length: int = 50) -> str:
@@ -249,6 +284,7 @@ def _upload_attachment_impl(
     issue_key: str,
     file_path: str,
     file_name: str | None = None,
+    client: JiraClient | None = None,
 ) -> dict | list:
     """
     Upload an attachment to an issue.
@@ -257,6 +293,7 @@ def _upload_attachment_impl(
         issue_key: Issue key
         file_path: Path to file
         file_name: Override filename
+        client: Optional JiraClient instance
 
     Returns:
         Attachment data
@@ -264,21 +301,36 @@ def _upload_attachment_impl(
     issue_key = validate_issue_key(issue_key)
     file_path = validate_file_path(file_path, must_exist=True)
 
-    with get_jira_client() as client:
-        return client.upload_file(
+    def _do_work(c: JiraClient) -> dict | list:
+        return c.upload_file(
             f"/rest/api/3/issue/{issue_key}/attachments",
             file_path,
             file_name=file_name,
             operation=f"upload attachment to {issue_key}",
         )
 
+    if client is not None:
+        return _do_work(client)
 
-def _list_attachments_impl(issue_key: str) -> list[dict[str, Any]]:
+    with get_jira_client() as c:
+        return _do_work(c)
+
+
+def _list_attachments_impl(
+    issue_key: str,
+    client: JiraClient | None = None,
+) -> list[dict[str, Any]]:
     """List all attachments for an issue."""
     issue_key = validate_issue_key(issue_key)
 
-    with get_jira_client() as client:
-        return client.get_attachments(issue_key)
+    def _do_work(c: JiraClient) -> list[dict[str, Any]]:
+        return c.get_attachments(issue_key)
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
 def _download_attachment_impl(
@@ -286,6 +338,7 @@ def _download_attachment_impl(
     attachment_id: str | None = None,
     attachment_name: str | None = None,
     output_dir: str | None = None,
+    client: JiraClient | None = None,
 ) -> str:
     """
     Download a specific attachment.
@@ -295,14 +348,15 @@ def _download_attachment_impl(
         attachment_id: Attachment ID
         attachment_name: Attachment name (if ID not specified)
         output_dir: Directory to save file
+        client: Optional JiraClient instance
 
     Returns:
         Path to downloaded file
     """
     issue_key = validate_issue_key(issue_key)
 
-    with get_jira_client() as client:
-        attachments = client.get_attachments(issue_key)
+    def _do_work(c: JiraClient) -> str:
+        attachments = c.get_attachments(issue_key)
 
         target = None
         if attachment_id:
@@ -329,9 +383,9 @@ def _download_attachment_impl(
         filename = target.get("filename", f"attachment_{target.get('id')}")
         if output_dir:
             os.makedirs(output_dir, exist_ok=True)
-            output_path = os.path.join(output_dir, filename)
+            save_path = os.path.join(output_dir, filename)
         else:
-            output_path = filename
+            save_path = filename
 
         content_url = target.get("content")
         if not content_url:
@@ -339,20 +393,28 @@ def _download_attachment_impl(
                 f"No content URL found for attachment {target.get('id')}"
             )
 
-        client.download_file(
-            content_url, output_path, operation=f"download attachment {filename}"
+        c.download_file(
+            content_url, save_path, operation=f"download attachment {filename}"
         )
-        return output_path
+        return save_path
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
 def _download_all_attachments_impl(
-    issue_key: str, output_dir: str | None = None
+    issue_key: str,
+    output_dir: str | None = None,
+    client: JiraClient | None = None,
 ) -> list[str]:
     """Download all attachments from an issue."""
     issue_key = validate_issue_key(issue_key)
 
-    with get_jira_client() as client:
-        attachments = client.get_attachments(issue_key)
+    def _do_work(c: JiraClient) -> list[str]:
+        attachments = c.get_attachments(issue_key)
 
         if not attachments:
             return []
@@ -369,23 +431,29 @@ def _download_all_attachments_impl(
                 continue
 
             if output_dir:
-                output_path = os.path.join(output_dir, filename)
+                save_path = os.path.join(output_dir, filename)
             else:
-                output_path = filename
+                save_path = filename
 
-            if os.path.exists(output_path):
-                base, ext = os.path.splitext(output_path)
+            if os.path.exists(save_path):
+                base, ext = os.path.splitext(save_path)
                 counter = 1
                 while os.path.exists(f"{base}_{counter}{ext}"):
                     counter += 1
-                output_path = f"{base}_{counter}{ext}"
+                save_path = f"{base}_{counter}{ext}"
 
-            client.download_file(
-                content_url, output_path, operation=f"download attachment {filename}"
+            c.download_file(
+                content_url, save_path, operation=f"download attachment {filename}"
             )
-            downloaded.append(output_path)
+            downloaded.append(save_path)
 
         return downloaded
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
 def _format_attachment_list(attachments: list[dict[str, Any]]) -> str:
@@ -426,49 +494,80 @@ def _format_attachment_list(attachments: list[dict[str, Any]]) -> str:
 # =============================================================================
 
 
-def _list_watchers_impl(issue_key: str) -> list:
+def _list_watchers_impl(
+    issue_key: str,
+    client: JiraClient | None = None,
+) -> list:
     """List watchers on an issue."""
     issue_key = validate_issue_key(issue_key)
 
-    with get_jira_client() as client:
-        result = client.get(
+    def _do_work(c: JiraClient) -> list:
+        result = c.get(
             f"/rest/api/3/issue/{issue_key}/watchers",
             operation=f"get watchers for {issue_key}",
         )
         return result.get("watchers", [])
 
+    if client is not None:
+        return _do_work(client)
 
-def _add_watcher_impl(issue_key: str, user: str) -> None:
+    with get_jira_client() as c:
+        return _do_work(c)
+
+
+def _add_watcher_impl(
+    issue_key: str,
+    user: str,
+    client: JiraClient | None = None,
+) -> None:
     """Add a watcher to an issue."""
     issue_key = validate_issue_key(issue_key)
 
-    with get_jira_client() as client:
+    def _do_work(c: JiraClient) -> None:
         try:
-            account_id = resolve_user_to_account_id(client, user)
+            account_id = resolve_user_to_account_id(c, user)
         except UserNotFoundError as e:
             raise ValidationError(str(e))
 
-        client.post(
+        c.post(
             f"/rest/api/3/issue/{issue_key}/watchers",
             data=f'"{account_id}"',
             operation=f"add watcher to {issue_key}",
         )
 
+    if client is not None:
+        _do_work(client)
+        return
 
-def _remove_watcher_impl(issue_key: str, user: str) -> None:
+    with get_jira_client() as c:
+        _do_work(c)
+
+
+def _remove_watcher_impl(
+    issue_key: str,
+    user: str,
+    client: JiraClient | None = None,
+) -> None:
     """Remove a watcher from an issue."""
     issue_key = validate_issue_key(issue_key)
 
-    with get_jira_client() as client:
+    def _do_work(c: JiraClient) -> None:
         try:
-            account_id = resolve_user_to_account_id(client, user)
+            account_id = resolve_user_to_account_id(c, user)
         except UserNotFoundError as e:
             raise ValidationError(str(e))
 
-        client.delete(
+        c.delete(
             f"/rest/api/3/issue/{issue_key}/watchers?accountId={account_id}",
             operation=f"remove watcher from {issue_key}",
         )
+
+    if client is not None:
+        _do_work(client)
+        return
+
+    with get_jira_client() as c:
+        _do_work(c)
 
 
 # =============================================================================
@@ -477,13 +576,22 @@ def _remove_watcher_impl(issue_key: str, user: str) -> None:
 
 
 def _get_activity_impl(
-    issue_key: str, limit: int = 100, offset: int = 0
+    issue_key: str,
+    limit: int = 100,
+    offset: int = 0,
+    client: JiraClient | None = None,
 ) -> dict[str, Any]:
     """Get activity/changelog for an issue."""
     issue_key = validate_issue_key(issue_key)
 
-    with get_jira_client() as client:
-        return client.get_changelog(issue_key, max_results=limit, start_at=offset)
+    def _do_work(c: JiraClient) -> dict[str, Any]:
+        return c.get_changelog(issue_key, max_results=limit, start_at=offset)
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
 def _parse_changelog(
@@ -567,6 +675,7 @@ def _send_notification_impl(
     users: list[str] | None = None,
     groups: list[str] | None = None,
     dry_run: bool = False,
+    client: JiraClient | None = None,
 ) -> dict[str, Any] | None:
     """
     Send notification about an issue.
@@ -582,6 +691,7 @@ def _send_notification_impl(
         users: List of account IDs to notify
         groups: List of group names to notify
         dry_run: Preview without sending
+        client: Optional JiraClient instance
 
     Returns:
         Notification details for dry_run, None otherwise
@@ -603,7 +713,7 @@ def _send_notification_impl(
             },
         }
 
-    to = {
+    to: dict[str, Any] = {
         "reporter": reporter,
         "assignee": assignee,
         "watchers": watchers,
@@ -618,8 +728,15 @@ def _send_notification_impl(
     if groups:
         to["groups"] = [{"name": group_name} for group_name in groups]
 
-    with get_jira_client() as client:
-        client.notify_issue(issue_key, subject=subject, text_body=body, to=to)
+    def _do_work(c: JiraClient) -> None:
+        c.notify_issue(issue_key, subject=subject, text_body=body, to=to)
+
+    if client is not None:
+        _do_work(client)
+        return None
+
+    with get_jira_client() as c:
+        _do_work(c)
         return None
 
 
@@ -633,6 +750,7 @@ def _update_custom_fields_impl(
     field: str | None = None,
     value: str | None = None,
     fields_json: str | None = None,
+    client: JiraClient | None = None,
 ) -> None:
     """
     Update custom fields on an issue.
@@ -642,6 +760,7 @@ def _update_custom_fields_impl(
         field: Single field ID
         value: Single field value
         fields_json: JSON string with multiple fields
+        client: Optional JiraClient instance
     """
     issue_key = validate_issue_key(issue_key)
 
@@ -656,8 +775,15 @@ def _update_custom_fields_impl(
             "Either --field and --value, or --fields must be specified"
         )
 
-    with get_jira_client() as client:
-        client.update_issue(issue_key, fields, notify_users=True)
+    def _do_work(c: JiraClient) -> None:
+        c.update_issue(issue_key, fields, notify_users=True)
+
+    if client is not None:
+        _do_work(client)
+        return
+
+    with get_jira_client() as c:
+        _do_work(c)
 
 
 # =============================================================================
@@ -725,12 +851,14 @@ def comment_add(
         visibility_type = "group"
         visibility_value = visibility_group
 
+    client = get_client_from_context(ctx)
     result = _add_comment_impl(
         issue_key=issue_key,
         body=body,
         body_format=body_format,
         visibility_type=visibility_type,
         visibility_value=visibility_value,
+        client=client,
     )
 
     comment_id = result.get("id", "")
@@ -773,12 +901,14 @@ def comment_list(
     output: str,
 ):
     """List comments on an issue."""
+    client = get_client_from_context(ctx)
     result = _get_comments_impl(
         issue_key=issue_key,
         comment_id=comment_id,
         limit=limit,
         offset=offset,
         order=order,
+        client=client,
     )
 
     if comment_id:
@@ -838,11 +968,13 @@ def comment_list(
 @handle_jira_errors
 def comment_update(ctx, issue_key: str, comment_id: str, body: str, body_format: str):
     """Update a comment."""
+    client = get_client_from_context(ctx)
     result = _update_comment_impl(
         issue_key=issue_key,
         comment_id=comment_id,
         body=body,
         body_format=body_format,
+        client=client,
     )
 
     click.echo(f"Comment {result['id']} updated on {issue_key}.\n")
@@ -859,11 +991,13 @@ def comment_update(ctx, issue_key: str, comment_id: str, body: str, body_format:
 @handle_jira_errors
 def comment_delete(ctx, issue_key: str, comment_id: str, yes: bool, dry_run: bool):
     """Delete a comment."""
+    client = get_client_from_context(ctx)
     result = _delete_comment_impl(
         issue_key=issue_key,
         comment_id=comment_id,
         force=yes,
         dry_run=dry_run,
+        client=client,
     )
 
     if result and result.get("dry_run"):
@@ -880,8 +1014,7 @@ def comment_delete(ctx, issue_key: str, comment_id: str, yes: bool, dry_run: boo
         click.echo()
 
         if click.confirm("Are you sure?"):
-            with get_jira_client() as client:
-                client.delete_comment(issue_key, comment_id)
+            client.delete_comment(issue_key, comment_id)
             print_success(f"Comment {comment_id} deleted from {issue_key}")
         else:
             click.echo("Deletion cancelled.")
@@ -908,10 +1041,12 @@ def attachment():
 @handle_jira_errors
 def attachment_upload(ctx, issue_key: str, file_path: str, name: str):
     """Upload an attachment to an issue."""
+    client = get_client_from_context(ctx)
     result = _upload_attachment_impl(
         issue_key=issue_key,
         file_path=file_path,
         file_name=name,
+        client=client,
     )
 
     if isinstance(result, list) and result:
@@ -934,7 +1069,8 @@ def attachment_upload(ctx, issue_key: str, file_path: str, name: str):
 @handle_jira_errors
 def attachment_list(ctx, issue_key: str, output: str):
     """List attachments on an issue."""
-    attachments = _list_attachments_impl(issue_key)
+    client = get_client_from_context(ctx)
+    attachments = _list_attachments_impl(issue_key, client=client)
 
     if output == "json":
         click.echo(json.dumps(attachments, indent=2))
@@ -960,8 +1096,11 @@ def attachment_download(
     output_dir: str,
 ):
     """Download attachments from an issue."""
+    client = get_client_from_context(ctx)
     if download_all:
-        downloaded = _download_all_attachments_impl(issue_key, output_dir=output_dir)
+        downloaded = _download_all_attachments_impl(
+            issue_key, output_dir=output_dir, client=client
+        )
 
         if downloaded:
             print_success(f"Downloaded {len(downloaded)} attachment(s):")
@@ -975,6 +1114,7 @@ def attachment_download(
             attachment_id=attachment_id,
             attachment_name=name,
             output_dir=output_dir,
+            client=client,
         )
         print_success(f"Downloaded: {output_path}")
     else:
@@ -997,14 +1137,15 @@ def collaborate_watchers(
     ctx, issue_key: str, add_user: str, remove_user: str, list_watchers: bool
 ):
     """Manage watchers on an issue."""
+    client = get_client_from_context(ctx)
     if add_user:
-        _add_watcher_impl(issue_key, add_user)
+        _add_watcher_impl(issue_key, add_user, client=client)
         print_success(f"Added {add_user} as watcher to {issue_key}")
     elif remove_user:
-        _remove_watcher_impl(issue_key, remove_user)
+        _remove_watcher_impl(issue_key, remove_user, client=client)
         print_success(f"Removed {remove_user} as watcher from {issue_key}")
     else:
-        watchers = _list_watchers_impl(issue_key)
+        watchers = _list_watchers_impl(issue_key, client=client)
         if not watchers:
             click.echo(f"No watchers on {issue_key}")
         else:
@@ -1051,7 +1192,8 @@ def collaborate_activity(
     output: str,
 ):
     """Get activity feed for an issue."""
-    changelog = _get_activity_impl(issue_key, limit=limit, offset=offset)
+    client = get_client_from_context(ctx)
+    changelog = _get_activity_impl(issue_key, limit=limit, offset=offset, client=client)
 
     changes = _parse_changelog(
         changelog,
@@ -1116,6 +1258,7 @@ def collaborate_notify(
     subject = subject or f"Issue Update: {issue_key}"
     body = body or "This is a notification about this issue."
 
+    client = get_client_from_context(ctx)
     result = _send_notification_impl(
         issue_key=issue_key,
         subject=subject,
@@ -1127,6 +1270,7 @@ def collaborate_notify(
         users=list(user) if user else None,
         groups=list(group) if group else None,
         dry_run=dry_run,
+        client=client,
     )
 
     if result:
@@ -1181,5 +1325,6 @@ def collaborate_notify(
 @handle_jira_errors
 def collaborate_update_fields(ctx, issue_key: str, fields: str):
     """Update custom fields on an issue."""
-    _update_custom_fields_impl(issue_key=issue_key, fields_json=fields)
+    client = get_client_from_context(ctx)
+    _update_custom_fields_impl(issue_key=issue_key, fields_json=fields, client=client)
     print_success(f"Updated custom fields on {issue_key}")

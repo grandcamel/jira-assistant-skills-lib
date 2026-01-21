@@ -513,7 +513,7 @@ class TestLinkCommand:
         mock_jira_client.get_link_types.return_value = deepcopy(sample_link_types)
 
         with patch(
-            "jira_assistant_skills_lib.cli.commands.relationships_cmds.get_jira_client",
+            "jira_assistant_skills_lib.cli.commands.relationships_cmds.get_client_from_context",
             return_value=mock_jira_client,
         ):
             result = cli_runner.invoke(
@@ -529,7 +529,7 @@ class TestLinkCommand:
         mock_jira_client.get_link_types.return_value = deepcopy(sample_link_types)
 
         with patch(
-            "jira_assistant_skills_lib.cli.commands.relationships_cmds.get_jira_client",
+            "jira_assistant_skills_lib.cli.commands.relationships_cmds.get_client_from_context",
             return_value=mock_jira_client,
         ):
             result = cli_runner.invoke(
@@ -550,7 +550,7 @@ class TestGetLinksCommand:
         mock_jira_client.get_issue_links.return_value = deepcopy(sample_issue_links)
 
         with patch(
-            "jira_assistant_skills_lib.cli.commands.relationships_cmds.get_jira_client",
+            "jira_assistant_skills_lib.cli.commands.relationships_cmds.get_client_from_context",
             return_value=mock_jira_client,
         ):
             result = cli_runner.invoke(
@@ -571,7 +571,7 @@ class TestLinkTypesCommand:
         mock_jira_client.get_link_types.return_value = deepcopy(sample_link_types)
 
         with patch(
-            "jira_assistant_skills_lib.cli.commands.relationships_cmds.get_jira_client",
+            "jira_assistant_skills_lib.cli.commands.relationships_cmds.get_client_from_context",
             return_value=mock_jira_client,
         ):
             result = cli_runner.invoke(
@@ -595,7 +595,7 @@ class TestCloneCommand:
         mock_jira_client.create_issue.return_value = deepcopy(sample_cloned_issue)
 
         with patch(
-            "jira_assistant_skills_lib.cli.commands.relationships_cmds.get_jira_client",
+            "jira_assistant_skills_lib.cli.commands.relationships_cmds.get_client_from_context",
             return_value=mock_jira_client,
         ):
             result = cli_runner.invoke(
@@ -615,7 +615,7 @@ class TestBulkLinkCommand:
     def test_bulk_link_cli(self, cli_runner, mock_jira_client):
         """Test CLI bulk-link command."""
         with patch(
-            "jira_assistant_skills_lib.cli.commands.relationships_cmds.get_jira_client",
+            "jira_assistant_skills_lib.cli.commands.relationships_cmds.get_client_from_context",
             return_value=mock_jira_client,
         ):
             result = cli_runner.invoke(

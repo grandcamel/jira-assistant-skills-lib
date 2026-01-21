@@ -22,8 +22,8 @@ from typing import Any
 from assistant_skills_lib import (
     BaseCredentialManager,
     CredentialBackend,
-    CredentialNotFoundError as BaseCredentialNotFoundError,
 )
+from assistant_skills_lib import CredentialNotFoundError as BaseCredentialNotFoundError
 
 from .error_handler import (
     AuthenticationError,

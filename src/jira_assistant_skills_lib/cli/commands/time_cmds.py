@@ -13,13 +13,18 @@ Commands:
 - bulk-log: Log time to multiple issues
 """
 
+from __future__ import annotations
+
 import csv
 from collections import defaultdict
 from datetime import datetime, timedelta
 from io import StringIO
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import click
+
+if TYPE_CHECKING:
+    from jira_assistant_skills_lib import JiraClient
 
 from jira_assistant_skills_lib import (
     AuthenticationError,
@@ -36,7 +41,12 @@ from jira_assistant_skills_lib import (
     validate_time_format,
 )
 
-from ..cli_utils import format_json, handle_jira_errors, parse_comma_list
+from ..cli_utils import (
+    format_json,
+    get_client_from_context,
+    handle_jira_errors,
+    parse_comma_list,
+)
 
 # =============================================================================
 # Implementation Functions
@@ -53,6 +63,7 @@ def _add_worklog_impl(
     reduce_by: str | None = None,
     visibility_type: str | None = None,
     visibility_value: str | None = None,
+    client: JiraClient | None = None,
 ) -> dict[str, Any]:
     """
     Add a worklog to an issue.
@@ -67,6 +78,7 @@ def _add_worklog_impl(
         reduce_by: Amount to reduce estimate (when adjust_estimate='manual')
         visibility_type: 'role' or 'group' to restrict visibility
         visibility_value: Role or group name for visibility restriction
+        client: Optional JiraClient instance (uses context manager if None)
 
     Returns:
         Created worklog object
@@ -102,8 +114,8 @@ def _add_worklog_impl(
     if comment:
         comment_adf = text_to_adf(comment)
 
-    with get_jira_client() as client:
-        return client.add_worklog(
+    def _do_work(c: JiraClient) -> dict[str, Any]:
+        return c.add_worklog(
             issue_key=issue_key,
             time_spent=time_spent,
             started=started_iso,
@@ -115,12 +127,19 @@ def _add_worklog_impl(
             visibility_value=visibility_value,
         )
 
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
+
 
 def _get_worklogs_impl(
     issue_key: str,
     author_filter: str | None = None,
     since: str | None = None,
     until: str | None = None,
+    client: JiraClient | None = None,
 ) -> dict[str, Any]:
     """
     Get worklogs for an issue with optional filtering.
@@ -130,18 +149,19 @@ def _get_worklogs_impl(
         author_filter: Filter by author email/accountId
         since: Only include worklogs started after this date
         until: Only include worklogs started before this date
+        client: Optional JiraClient instance (uses context manager if None)
 
     Returns:
         Dict with 'worklogs' list and 'total' count
     """
     validate_issue_key(issue_key)
 
-    with get_jira_client() as client:
+    def _do_work(c: JiraClient) -> dict[str, Any]:
+        nonlocal author_filter, since, until
+
         # Handle currentUser() filter
         if author_filter == "currentUser()":
-            current_user = client.get(
-                "/rest/api/3/myself", operation="get current user"
-            )
+            current_user = c.get("/rest/api/3/myself", operation="get current user")
             author_filter = current_user.get("emailAddress") or current_user.get(
                 "accountId"
             )
@@ -159,7 +179,7 @@ def _get_worklogs_impl(
             except ValueError:
                 pass
 
-        result = client.get_worklogs(issue_key)
+        result = c.get_worklogs(issue_key)
         worklogs = result.get("worklogs", [])
 
         filtered = worklogs
@@ -186,6 +206,12 @@ def _get_worklogs_impl(
             "maxResults": result.get("maxResults", len(filtered)),
         }
 
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
+
 
 def _update_worklog_impl(
     issue_key: str,
@@ -195,6 +221,7 @@ def _update_worklog_impl(
     comment: str | None = None,
     adjust_estimate: str = "auto",
     new_estimate: str | None = None,
+    client: JiraClient | None = None,
 ) -> dict[str, Any]:
     """
     Update an existing worklog.
@@ -207,6 +234,7 @@ def _update_worklog_impl(
         comment: New comment text (optional)
         adjust_estimate: How to adjust remaining estimate
         new_estimate: New remaining estimate
+        client: Optional JiraClient instance (uses context manager if None)
 
     Returns:
         Updated worklog object
@@ -235,8 +263,8 @@ def _update_worklog_impl(
     if comment:
         comment_adf = text_to_adf(comment)
 
-    with get_jira_client() as client:
-        return client.update_worklog(
+    def _do_work(c: JiraClient) -> dict[str, Any]:
+        return c.update_worklog(
             issue_key=issue_key,
             worklog_id=worklog_id,
             time_spent=time_spent,
@@ -246,6 +274,12 @@ def _update_worklog_impl(
             new_estimate=new_estimate,
         )
 
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
+
 
 def _delete_worklog_impl(
     issue_key: str,
@@ -254,6 +288,7 @@ def _delete_worklog_impl(
     new_estimate: str | None = None,
     increase_by: str | None = None,
     dry_run: bool = False,
+    client: JiraClient | None = None,
 ) -> dict[str, Any]:
     """
     Delete a worklog from an issue.
@@ -265,14 +300,15 @@ def _delete_worklog_impl(
         new_estimate: New remaining estimate
         increase_by: Amount to increase estimate
         dry_run: If True, show what would be deleted without deleting
+        client: Optional JiraClient instance (uses context manager if None)
 
     Returns:
         Dict with worklog info and deletion status
     """
     validate_issue_key(issue_key)
 
-    with get_jira_client() as client:
-        worklog = client.get_worklog(issue_key, worklog_id)
+    def _do_work(c: JiraClient) -> dict[str, Any]:
+        worklog = c.get_worklog(issue_key, worklog_id)
 
         if dry_run:
             return {
@@ -281,7 +317,7 @@ def _delete_worklog_impl(
                 "deleted": False,
             }
 
-        client.delete_worklog(
+        c.delete_worklog(
             issue_key=issue_key,
             worklog_id=worklog_id,
             adjust_estimate=adjust_estimate,
@@ -295,11 +331,18 @@ def _delete_worklog_impl(
             "deleted": True,
         }
 
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
+
 
 def _set_estimate_impl(
     issue_key: str,
     original_estimate: str | None = None,
     remaining_estimate: str | None = None,
+    client: JiraClient | None = None,
 ) -> dict[str, Any]:
     """
     Set time estimates on an issue.
@@ -308,6 +351,7 @@ def _set_estimate_impl(
         issue_key: Issue key (e.g., 'PROJ-123')
         original_estimate: Original estimate (e.g., '2d')
         remaining_estimate: Remaining estimate (e.g., '1d 4h')
+        client: Optional JiraClient instance (uses context manager if None)
 
     Returns:
         Dict with old and new time tracking info
@@ -329,39 +373,55 @@ def _set_estimate_impl(
             f"Invalid time format: '{remaining_estimate}'. Use format like '2h', '1d 4h', '30m'"
         )
 
-    with get_jira_client() as client:
-        current = client.get_time_tracking(issue_key)
+    def _do_work(c: JiraClient) -> dict[str, Any]:
+        current = c.get_time_tracking(issue_key)
 
-        client.set_time_tracking(
+        c.set_time_tracking(
             issue_key=issue_key,
             original_estimate=original_estimate,
             remaining_estimate=remaining_estimate,
         )
 
-        updated = client.get_time_tracking(issue_key)
+        updated = c.get_time_tracking(issue_key)
 
         return {
             "previous": current,
             "current": updated,
         }
 
+    if client is not None:
+        return _do_work(client)
 
-def _get_time_tracking_impl(issue_key: str) -> dict[str, Any]:
+    with get_jira_client() as c:
+        return _do_work(c)
+
+
+def _get_time_tracking_impl(
+    issue_key: str,
+    client: JiraClient | None = None,
+) -> dict[str, Any]:
     """
     Get time tracking info for an issue.
 
     Args:
         issue_key: Issue key (e.g., 'PROJ-123')
+        client: Optional JiraClient instance (uses context manager if None)
 
     Returns:
         Time tracking info dict with progress
     """
     validate_issue_key(issue_key)
 
-    with get_jira_client() as client:
-        result = client.get_time_tracking(issue_key)
+    def _do_work(c: JiraClient) -> dict[str, Any]:
+        result = c.get_time_tracking(issue_key)
         result["progress"] = _calculate_progress(result)
         return result
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
 def _generate_report_impl(
@@ -370,6 +430,7 @@ def _generate_report_impl(
     since: str | None = None,
     until: str | None = None,
     group_by: str | None = None,
+    client: JiraClient | None = None,
 ) -> dict[str, Any]:
     """
     Generate a time report.
@@ -380,11 +441,13 @@ def _generate_report_impl(
         since: Start date for filtering
         until: End date for filtering
         group_by: Grouping option (issue, day, user)
+        client: Optional JiraClient instance (uses context manager if None)
 
     Returns:
         Report data dict with entries, totals, and grouping
     """
-    with get_jira_client() as client:
+
+    def _do_work(c: JiraClient) -> dict[str, Any]:
         jql_parts = []
         if project:
             jql_parts.append(f"project = {project}")
@@ -399,7 +462,7 @@ def _generate_report_impl(
             until_dt = parse_relative_date(until)
             until_dt = until_dt.replace(hour=23, minute=59, second=59)
 
-        search_result = client.search_issues(jql, fields=["summary"], max_results=100)
+        search_result = c.search_issues(jql, fields=["summary"], max_results=100)
         issues = search_result.get("issues", [])
 
         entries = []
@@ -407,7 +470,7 @@ def _generate_report_impl(
             issue_key = issue["key"]
             issue_summary = issue["fields"].get("summary", "")
 
-            worklogs_result = client.get_worklogs(issue_key)
+            worklogs_result = c.get_worklogs(issue_key)
             worklogs = worklogs_result.get("worklogs", [])
 
             for worklog in worklogs:
@@ -448,7 +511,7 @@ def _generate_report_impl(
 
         total_seconds = sum(e["time_seconds"] for e in entries)
 
-        result = {
+        result: dict[str, Any] = {
             "entries": entries,
             "entry_count": len(entries),
             "total_seconds": total_seconds,
@@ -467,12 +530,19 @@ def _generate_report_impl(
 
         return result
 
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
+
 
 def _export_timesheets_impl(
     project: str | None = None,
     author: str | None = None,
     since: str | None = None,
     until: str | None = None,
+    client: JiraClient | None = None,
 ) -> dict[str, Any]:
     """
     Fetch timesheet data from JIRA.
@@ -482,11 +552,13 @@ def _export_timesheets_impl(
         author: Author email/accountId to filter by
         since: Start date
         until: End date
+        client: Optional JiraClient instance (uses context manager if None)
 
     Returns:
         Timesheet data dict with entries
     """
-    with get_jira_client() as client:
+
+    def _do_work(c: JiraClient) -> dict[str, Any]:
         jql_parts = []
         if project:
             jql_parts.append(f"project = {project}")
@@ -501,7 +573,7 @@ def _export_timesheets_impl(
             until_dt = parse_relative_date(until)
             until_dt = until_dt.replace(hour=23, minute=59, second=59)
 
-        search_result = client.search_issues(jql, fields=["summary"], max_results=100)
+        search_result = c.search_issues(jql, fields=["summary"], max_results=100)
         issues = search_result.get("issues", [])
 
         entries = []
@@ -509,7 +581,7 @@ def _export_timesheets_impl(
             issue_key = issue["key"]
             issue_summary = issue["fields"].get("summary", "")
 
-            worklogs_result = client.get_worklogs(issue_key)
+            worklogs_result = c.get_worklogs(issue_key)
             worklogs = worklogs_result.get("worklogs", [])
 
             for worklog in worklogs:
@@ -573,6 +645,12 @@ def _export_timesheets_impl(
             },
         }
 
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
+
 
 def _bulk_log_time_impl(
     issues: list[str] | None = None,
@@ -581,6 +659,7 @@ def _bulk_log_time_impl(
     comment: str | None = None,
     started: str | None = None,
     dry_run: bool = False,
+    client: JiraClient | None = None,
 ) -> dict[str, Any]:
     """
     Log time to multiple issues.
@@ -592,6 +671,7 @@ def _bulk_log_time_impl(
         comment: Optional comment for all worklogs
         started: Optional start time
         dry_run: If True, preview without logging
+        client: Optional JiraClient instance (uses context manager if None)
 
     Returns:
         Result dict with success/failure counts
@@ -606,11 +686,11 @@ def _bulk_log_time_impl(
 
     time_seconds = parse_time_string(time_spent)
 
-    with get_jira_client() as client:
+    def _do_work(c: JiraClient) -> dict[str, Any]:
+        nonlocal issues
+
         if jql:
-            search_result = client.search_issues(
-                jql, fields=["summary"], max_results=100
-            )
+            search_result = c.search_issues(jql, fields=["summary"], max_results=100)
             issues = [issue["key"] for issue in search_result.get("issues", [])]
 
         if not issues:
@@ -632,7 +712,7 @@ def _bulk_log_time_impl(
             preview = []
             for issue_key in issues:
                 try:
-                    issue = client.get_issue(issue_key)
+                    issue = c.get_issue(issue_key)
                     preview.append(
                         {
                             "issue": issue_key,
@@ -662,7 +742,7 @@ def _bulk_log_time_impl(
 
         for issue_key in issues:
             try:
-                worklog = client.add_worklog(
+                worklog = c.add_worklog(
                     issue_key=issue_key,
                     time_spent=time_spent,
                     started=started,
@@ -689,6 +769,12 @@ def _bulk_log_time_impl(
             "failures": failures,
             "dry_run": False,
         }
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
 # =============================================================================
@@ -1131,7 +1217,7 @@ def time():
 @click.pass_context
 @handle_jira_errors
 def time_log(
-    ctx,
+    ctx: click.Context,
     issue_key: str,
     time_spent: str,
     comment: str,
@@ -1149,6 +1235,7 @@ def time_log(
         jira-as time log PROJ-123 --time 2h
         jira-as time log PROJ-123 --time "1d 4h" --comment "Code review"
     """
+    client = get_client_from_context(ctx)
     result = _add_worklog_impl(
         issue_key,
         time_spent,
@@ -1159,6 +1246,7 @@ def time_log(
         reduce_by=reduce_by,
         visibility_type=visibility_type,
         visibility_value=visibility_value,
+        client=client,
     )
 
     if output == "json":
@@ -1182,11 +1270,12 @@ def time_log(
 @click.pass_context
 @handle_jira_errors
 def time_worklogs(
-    ctx, issue_key: str, since: str, until: str, author: str, output: str
+    ctx: click.Context, issue_key: str, since: str, until: str, author: str, output: str
 ):
     """Get worklogs for an issue."""
+    client = get_client_from_context(ctx)
     result = _get_worklogs_impl(
-        issue_key, author_filter=author, since=since, until=until
+        issue_key, author_filter=author, since=since, until=until, client=client
     )
 
     if output == "json":
@@ -1218,7 +1307,7 @@ def time_worklogs(
 @click.pass_context
 @handle_jira_errors
 def time_update_worklog(
-    ctx,
+    ctx: click.Context,
     issue_key: str,
     worklog_id: str,
     time_spent: str,
@@ -1229,6 +1318,7 @@ def time_update_worklog(
     output: str,
 ):
     """Update an existing worklog."""
+    client = get_client_from_context(ctx)
     result = _update_worklog_impl(
         issue_key,
         worklog_id,
@@ -1237,6 +1327,7 @@ def time_update_worklog(
         comment=comment,
         adjust_estimate=adjust_estimate,
         new_estimate=new_estimate,
+        client=client,
     )
 
     if output == "json":
@@ -1269,7 +1360,7 @@ def time_update_worklog(
 @click.pass_context
 @handle_jira_errors
 def time_delete_worklog(
-    ctx,
+    ctx: click.Context,
     issue_key: str,
     worklog_id: str,
     adjust_estimate: str,
@@ -1286,10 +1377,13 @@ def time_delete_worklog(
         jira-as time delete-worklog PROJ-123 --worklog-id 12345 --adjust-estimate leave
         jira-as time delete-worklog PROJ-123 --worklog-id 12345 --dry-run
     """
+    client = get_client_from_context(ctx)
     # For non-dry-run, we need to confirm unless --yes
     if not dry_run and not yes:
         # First do a dry-run to show what will be deleted
-        preview = _delete_worklog_impl(issue_key, worklog_id, dry_run=True)
+        preview = _delete_worklog_impl(
+            issue_key, worklog_id, dry_run=True, client=client
+        )
         worklog = preview.get("worklog", {})
         time_spent = worklog.get("timeSpent", "Unknown")
         author = worklog.get("author", {}).get("displayName", "Unknown")
@@ -1312,6 +1406,7 @@ def time_delete_worklog(
         new_estimate=new_estimate,
         increase_by=increase_by,
         dry_run=dry_run,
+        client=client,
     )
 
     if output == "json":
@@ -1332,7 +1427,9 @@ def time_delete_worklog(
 )
 @click.pass_context
 @handle_jira_errors
-def time_estimate(ctx, issue_key: str, original: str, remaining: str, output: str):
+def time_estimate(
+    ctx: click.Context, issue_key: str, original: str, remaining: str, output: str
+):
     """Set time estimate for an issue.
 
     At least one of --original or --remaining is required.
@@ -1345,8 +1442,12 @@ def time_estimate(ctx, issue_key: str, original: str, remaining: str, output: st
     if not original and not remaining:
         raise click.UsageError("At least one of --original or --remaining is required")
 
+    client = get_client_from_context(ctx)
     result = _set_estimate_impl(
-        issue_key, original_estimate=original, remaining_estimate=remaining
+        issue_key,
+        original_estimate=original,
+        remaining_estimate=remaining,
+        client=client,
     )
 
     if output == "json":
@@ -1368,9 +1469,10 @@ def time_estimate(ctx, issue_key: str, original: str, remaining: str, output: st
 )
 @click.pass_context
 @handle_jira_errors
-def time_tracking(ctx, issue_key: str, output: str):
+def time_tracking(ctx: click.Context, issue_key: str, output: str):
     """Get time tracking information for an issue."""
-    result = _get_time_tracking_impl(issue_key)
+    client = get_client_from_context(ctx)
+    result = _get_time_tracking_impl(issue_key, client=client)
 
     if output == "json":
         click.echo(format_json(result))
@@ -1407,7 +1509,7 @@ def time_tracking(ctx, issue_key: str, output: str):
 @click.pass_context
 @handle_jira_errors
 def time_report(
-    ctx,
+    ctx: click.Context,
     project: str,
     user: str,
     since: str,
@@ -1420,12 +1522,14 @@ def time_report(
     if period:
         since, until = _resolve_period_dates(period)
 
+    client = get_client_from_context(ctx)
     result = _generate_report_impl(
         project=project,
         author=user,
         since=since,
         until=until,
         group_by=group_by,
+        client=client,
     )
 
     if output_format == "json":
@@ -1457,7 +1561,7 @@ def time_report(
 @click.pass_context
 @handle_jira_errors
 def time_export(
-    ctx,
+    ctx: click.Context,
     project: str,
     user: str,
     since: str,
@@ -1470,11 +1574,13 @@ def time_export(
     if period:
         since, until = _resolve_period_dates(period)
 
+    client = get_client_from_context(ctx)
     data = _export_timesheets_impl(
         project=project,
         author=user,
         since=since,
         until=until,
+        client=client,
     )
 
     if output_file:
@@ -1519,7 +1625,7 @@ def time_export(
 @click.pass_context
 @handle_jira_errors
 def time_bulk_log(
-    ctx,
+    ctx: click.Context,
     jql: str,
     issues: str,
     time_spent: str,
@@ -1549,6 +1655,7 @@ def time_bulk_log(
             for key in issue_list:
                 validate_issue_key(key)
 
+    client = get_client_from_context(ctx)
     result = _bulk_log_time_impl(
         issues=issue_list,
         jql=jql,
@@ -1556,6 +1663,7 @@ def time_bulk_log(
         comment=comment,
         started=started,
         dry_run=dry_run,
+        client=client,
     )
 
     if output == "json":

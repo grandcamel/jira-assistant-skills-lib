@@ -18,8 +18,8 @@ from pathlib import Path
 from typing import Any
 
 # Re-export base classes
+from assistant_skills_lib import BatchConfig as BaseBatchConfig
 from assistant_skills_lib import (
-    BatchConfig as BaseBatchConfig,
     BatchProcessor,
     BatchProgress,
     CheckpointManager,

@@ -579,7 +579,7 @@ class TestDiscoverProjectCommand:
         mock_jira_client.search_issues.return_value = {"issues": []}
 
         with patch(
-            "jira_assistant_skills_lib.cli.commands.ops_cmds.get_jira_client",
+            "jira_assistant_skills_lib.cli.commands.ops_cmds.get_client_from_context",
             return_value=mock_jira_client,
         ):
             result = cli_runner.invoke(ops, ["discover-project", "PROJ"])
@@ -600,7 +600,7 @@ class TestDiscoverProjectCommand:
         mock_jira_client.search_issues.return_value = {"issues": []}
 
         with patch(
-            "jira_assistant_skills_lib.cli.commands.ops_cmds.get_jira_client",
+            "jira_assistant_skills_lib.cli.commands.ops_cmds.get_client_from_context",
             return_value=mock_jira_client,
         ):
             result = cli_runner.invoke(ops, ["discover-project", "PROJ", "-o", "json"])

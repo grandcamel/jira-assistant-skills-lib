@@ -9,8 +9,10 @@ Commands:
 - delete: Bulk delete issues (destructive)
 """
 
+from __future__ import annotations
+
 import time
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import click
 
@@ -24,7 +26,15 @@ from jira_assistant_skills_lib import (
     validate_project_key,
 )
 
-from ..cli_utils import format_json, handle_jira_errors, parse_comma_list
+from ..cli_utils import (
+    format_json,
+    get_client_from_context,
+    handle_jira_errors,
+    parse_comma_list,
+)
+
+if TYPE_CHECKING:
+    from jira_assistant_skills_lib import JiraClient
 
 # =============================================================================
 # Constants
@@ -178,14 +188,15 @@ def _bulk_transition_impl(
     dry_run: bool = False,
     max_issues: int = 100,
     delay: float = 0.1,
+    client: JiraClient | None = None,
 ) -> dict[str, Any]:
     """Transition multiple issues to a new status."""
     if not target_status:
         raise ValidationError("Target status is required")
 
-    with get_jira_client() as client:
+    def _do_transition(c: JiraClient) -> dict[str, Any]:
         issues = _get_issues_to_process(
-            client,
+            c,
             issue_keys=issue_keys,
             jql=jql,
             max_issues=max_issues,
@@ -231,14 +242,14 @@ def _bulk_transition_impl(
 
         success = 0
         failed = 0
-        errors = {}
-        processed = []
+        errors: dict[str, str] = {}
+        processed: list[str] = []
 
         for i, issue in enumerate(issues, 1):
             issue_key = issue.get("key")
 
             try:
-                transitions = client.get_transitions(issue_key)
+                transitions = c.get_transitions(issue_key)
                 transition = _find_transition(transitions, target_status)
 
                 if not transition:
@@ -248,16 +259,16 @@ def _bulk_transition_impl(
                         f"Available: {', '.join(available)}"
                     )
 
-                fields = {}
+                fields: dict[str, Any] = {}
                 if resolution:
                     fields["resolution"] = {"name": resolution}
 
-                client.transition_issue(
+                c.transition_issue(
                     issue_key, transition["id"], fields=fields if fields else None
                 )
 
                 if comment:
-                    client.add_comment(issue_key, text_to_adf(comment))
+                    c.add_comment(issue_key, text_to_adf(comment))
 
                 success += 1
                 processed.append(issue_key)
@@ -277,6 +288,12 @@ def _bulk_transition_impl(
             "processed": processed,
         }
 
+    if client is not None:
+        return _do_transition(client)
+
+    with get_jira_client() as c:
+        return _do_transition(c)
+
 
 def _bulk_assign_impl(
     issue_keys: list[str] | None = None,
@@ -286,24 +303,25 @@ def _bulk_assign_impl(
     dry_run: bool = False,
     max_issues: int = 100,
     delay: float = 0.1,
+    client: JiraClient | None = None,
 ) -> dict[str, Any]:
     """Assign or unassign multiple issues."""
     if not assignee and not unassign:
         raise ValidationError("Either --assignee or --unassign must be provided")
 
-    with get_jira_client() as client:
+    def _do_assign(c: JiraClient) -> dict[str, Any]:
         account_id = None
         action = "unassign"
         if not unassign:
-            # assignee must be set since we checked at line 291
+            # assignee must be set since we checked above
             assert assignee is not None
-            account_id = _resolve_user_id(client, assignee)
+            account_id = _resolve_user_id(c, assignee)
             if account_id is None and assignee.lower() != "self":
                 raise ValidationError(f"Could not resolve user: {assignee}")
             action = f"assign to {assignee}"
 
         issues = _get_issues_to_process(
-            client,
+            c,
             issue_keys=issue_keys,
             jql=jql,
             max_issues=max_issues,
@@ -352,14 +370,14 @@ def _bulk_assign_impl(
 
         success = 0
         failed = 0
-        errors = {}
-        processed = []
+        errors: dict[str, str] = {}
+        processed: list[str] = []
 
         for i, issue in enumerate(issues, 1):
             issue_key = issue.get("key")
 
             try:
-                client.assign_issue(issue_key, account_id)
+                c.assign_issue(issue_key, account_id)
                 success += 1
                 processed.append(issue_key)
 
@@ -379,6 +397,12 @@ def _bulk_assign_impl(
             "action": action,
         }
 
+    if client is not None:
+        return _do_assign(client)
+
+    with get_jira_client() as c:
+        return _do_assign(c)
+
 
 def _bulk_set_priority_impl(
     issue_keys: list[str] | None = None,
@@ -387,6 +411,7 @@ def _bulk_set_priority_impl(
     dry_run: bool = False,
     max_issues: int = 100,
     delay: float = 0.1,
+    client: JiraClient | None = None,
 ) -> dict[str, Any]:
     """Set priority on multiple issues."""
     if not priority:
@@ -394,9 +419,9 @@ def _bulk_set_priority_impl(
 
     priority = _validate_priority(priority)
 
-    with get_jira_client() as client:
+    def _do_set_priority(c: JiraClient) -> dict[str, Any]:
         issues = _get_issues_to_process(
-            client,
+            c,
             issue_keys=issue_keys,
             jql=jql,
             max_issues=max_issues,
@@ -441,14 +466,14 @@ def _bulk_set_priority_impl(
 
         success = 0
         failed = 0
-        errors = {}
-        processed = []
+        errors: dict[str, str] = {}
+        processed: list[str] = []
 
         for i, issue in enumerate(issues, 1):
             issue_key = issue.get("key")
 
             try:
-                client.update_issue(
+                c.update_issue(
                     issue_key,
                     fields={"priority": {"name": priority}},
                     notify_users=False,
@@ -470,6 +495,12 @@ def _bulk_set_priority_impl(
             "errors": errors,
             "processed": processed,
         }
+
+    if client is not None:
+        return _do_set_priority(client)
+
+    with get_jira_client() as c:
+        return _do_set_priority(c)
 
 
 def _clone_issue(
@@ -634,28 +665,30 @@ def _bulk_clone_impl(
     dry_run: bool = False,
     max_issues: int = 100,
     delay: float = 0.2,
+    client: JiraClient | None = None,
 ) -> dict[str, Any]:
     """Clone multiple issues."""
     if target_project:
         target_project = validate_project_key(target_project)
 
-    with get_jira_client() as client:
+    def _do_clone(c: JiraClient) -> dict[str, Any]:
         # Clone requires full issue data
+        nonlocal issue_keys, jql
+        retrieval_errors: dict[str, str] = {}
+
         if issue_keys:
             issue_keys = [validate_issue_key(k) for k in issue_keys[:max_issues]]
-            issues = []
-            retrieval_errors = {}
+            issues: list[dict[str, Any]] = []
             for key in issue_keys:
                 try:
-                    issue = client.get_issue(key)
+                    issue = c.get_issue(key)
                     issues.append(issue)
                 except JiraError as e:
                     retrieval_errors[key] = str(e)
         elif jql:
             jql = validate_jql(jql)
-            result = client.search_issues(jql, fields=["*all"], max_results=max_issues)
+            result = c.search_issues(jql, fields=["*all"], max_results=max_issues)
             issues = result.get("issues", [])
-            retrieval_errors = {}
         else:
             raise ValidationError("Either --issues or --jql must be provided")
 
@@ -712,7 +745,7 @@ def _bulk_clone_impl(
 
             try:
                 result = _clone_issue(
-                    client=client,
+                    client=c,
                     source_issue=issue,
                     target_project=target_project,
                     prefix=prefix,
@@ -741,6 +774,12 @@ def _bulk_clone_impl(
             "retrieval_failed": len(retrieval_errors),
         }
 
+    if client is not None:
+        return _do_clone(client)
+
+    with get_jira_client() as c:
+        return _do_clone(c)
+
 
 def _bulk_delete_impl(
     issue_keys: list[str] | None = None,
@@ -749,11 +788,13 @@ def _bulk_delete_impl(
     max_issues: int = 100,
     delete_subtasks: bool = True,
     delay: float = 0.1,
+    client: JiraClient | None = None,
 ) -> dict[str, Any]:
     """Delete multiple issues permanently."""
-    with get_jira_client() as client:
+
+    def _do_delete(c: JiraClient) -> dict[str, Any]:
         issues = _get_issues_to_process(
-            client,
+            c,
             issue_keys=issue_keys,
             jql=jql,
             max_issues=max_issues,
@@ -811,14 +852,14 @@ def _bulk_delete_impl(
 
         success = 0
         failed = 0
-        errors = {}
-        processed = []
+        errors: dict[str, str] = {}
+        processed: list[str] = []
 
         for i, issue in enumerate(issues, 1):
             issue_key = issue.get("key")
 
             try:
-                client.delete_issue(issue_key, delete_subtasks=delete_subtasks)
+                c.delete_issue(issue_key, delete_subtasks=delete_subtasks)
                 success += 1
                 processed.append(issue_key)
 
@@ -836,6 +877,12 @@ def _bulk_delete_impl(
             "errors": errors,
             "processed": processed,
         }
+
+    if client is not None:
+        return _do_delete(client)
+
+    with get_jira_client() as c:
+        return _do_delete(c)
 
 
 # =============================================================================
@@ -939,7 +986,7 @@ def bulk():
 @click.pass_context
 @handle_jira_errors
 def bulk_transition(
-    ctx,
+    ctx: click.Context,
     jql,
     issues,
     target_status,
@@ -963,6 +1010,7 @@ def bulk_transition(
     if jql and issues:
         raise click.UsageError("--jql and --issues are mutually exclusive")
 
+    client = get_client_from_context(ctx)
     issue_keys = parse_comma_list(issues)
 
     result = _bulk_transition_impl(
@@ -973,6 +1021,7 @@ def bulk_transition(
         comment=comment,
         dry_run=dry_run or not yes,
         max_issues=max_issues,
+        client=client,
     )
 
     if output == "json":
@@ -1003,7 +1052,17 @@ def bulk_transition(
 )
 @click.pass_context
 @handle_jira_errors
-def bulk_assign(ctx, jql, issues, assignee, unassign, dry_run, max_issues, yes, output):
+def bulk_assign(
+    ctx: click.Context,
+    jql,
+    issues,
+    assignee,
+    unassign,
+    dry_run,
+    max_issues,
+    yes,
+    output,
+):
     """Assign or unassign multiple issues.
 
     Specify issues using either --jql or --issues (mutually exclusive).
@@ -1023,6 +1082,7 @@ def bulk_assign(ctx, jql, issues, assignee, unassign, dry_run, max_issues, yes, 
     if assignee and unassign:
         raise click.UsageError("--assignee and --unassign are mutually exclusive")
 
+    client = get_client_from_context(ctx)
     issue_keys = parse_comma_list(issues)
 
     result = _bulk_assign_impl(
@@ -1032,6 +1092,7 @@ def bulk_assign(ctx, jql, issues, assignee, unassign, dry_run, max_issues, yes, 
         unassign=unassign,
         dry_run=dry_run or not yes,
         max_issues=max_issues,
+        client=client,
     )
 
     action = result.get("action", "unassign" if unassign else f"assign to {assignee}")
@@ -1068,7 +1129,9 @@ def bulk_assign(ctx, jql, issues, assignee, unassign, dry_run, max_issues, yes, 
 )
 @click.pass_context
 @handle_jira_errors
-def bulk_set_priority(ctx, jql, issues, priority, dry_run, max_issues, yes, output):
+def bulk_set_priority(
+    ctx: click.Context, jql, issues, priority, dry_run, max_issues, yes, output
+):
     """Set priority for multiple issues.
 
     Specify issues using either --jql or --issues (mutually exclusive).
@@ -1082,6 +1145,7 @@ def bulk_set_priority(ctx, jql, issues, priority, dry_run, max_issues, yes, outp
     if jql and issues:
         raise click.UsageError("--jql and --issues are mutually exclusive")
 
+    client = get_client_from_context(ctx)
     issue_keys = parse_comma_list(issues)
 
     result = _bulk_set_priority_impl(
@@ -1090,6 +1154,7 @@ def bulk_set_priority(ctx, jql, issues, priority, dry_run, max_issues, yes, outp
         priority=priority,
         dry_run=dry_run or not yes,
         max_issues=max_issues,
+        client=client,
     )
 
     if output == "json":
@@ -1123,7 +1188,7 @@ def bulk_set_priority(ctx, jql, issues, priority, dry_run, max_issues, yes, outp
 @click.pass_context
 @handle_jira_errors
 def bulk_clone(
-    ctx,
+    ctx: click.Context,
     jql,
     issues,
     target_project,
@@ -1148,6 +1213,7 @@ def bulk_clone(
     if jql and issues:
         raise click.UsageError("--jql and --issues are mutually exclusive")
 
+    client = get_client_from_context(ctx)
     issue_keys = parse_comma_list(issues)
 
     result = _bulk_clone_impl(
@@ -1159,6 +1225,7 @@ def bulk_clone(
         include_links=include_links,
         dry_run=dry_run or not yes,
         max_issues=max_issues,
+        client=client,
     )
 
     if output == "json":
@@ -1190,7 +1257,9 @@ def bulk_clone(
 )
 @click.pass_context
 @handle_jira_errors
-def bulk_delete(ctx, jql, issues, no_subtasks, dry_run, max_issues, yes, output):
+def bulk_delete(
+    ctx: click.Context, jql, issues, no_subtasks, dry_run, max_issues, yes, output
+):
     """Delete multiple issues permanently.
 
     WARNING: This is a destructive operation. Deleted issues cannot be recovered.
@@ -1212,6 +1281,7 @@ def bulk_delete(ctx, jql, issues, no_subtasks, dry_run, max_issues, yes, output)
         click.echo("WARNING: This will PERMANENTLY delete issues.")
         click.echo("Consider using --dry-run first to preview.\n")
 
+    client = get_client_from_context(ctx)
     issue_keys = parse_comma_list(issues)
 
     result = _bulk_delete_impl(
@@ -1220,6 +1290,7 @@ def bulk_delete(ctx, jql, issues, no_subtasks, dry_run, max_issues, yes, output)
         dry_run=dry_run or not yes,
         max_issues=max_issues,
         delete_subtasks=not no_subtasks,
+        client=client,
     )
 
     if output == "json":

@@ -5,9 +5,11 @@ This module contains all logic for jira-ops operations.
 All implementation functions are inlined for direct CLI usage.
 """
 
+from __future__ import annotations
+
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import click
 
@@ -16,7 +18,10 @@ from jira_assistant_skills_lib import (
     get_jira_client,
 )
 
-from ..cli_utils import format_json, handle_jira_errors
+from ..cli_utils import format_json, get_client_from_context, handle_jira_errors
+
+if TYPE_CHECKING:
+    from jira_assistant_skills_lib import JiraClient
 
 # =============================================================================
 # Helper Functions
@@ -329,6 +334,7 @@ def _cache_warm_impl(
     warm_all: bool = False,
     verbose: bool = False,
     cache_dir: str | None = None,
+    client: JiraClient | None = None,
 ) -> dict[str, Any]:
     """
     Pre-warm cache with commonly accessed data.
@@ -340,6 +346,7 @@ def _cache_warm_impl(
         warm_all: Cache all available metadata
         verbose: Verbose output
         cache_dir: Optional custom cache directory
+        client: Optional JiraClient instance. If None, creates one internally.
 
     Returns:
         Dict with warming results
@@ -349,13 +356,13 @@ def _cache_warm_impl(
 
     cache = JiraCache(cache_dir=cache_dir)
 
-    with get_jira_client() as client:
+    def _do_warm(c: JiraClient) -> dict[str, Any]:
         total_cached = 0
-        critical_errors = []
-        warmed = []
+        critical_errors: list[str] = []
+        warmed: list[str] = []
 
         if warm_all or projects:
-            count, error = _warm_projects(client, cache, verbose)
+            count, error = _warm_projects(c, cache, verbose)
             total_cached += count
             if count > 0:
                 warmed.append("projects")
@@ -363,28 +370,28 @@ def _cache_warm_impl(
                 critical_errors.append(str(error))
 
         if warm_all or fields:
-            count, error = _warm_fields(client, cache, verbose)
+            count, error = _warm_fields(c, cache, verbose)
             total_cached += count
             if count > 0:
                 warmed.append("fields")
             if error:
                 critical_errors.append(str(error))
 
-            count, error = _warm_issue_types(client, cache, verbose)
+            count, error = _warm_issue_types(c, cache, verbose)
             total_cached += count
             if count > 0:
                 warmed.append("issue_types")
             if error:
                 critical_errors.append(str(error))
 
-            count, error = _warm_priorities(client, cache, verbose)
+            count, error = _warm_priorities(c, cache, verbose)
             total_cached += count
             if count > 0:
                 warmed.append("priorities")
             if error:
                 critical_errors.append(str(error))
 
-            count, error = _warm_statuses(client, cache, verbose)
+            count, error = _warm_statuses(c, cache, verbose)
             total_cached += count
             if count > 0:
                 warmed.append("statuses")
@@ -393,7 +400,7 @@ def _cache_warm_impl(
 
         stats = cache.get_stats()
 
-        result = {
+        result: dict[str, Any] = {
             "total_cached": total_cached,
             "warmed": warmed,
             "cache_size_bytes": stats.total_size_bytes,
@@ -404,6 +411,12 @@ def _cache_warm_impl(
             result["errors"] = critical_errors
 
         return result
+
+    if client is not None:
+        return _do_warm(client)
+
+    with get_jira_client() as c:
+        return _do_warm(c)
 
 
 # =============================================================================
@@ -702,6 +715,7 @@ def _discover_project_impl(
     sample_size: int = 100,
     sample_period_days: int = 30,
     verbose: bool = False,
+    client: JiraClient | None = None,
 ) -> dict[str, Any]:
     """
     Discover project context.
@@ -711,22 +725,29 @@ def _discover_project_impl(
         sample_size: Number of issues to sample
         sample_period_days: How many days back to sample
         verbose: Verbose output
+        client: Optional JiraClient instance. If None, creates one internally.
 
     Returns:
         Dict with discovered context
     """
     project_key = project_key.upper()
 
-    with get_jira_client() as client:
-        metadata = _discover_metadata(client, project_key, verbose)
+    def _do_discover(c: JiraClient) -> dict[str, Any]:
+        metadata = _discover_metadata(c, project_key, verbose)
         patterns = _discover_patterns(
-            client, project_key, sample_size, sample_period_days, verbose
+            c, project_key, sample_size, sample_period_days, verbose
         )
 
         return {
             "metadata": metadata,
             "patterns": patterns,
         }
+
+    if client is not None:
+        return _do_discover(client)
+
+    with get_jira_client() as c:
+        return _do_discover(c)
 
 
 # =============================================================================
@@ -924,7 +945,7 @@ def ops_cache_clear(
 @click.pass_context
 @handle_jira_errors
 def ops_cache_warm(
-    ctx,
+    ctx: click.Context,
     projects: bool,
     fields: bool,
     users: bool,
@@ -944,12 +965,14 @@ def ops_cache_warm(
         )
         return
 
+    client = get_client_from_context(ctx)
     result = _cache_warm_impl(
         projects=projects,
         fields=fields,
         users=users,
         warm_all=warm_all,
         verbose=verbose,
+        client=client,
     )
 
     if result.get("errors"):
@@ -988,7 +1011,7 @@ def ops_cache_warm(
 @click.pass_context
 @handle_jira_errors
 def ops_discover_project(
-    ctx,
+    ctx: click.Context,
     project_key: str,
     sample_size: int,
     days: int,
@@ -996,11 +1019,13 @@ def ops_discover_project(
     verbose: bool,
 ):
     """Discover project configuration and capabilities."""
+    client = get_client_from_context(ctx)
     result = _discover_project_impl(
         project_key=project_key,
         sample_size=sample_size,
         sample_period_days=days,
         verbose=verbose,
+        client=client,
     )
 
     if output == "json":

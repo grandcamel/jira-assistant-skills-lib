@@ -1308,7 +1308,7 @@ class TestSearchCLICommands:
         """Create CLI runner."""
         return CliRunner()
 
-    @patch("jira_assistant_skills_lib.cli.commands.search_cmds.get_jira_client")
+    @patch("jira_assistant_skills_lib.cli.commands.search_cmds.get_client_from_context")
     @patch("jira_assistant_skills_lib.cli.commands.search_cmds.validate_jql")
     def test_query_command(
         self, mock_validate, mock_get_client, runner, mock_client, sample_issues
@@ -1323,7 +1323,7 @@ class TestSearchCLICommands:
         assert result.exit_code == 0
         assert "Found 3" in result.output
 
-    @patch("jira_assistant_skills_lib.cli.commands.search_cmds.get_jira_client")
+    @patch("jira_assistant_skills_lib.cli.commands.search_cmds.get_client_from_context")
     @patch("jira_assistant_skills_lib.cli.commands.search_cmds.validate_jql")
     def test_query_command_json(
         self, mock_validate, mock_get_client, runner, mock_client, sample_issues
@@ -1346,7 +1346,7 @@ class TestSearchCLICommands:
         assert result.exit_code != 0
         assert "required" in result.output.lower()
 
-    @patch("jira_assistant_skills_lib.cli.commands.search_cmds.get_jira_client")
+    @patch("jira_assistant_skills_lib.cli.commands.search_cmds.get_client_from_context")
     def test_validate_command_valid(self, mock_get_client, runner, mock_client):
         """Test validate command with valid JQL."""
         mock_get_client.return_value = mock_client
@@ -1359,7 +1359,7 @@ class TestSearchCLICommands:
         assert result.exit_code == 0
         assert "Valid JQL" in result.output
 
-    @patch("jira_assistant_skills_lib.cli.commands.search_cmds.get_jira_client")
+    @patch("jira_assistant_skills_lib.cli.commands.search_cmds.get_client_from_context")
     def test_validate_command_invalid(self, mock_get_client, runner, mock_client):
         """Test validate command with invalid JQL."""
         mock_get_client.return_value = mock_client
@@ -1403,7 +1403,7 @@ class TestSearchCLICommands:
         assert result.exit_code == 0
         assert "assignee = currentUser()" in result.output
 
-    @patch("jira_assistant_skills_lib.cli.commands.search_cmds.get_jira_client")
+    @patch("jira_assistant_skills_lib.cli.commands.search_cmds.get_client_from_context")
     @patch("jira_assistant_skills_lib.cli.commands.search_cmds.get_autocomplete_cache")
     def test_suggest_command(
         self, mock_cache, mock_get_client, runner, mock_client, sample_suggestions
@@ -1419,7 +1419,7 @@ class TestSearchCLICommands:
         assert result.exit_code == 0
         assert "High" in result.output
 
-    @patch("jira_assistant_skills_lib.cli.commands.search_cmds.get_jira_client")
+    @patch("jira_assistant_skills_lib.cli.commands.search_cmds.get_client_from_context")
     @patch("jira_assistant_skills_lib.cli.commands.search_cmds.get_autocomplete_cache")
     def test_fields_command(
         self, mock_cache, mock_get_client, runner, mock_client, sample_fields
@@ -1436,7 +1436,7 @@ class TestSearchCLICommands:
         assert "project" in result.output
         assert "JQL Fields:" in result.output
 
-    @patch("jira_assistant_skills_lib.cli.commands.search_cmds.get_jira_client")
+    @patch("jira_assistant_skills_lib.cli.commands.search_cmds.get_client_from_context")
     def test_functions_command(
         self, mock_get_client, runner, mock_client, sample_functions
     ):
@@ -1451,7 +1451,7 @@ class TestSearchCLICommands:
         assert result.exit_code == 0
         assert "currentUser()" in result.output
 
-    @patch("jira_assistant_skills_lib.cli.commands.search_cmds.get_jira_client")
+    @patch("jira_assistant_skills_lib.cli.commands.search_cmds.get_client_from_context")
     @patch("jira_assistant_skills_lib.cli.commands.search_cmds.validate_jql")
     def test_bulk_update_dry_run(
         self, mock_validate, mock_get_client, runner, mock_client, sample_issues
@@ -1484,7 +1484,7 @@ class TestFilterCLICommands:
         """Create CLI runner."""
         return CliRunner()
 
-    @patch("jira_assistant_skills_lib.cli.commands.search_cmds.get_jira_client")
+    @patch("jira_assistant_skills_lib.cli.commands.search_cmds.get_client_from_context")
     def test_filter_list_my(self, mock_get_client, runner, mock_client, sample_filters):
         """Test filter list --my command."""
         mock_get_client.return_value = mock_client
@@ -1495,7 +1495,7 @@ class TestFilterCLICommands:
         assert result.exit_code == 0
         assert "My Open Issues" in result.output
 
-    @patch("jira_assistant_skills_lib.cli.commands.search_cmds.get_jira_client")
+    @patch("jira_assistant_skills_lib.cli.commands.search_cmds.get_client_from_context")
     def test_filter_list_favourites(
         self, mock_get_client, runner, mock_client, sample_filters
     ):
@@ -1510,7 +1510,7 @@ class TestFilterCLICommands:
         assert result.exit_code == 0
         assert "My Open Issues" in result.output
 
-    @patch("jira_assistant_skills_lib.cli.commands.search_cmds.get_jira_client")
+    @patch("jira_assistant_skills_lib.cli.commands.search_cmds.get_client_from_context")
     def test_filter_list_by_id(
         self, mock_get_client, runner, mock_client, sample_filter
     ):
@@ -1524,7 +1524,7 @@ class TestFilterCLICommands:
         assert "My Open Issues" in result.output
         assert "Filter Details:" in result.output
 
-    @patch("jira_assistant_skills_lib.cli.commands.search_cmds.get_jira_client")
+    @patch("jira_assistant_skills_lib.cli.commands.search_cmds.get_client_from_context")
     def test_filter_create(self, mock_get_client, runner, mock_client):
         """Test filter create command."""
         mock_get_client.return_value = mock_client
@@ -1550,7 +1550,7 @@ class TestFilterCLICommands:
         assert "Filter created" in result.output
         assert "10010" in result.output
 
-    @patch("jira_assistant_skills_lib.cli.commands.search_cmds.get_jira_client")
+    @patch("jira_assistant_skills_lib.cli.commands.search_cmds.get_client_from_context")
     def test_filter_run(
         self, mock_get_client, runner, mock_client, sample_issues, sample_filter
     ):
@@ -1564,7 +1564,7 @@ class TestFilterCLICommands:
         assert result.exit_code == 0
         assert "Found 3" in result.output
 
-    @patch("jira_assistant_skills_lib.cli.commands.search_cmds.get_jira_client")
+    @patch("jira_assistant_skills_lib.cli.commands.search_cmds.get_client_from_context")
     def test_filter_update(self, mock_get_client, runner, mock_client):
         """Test filter update command."""
         mock_get_client.return_value = mock_client
@@ -1596,7 +1596,7 @@ class TestFilterCLICommands:
         assert result.exit_code != 0
         assert "required" in result.output.lower()
 
-    @patch("jira_assistant_skills_lib.cli.commands.search_cmds.get_jira_client")
+    @patch("jira_assistant_skills_lib.cli.commands.search_cmds.get_client_from_context")
     def test_filter_delete_dry_run(
         self, mock_get_client, runner, mock_client, sample_filter
     ):
@@ -1610,7 +1610,7 @@ class TestFilterCLICommands:
         assert "Would delete" in result.output
         mock_client.delete_filter.assert_not_called()
 
-    @patch("jira_assistant_skills_lib.cli.commands.search_cmds.get_jira_client")
+    @patch("jira_assistant_skills_lib.cli.commands.search_cmds.get_client_from_context")
     def test_filter_delete_confirmed(
         self, mock_get_client, runner, mock_client, sample_filter
     ):
@@ -1624,7 +1624,7 @@ class TestFilterCLICommands:
         assert "deleted" in result.output
         mock_client.delete_filter.assert_called_once()
 
-    @patch("jira_assistant_skills_lib.cli.commands.search_cmds.get_jira_client")
+    @patch("jira_assistant_skills_lib.cli.commands.search_cmds.get_client_from_context")
     def test_filter_share_list(self, mock_get_client, runner, mock_client):
         """Test filter share --list command."""
         mock_get_client.return_value = mock_client
@@ -1637,7 +1637,7 @@ class TestFilterCLICommands:
         assert result.exit_code == 0
         assert "permissions" in result.output.lower()
 
-    @patch("jira_assistant_skills_lib.cli.commands.search_cmds.get_jira_client")
+    @patch("jira_assistant_skills_lib.cli.commands.search_cmds.get_client_from_context")
     def test_filter_share_project(self, mock_get_client, runner, mock_client):
         """Test filter share --project command."""
         mock_get_client.return_value = mock_client
@@ -1650,7 +1650,7 @@ class TestFilterCLICommands:
         assert result.exit_code == 0
         assert "shared" in result.output.lower()
 
-    @patch("jira_assistant_skills_lib.cli.commands.search_cmds.get_jira_client")
+    @patch("jira_assistant_skills_lib.cli.commands.search_cmds.get_client_from_context")
     def test_filter_favourite_add(
         self, mock_get_client, runner, mock_client, sample_filter
     ):
@@ -1663,7 +1663,7 @@ class TestFilterCLICommands:
         assert result.exit_code == 0
         assert "added" in result.output.lower()
 
-    @patch("jira_assistant_skills_lib.cli.commands.search_cmds.get_jira_client")
+    @patch("jira_assistant_skills_lib.cli.commands.search_cmds.get_client_from_context")
     def test_filter_favourite_remove(
         self, mock_get_client, runner, mock_client, sample_filter
     ):
@@ -1690,7 +1690,7 @@ class TestErrorHandling:
         """Create CLI runner."""
         return CliRunner()
 
-    @patch("jira_assistant_skills_lib.cli.commands.search_cmds.get_jira_client")
+    @patch("jira_assistant_skills_lib.cli.commands.search_cmds.get_client_from_context")
     def test_jira_error_handling(self, mock_get_client, runner):
         """Test JiraError is handled properly."""
         mock_client = MagicMock()

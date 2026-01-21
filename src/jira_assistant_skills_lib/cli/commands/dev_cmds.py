@@ -5,9 +5,11 @@ This module contains all logic for jira-dev operations.
 All implementation functions are inlined for direct CLI usage.
 """
 
+from __future__ import annotations
+
 import re
 import sys
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from urllib.parse import urlparse
 
 import click
@@ -22,7 +24,10 @@ from jira_assistant_skills_lib import (
     wiki_markup_to_adf,
 )
 
-from ..cli_utils import format_json, handle_jira_errors
+from ..cli_utils import format_json, get_client_from_context, handle_jira_errors
+
+if TYPE_CHECKING:
+    from jira_assistant_skills_lib import JiraClient
 
 # =============================================================================
 # Constants
@@ -267,6 +272,7 @@ def _create_branch_name_impl(
     issue_key: str,
     prefix: str | None = None,
     auto_prefix: bool = False,
+    client: JiraClient | None = None,
 ) -> dict[str, Any]:
     """
     Create a standardized branch name from JIRA issue.
@@ -275,55 +281,62 @@ def _create_branch_name_impl(
         issue_key: JIRA issue key
         prefix: Custom prefix (feature, bugfix, etc.)
         auto_prefix: If True, determine prefix from issue type
+        client: Optional JiraClient instance. If None, creates one internally.
 
     Returns:
         Dictionary with branch_name, issue_key, git_command
     """
     issue_key = validate_issue_key(issue_key)
 
-    with get_jira_client() as client:
-        issue = client.get_issue(issue_key, fields=["summary", "issuetype"])
+    def _do_create(c: JiraClient) -> dict[str, Any]:
+        issue = c.get_issue(issue_key, fields=["summary", "issuetype"])
 
-    fields = issue.get("fields", {})
-    summary = fields.get("summary", "")
-    issue_type = fields.get("issuetype", {}).get("name", "")
+        fields = issue.get("fields", {})
+        summary = fields.get("summary", "")
+        issue_type = fields.get("issuetype", {}).get("name", "")
 
-    # Determine prefix
-    if prefix:
-        branch_prefix = prefix.lower()
-    elif auto_prefix:
-        branch_prefix = _get_prefix_for_issue_type(issue_type)
-    else:
-        branch_prefix = DEFAULT_PREFIX
+        # Determine prefix
+        if prefix:
+            branch_prefix = prefix.lower()
+        elif auto_prefix:
+            branch_prefix = _get_prefix_for_issue_type(issue_type)
+        else:
+            branch_prefix = DEFAULT_PREFIX
 
-    # Sanitize summary
-    sanitized_summary = _sanitize_for_branch(summary)
-    issue_key_lower = issue_key.lower()
+        # Sanitize summary
+        sanitized_summary = _sanitize_for_branch(summary)
+        issue_key_lower = issue_key.lower()
 
-    # Build branch name
-    if not sanitized_summary:
-        branch_name = f"{branch_prefix}/{issue_key_lower}"
-    else:
-        prefix_part_len = len(branch_prefix) + 1
-        key_part_len = len(issue_key_lower) + 1
-        max_summary_len = MAX_BRANCH_LENGTH - prefix_part_len - key_part_len
+        # Build branch name
+        if not sanitized_summary:
+            branch_name = f"{branch_prefix}/{issue_key_lower}"
+        else:
+            prefix_part_len = len(branch_prefix) + 1
+            key_part_len = len(issue_key_lower) + 1
+            max_summary_len = MAX_BRANCH_LENGTH - prefix_part_len - key_part_len
 
-        if len(sanitized_summary) > max_summary_len:
-            truncated = sanitized_summary[:max_summary_len]
-            last_hyphen = truncated.rfind("-")
-            if last_hyphen > max_summary_len // 2:
-                truncated = truncated[:last_hyphen]
-            sanitized_summary = truncated.rstrip("-")
+            if len(sanitized_summary) > max_summary_len:
+                truncated = sanitized_summary[:max_summary_len]
+                last_hyphen = truncated.rfind("-")
+                if last_hyphen > max_summary_len // 2:
+                    truncated = truncated[:last_hyphen]
+                sanitized_summary = truncated.rstrip("-")
 
-        branch_name = f"{branch_prefix}/{issue_key_lower}-{sanitized_summary}"
+            branch_name = f"{branch_prefix}/{issue_key_lower}-{sanitized_summary}"
 
-    return {
-        "branch_name": branch_name,
-        "issue_key": issue_key,
-        "issue_type": issue_type,
-        "summary": summary,
-        "git_command": f"git checkout -b {branch_name}",
-    }
+        return {
+            "branch_name": branch_name,
+            "issue_key": issue_key,
+            "issue_type": issue_type,
+            "summary": summary,
+            "git_command": f"git checkout -b {branch_name}",
+        }
+
+    if client is not None:
+        return _do_create(client)
+
+    with get_jira_client() as c:
+        return _do_create(c)
 
 
 def _create_pr_description_impl(
@@ -331,6 +344,7 @@ def _create_pr_description_impl(
     include_checklist: bool = False,
     include_labels: bool = False,
     include_components: bool = False,
+    client: JiraClient | None = None,
 ) -> dict[str, Any]:
     """
     Create a PR description from JIRA issue details.
@@ -340,14 +354,15 @@ def _create_pr_description_impl(
         include_checklist: Include testing checklist
         include_labels: Include issue labels
         include_components: Include components
+        client: Optional JiraClient instance. If None, creates one internally.
 
     Returns:
         Dictionary with markdown, issue_key, issue_type, etc.
     """
     issue_key = validate_issue_key(issue_key)
 
-    with get_jira_client() as client:
-        issue = client.get_issue(
+    def _do_create(c: JiraClient) -> dict[str, Any]:
+        issue = c.get_issue(
             issue_key,
             fields=[
                 "summary",
@@ -359,92 +374,98 @@ def _create_pr_description_impl(
             ],
         )
 
-    fields = issue.get("fields", {})
-    summary = fields.get("summary", "")
-    description = fields.get("description")
-    issue_type = fields.get("issuetype", {}).get("name", "")
-    labels = fields.get("labels", [])
-    components = [c.get("name", "") for c in fields.get("components", [])]
-    priority = (
-        fields.get("priority", {}).get("name", "") if fields.get("priority") else ""
-    )
+        fields = issue.get("fields", {})
+        summary = fields.get("summary", "")
+        description = fields.get("description")
+        issue_type = fields.get("issuetype", {}).get("name", "")
+        labels = fields.get("labels", [])
+        components = [comp.get("name", "") for comp in fields.get("components", [])]
+        priority = (
+            fields.get("priority", {}).get("name", "") if fields.get("priority") else ""
+        )
 
-    # Convert ADF description to text
-    if isinstance(description, dict):
-        desc_text = adf_to_text(description)
-    else:
-        desc_text = description or ""
-
-    jira_url = _get_jira_base_url()
-
-    # Build PR description
-    lines = []
-
-    lines.append("## Summary")
-    lines.append("")
-    lines.append(summary)
-    lines.append("")
-
-    lines.append("## JIRA Issue")
-    lines.append("")
-    lines.append(f"[{issue_key}]({jira_url}/browse/{issue_key})")
-    lines.append("")
-
-    if issue_type or priority:
-        lines.append(f"**Type:** {issue_type}")
-        if priority:
-            lines.append(f"**Priority:** {priority}")
-        lines.append("")
-
-    if desc_text:
-        lines.append("## Description")
-        lines.append("")
-        if len(desc_text) > 500:
-            lines.append(desc_text[:500] + "...")
+        # Convert ADF description to text
+        if isinstance(description, dict):
+            desc_text = adf_to_text(description)
         else:
-            lines.append(desc_text)
+            desc_text = description or ""
+
+        jira_url = _get_jira_base_url()
+
+        # Build PR description
+        lines: list[str] = []
+
+        lines.append("## Summary")
+        lines.append("")
+        lines.append(summary)
         lines.append("")
 
-    if include_labels and labels:
-        lines.append("## Labels")
+        lines.append("## JIRA Issue")
         lines.append("")
-        lines.append(", ".join([f"`{label}`" for label in labels]))
-        lines.append("")
-
-    if include_components and components:
-        lines.append("## Components")
-        lines.append("")
-        lines.append(", ".join(components))
+        lines.append(f"[{issue_key}]({jira_url}/browse/{issue_key})")
         lines.append("")
 
-    acceptance_criteria = _extract_acceptance_criteria(desc_text)
-    if acceptance_criteria:
-        lines.append("## Acceptance Criteria")
-        lines.append("")
-        for criterion in acceptance_criteria:
-            lines.append(f"- [ ] {criterion}")
-        lines.append("")
+        if issue_type or priority:
+            lines.append(f"**Type:** {issue_type}")
+            if priority:
+                lines.append(f"**Priority:** {priority}")
+            lines.append("")
 
-    if include_checklist:
-        lines.append("## Testing Checklist")
-        lines.append("")
-        lines.append("- [ ] Unit tests added/updated")
-        lines.append("- [ ] Integration tests pass")
-        lines.append("- [ ] Manual testing completed")
-        lines.append("- [ ] No regressions introduced")
-        lines.append("")
+        if desc_text:
+            lines.append("## Description")
+            lines.append("")
+            if len(desc_text) > 500:
+                lines.append(desc_text[:500] + "...")
+            else:
+                lines.append(desc_text)
+            lines.append("")
 
-    markdown = "\n".join(lines)
+        if include_labels and labels:
+            lines.append("## Labels")
+            lines.append("")
+            lines.append(", ".join([f"`{label}`" for label in labels]))
+            lines.append("")
 
-    return {
-        "markdown": markdown,
-        "issue_key": issue_key,
-        "issue_type": issue_type,
-        "summary": summary,
-        "priority": priority,
-        "labels": labels,
-        "components": components,
-    }
+        if include_components and components:
+            lines.append("## Components")
+            lines.append("")
+            lines.append(", ".join(components))
+            lines.append("")
+
+        acceptance_criteria = _extract_acceptance_criteria(desc_text)
+        if acceptance_criteria:
+            lines.append("## Acceptance Criteria")
+            lines.append("")
+            for criterion in acceptance_criteria:
+                lines.append(f"- [ ] {criterion}")
+            lines.append("")
+
+        if include_checklist:
+            lines.append("## Testing Checklist")
+            lines.append("")
+            lines.append("- [ ] Unit tests added/updated")
+            lines.append("- [ ] Integration tests pass")
+            lines.append("- [ ] Manual testing completed")
+            lines.append("- [ ] No regressions introduced")
+            lines.append("")
+
+        markdown = "\n".join(lines)
+
+        return {
+            "markdown": markdown,
+            "issue_key": issue_key,
+            "issue_type": issue_type,
+            "summary": summary,
+            "priority": priority,
+            "labels": labels,
+            "components": components,
+        }
+
+    if client is not None:
+        return _do_create(client)
+
+    with get_jira_client() as c:
+        return _do_create(c)
 
 
 def _parse_commit_issues_impl(
@@ -509,6 +530,7 @@ def _link_commit_impl(
     repo: str | None = None,
     author: str | None = None,
     branch: str | None = None,
+    client: JiraClient | None = None,
 ) -> dict[str, Any]:
     """
     Link a commit to a JIRA issue by adding a comment.
@@ -520,6 +542,7 @@ def _link_commit_impl(
         repo: Repository URL
         author: Commit author
         branch: Branch name
+        client: Optional JiraClient instance. If None, creates one internally.
 
     Returns:
         Result dictionary with success status
@@ -527,7 +550,7 @@ def _link_commit_impl(
     issue_key = validate_issue_key(issue_key)
 
     # Build comment
-    lines = ["Commit linked to this issue:", ""]
+    lines: list[str] = ["Commit linked to this issue:", ""]
 
     short_sha = commit[:7] if len(commit) >= 7 else commit
     commit_url = _build_commit_url(commit, repo)
@@ -548,10 +571,10 @@ def _link_commit_impl(
 
     comment_body = "\n".join(lines)
 
-    with get_jira_client() as client:
+    def _do_link(c: JiraClient) -> dict[str, Any]:
         comment_data = {"body": wiki_markup_to_adf(comment_body)}
 
-        result = client.post(
+        result = c.post(
             f"/rest/api/3/issue/{issue_key}/comment",
             data=comment_data,
             operation=f"link commit to {issue_key}",
@@ -564,6 +587,12 @@ def _link_commit_impl(
             "comment_id": result.get("id"),
         }
 
+    if client is not None:
+        return _do_link(client)
+
+    with get_jira_client() as c:
+        return _do_link(c)
+
 
 def _link_pr_impl(
     issue_key: str,
@@ -571,6 +600,7 @@ def _link_pr_impl(
     title: str | None = None,
     status: str | None = None,
     author: str | None = None,
+    client: JiraClient | None = None,
 ) -> dict[str, Any]:
     """
     Link a pull request to a JIRA issue by adding a comment.
@@ -581,6 +611,7 @@ def _link_pr_impl(
         title: PR title
         status: PR status
         author: PR author
+        client: Optional JiraClient instance. If None, creates one internally.
 
     Returns:
         Result dictionary with success status
@@ -591,7 +622,7 @@ def _link_pr_impl(
     pr_type = "Merge Request" if pr_info["provider"] == "gitlab" else "Pull Request"
 
     # Build comment
-    lines = [f"{pr_type} linked to this issue:", ""]
+    lines: list[str] = [f"{pr_type} linked to this issue:", ""]
     lines.append(f"*{pr_type}:* [#{pr_info['pr_number']}|{pr_url}]")
 
     if title:
@@ -608,10 +639,10 @@ def _link_pr_impl(
 
     comment_body = "\n".join(lines)
 
-    with get_jira_client() as client:
+    def _do_link(c: JiraClient) -> dict[str, Any]:
         comment_data = {"body": wiki_markup_to_adf(comment_body)}
 
-        result = client.post(
+        result = c.post(
             f"/rest/api/3/issue/{issue_key}/comment",
             data=comment_data,
             operation=f"link PR to {issue_key}",
@@ -626,11 +657,18 @@ def _link_pr_impl(
             "comment_id": result.get("id"),
         }
 
+    if client is not None:
+        return _do_link(client)
+
+    with get_jira_client() as c:
+        return _do_link(c)
+
 
 def _get_commits_impl(
     issue_key: str,
     detailed: bool = False,
     repo_filter: str | None = None,
+    client: JiraClient | None = None,
 ) -> list[dict[str, Any]]:
     """
     Get commits linked to a JIRA issue via Development Information API.
@@ -639,17 +677,18 @@ def _get_commits_impl(
         issue_key: JIRA issue key
         detailed: Include commit message and author details
         repo_filter: Only return commits from this repository
+        client: Optional JiraClient instance. If None, creates one internally.
 
     Returns:
         List of commit dictionaries
     """
     issue_key = validate_issue_key(issue_key)
 
-    with get_jira_client() as client:
-        issue = client.get_issue(issue_key, fields=["id"])
+    def _do_get(c: JiraClient) -> list[dict[str, Any]]:
+        issue = c.get_issue(issue_key, fields=["id"])
         issue_id = issue.get("id")
 
-        dev_info = client.get(
+        dev_info = c.get(
             "/rest/dev-status/latest/issue/detail",
             params={
                 "issueId": issue_id,
@@ -659,42 +698,50 @@ def _get_commits_impl(
             operation=f"get development info for {issue_key}",
         )
 
-    commits = []
-    detail = dev_info.get("detail", [])
+        commits: list[dict[str, Any]] = []
+        detail = dev_info.get("detail", [])
 
-    for detail_item in detail:
-        repositories = detail_item.get("repositories", [])
+        for detail_item in detail:
+            repositories = detail_item.get("repositories", [])
 
-        for repo in repositories:
-            repo_name = repo.get("name", "")
+            for repo in repositories:
+                repo_name = repo.get("name", "")
 
-            if repo_filter and repo_filter.lower() not in repo_name.lower():
-                continue
+                if repo_filter and repo_filter.lower() not in repo_name.lower():
+                    continue
 
-            repo_commits = repo.get("commits", [])
+                repo_commits = repo.get("commits", [])
 
-            for commit in repo_commits:
-                commit_data = {
-                    "id": commit.get("id", ""),
-                    "sha": commit.get("id", ""),
-                    "display_id": commit.get("displayId", commit.get("id", "")[:7]),
-                    "repository": repo_name,
-                    "url": commit.get("url", ""),
-                }
+                for commit in repo_commits:
+                    commit_data: dict[str, Any] = {
+                        "id": commit.get("id", ""),
+                        "sha": commit.get("id", ""),
+                        "display_id": commit.get("displayId", commit.get("id", "")[:7]),
+                        "repository": repo_name,
+                        "url": commit.get("url", ""),
+                    }
 
-                if detailed:
-                    commit_data.update(
-                        {
-                            "message": commit.get("message", ""),
-                            "author": commit.get("author", {}).get("name", ""),
-                            "author_email": commit.get("author", {}).get("email", ""),
-                            "timestamp": commit.get("authorTimestamp", ""),
-                        }
-                    )
+                    if detailed:
+                        commit_data.update(
+                            {
+                                "message": commit.get("message", ""),
+                                "author": commit.get("author", {}).get("name", ""),
+                                "author_email": commit.get("author", {}).get(
+                                    "email", ""
+                                ),
+                                "timestamp": commit.get("authorTimestamp", ""),
+                            }
+                        )
 
-                commits.append(commit_data)
+                    commits.append(commit_data)
 
-    return commits
+        return commits
+
+    if client is not None:
+        return _do_get(client)
+
+    with get_jira_client() as c:
+        return _do_get(c)
 
 
 # =============================================================================
@@ -781,12 +828,16 @@ def dev():
 )
 @click.pass_context
 @handle_jira_errors
-def dev_branch_name(ctx, issue_key: str, prefix: str, auto_prefix: bool, output: str):
+def dev_branch_name(
+    ctx: click.Context, issue_key: str, prefix: str, auto_prefix: bool, output: str
+):
     """Generate a Git branch name from an issue."""
+    client = get_client_from_context(ctx)
     result = _create_branch_name_impl(
         issue_key=issue_key,
         prefix=prefix,
         auto_prefix=auto_prefix,
+        client=client,
     )
 
     if output == "json":
@@ -813,7 +864,7 @@ def dev_branch_name(ctx, issue_key: str, prefix: str, auto_prefix: bool, output:
 @click.pass_context
 @handle_jira_errors
 def dev_pr_description(
-    ctx,
+    ctx: click.Context,
     issue_key: str,
     include_checklist: bool,
     include_labels: bool,
@@ -822,11 +873,13 @@ def dev_pr_description(
     copy: bool,
 ):
     """Generate a PR description from an issue."""
+    client = get_client_from_context(ctx)
     result = _create_pr_description_impl(
         issue_key=issue_key,
         include_checklist=include_checklist,
         include_labels=include_labels,
         include_components=include_components,
+        client=client,
     )
 
     if copy:
@@ -913,7 +966,7 @@ def dev_parse_commits(ctx, message: str, from_stdin: bool, project: str, output:
 @click.pass_context
 @handle_jira_errors
 def dev_link_commit(
-    ctx,
+    ctx: click.Context,
     issue_key: str,
     commit: str,
     message: str,
@@ -923,6 +976,7 @@ def dev_link_commit(
     output: str,
 ):
     """Link a Git commit to a JIRA issue."""
+    client = get_client_from_context(ctx)
     result = _link_commit_impl(
         issue_key=issue_key,
         commit=commit,
@@ -930,6 +984,7 @@ def dev_link_commit(
         repo=repo,
         author=author,
         branch=branch,
+        client=client,
     )
 
     if output == "json":
@@ -956,7 +1011,7 @@ def dev_link_commit(
 @click.pass_context
 @handle_jira_errors
 def dev_link_pr(
-    ctx,
+    ctx: click.Context,
     issue_key: str,
     pr: str,
     title: str,
@@ -965,12 +1020,14 @@ def dev_link_pr(
     output: str,
 ):
     """Link a Pull Request to a JIRA issue."""
+    client = get_client_from_context(ctx)
     result = _link_pr_impl(
         issue_key=issue_key,
         pr_url=pr,
         title=title,
         status=status,
         author=author,
+        client=client,
     )
 
     if output == "json":
@@ -995,12 +1052,16 @@ def dev_link_pr(
 )
 @click.pass_context
 @handle_jira_errors
-def dev_get_commits(ctx, issue_key: str, detailed: bool, repo: str, output: str):
+def dev_get_commits(
+    ctx: click.Context, issue_key: str, detailed: bool, repo: str, output: str
+):
     """Get commits linked to an issue."""
+    client = get_client_from_context(ctx)
     commits = _get_commits_impl(
         issue_key=issue_key,
         detailed=detailed,
         repo_filter=repo,
+        client=client,
     )
 
     if output == "json":

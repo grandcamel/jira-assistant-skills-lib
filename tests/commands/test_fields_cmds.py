@@ -662,7 +662,7 @@ class TestFieldsListCommand:
         mock_jira_client.get.return_value = deepcopy(sample_fields)
 
         with patch(
-            "jira_assistant_skills_lib.cli.commands.fields_cmds.get_jira_client",
+            "jira_assistant_skills_lib.cli.commands.fields_cmds.get_client_from_context",
             return_value=mock_jira_client,
         ):
             result = cli_runner.invoke(fields, ["list"])
@@ -675,7 +675,7 @@ class TestFieldsListCommand:
         mock_jira_client.get.return_value = deepcopy(sample_fields)
 
         with patch(
-            "jira_assistant_skills_lib.cli.commands.fields_cmds.get_jira_client",
+            "jira_assistant_skills_lib.cli.commands.fields_cmds.get_client_from_context",
             return_value=mock_jira_client,
         ):
             result = cli_runner.invoke(fields, ["list", "--output", "json"])
@@ -688,7 +688,7 @@ class TestFieldsListCommand:
         mock_jira_client.get.return_value = deepcopy(sample_fields)
 
         with patch(
-            "jira_assistant_skills_lib.cli.commands.fields_cmds.get_jira_client",
+            "jira_assistant_skills_lib.cli.commands.fields_cmds.get_client_from_context",
             return_value=mock_jira_client,
         ):
             result = cli_runner.invoke(fields, ["list", "--agile"])
@@ -707,7 +707,7 @@ class TestFieldsCreateCommand:
         mock_jira_client.post.return_value = deepcopy(sample_created_field)
 
         with patch(
-            "jira_assistant_skills_lib.cli.commands.fields_cmds.get_jira_client",
+            "jira_assistant_skills_lib.cli.commands.fields_cmds.get_client_from_context",
             return_value=mock_jira_client,
         ):
             result = cli_runner.invoke(
@@ -724,7 +724,7 @@ class TestFieldsCreateCommand:
         mock_jira_client.post.return_value = deepcopy(sample_created_field)
 
         with patch(
-            "jira_assistant_skills_lib.cli.commands.fields_cmds.get_jira_client",
+            "jira_assistant_skills_lib.cli.commands.fields_cmds.get_client_from_context",
             return_value=mock_jira_client,
         ):
             result = cli_runner.invoke(
@@ -758,7 +758,7 @@ class TestFieldsCheckProjectCommand:
         ]
 
         with patch(
-            "jira_assistant_skills_lib.cli.commands.fields_cmds.get_jira_client",
+            "jira_assistant_skills_lib.cli.commands.fields_cmds.get_client_from_context",
             return_value=mock_jira_client,
         ):
             result = cli_runner.invoke(fields, ["check-project", "PROJ"])
@@ -776,7 +776,7 @@ class TestFieldsCheckProjectCommand:
         ]
 
         with patch(
-            "jira_assistant_skills_lib.cli.commands.fields_cmds.get_jira_client",
+            "jira_assistant_skills_lib.cli.commands.fields_cmds.get_client_from_context",
             return_value=mock_jira_client,
         ):
             result = cli_runner.invoke(
@@ -809,7 +809,7 @@ class TestFieldsConfigureAgileCommand:
         ]
 
         with patch(
-            "jira_assistant_skills_lib.cli.commands.fields_cmds.get_jira_client",
+            "jira_assistant_skills_lib.cli.commands.fields_cmds.get_client_from_context",
             return_value=mock_jira_client,
         ):
             result = cli_runner.invoke(fields, ["configure-agile", "PROJ", "--dry-run"])
@@ -835,7 +835,7 @@ class TestFieldsConfigureAgileCommand:
         ]
 
         with patch(
-            "jira_assistant_skills_lib.cli.commands.fields_cmds.get_jira_client",
+            "jira_assistant_skills_lib.cli.commands.fields_cmds.get_client_from_context",
             return_value=mock_jira_client,
         ):
             result = cli_runner.invoke(

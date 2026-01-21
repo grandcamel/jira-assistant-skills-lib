@@ -14,17 +14,7 @@ Supports configurable Agile field IDs with automatic discovery fallback.
 from __future__ import annotations
 
 import os
-import warnings
 from typing import Any
-
-# Emit deprecation warning if JIRA_PROFILE is set
-if os.environ.get("JIRA_PROFILE"):
-    warnings.warn(
-        "JIRA_PROFILE environment variable is deprecated and will be ignored. "
-        "Use JIRA_API_TOKEN, JIRA_EMAIL, and JIRA_SITE_URL instead.",
-        DeprecationWarning,
-        stacklevel=1,
-    )
 
 from assistant_skills_lib.config_manager import BaseConfigManager
 from assistant_skills_lib.error_handler import (  # Assuming error_handler is consolidated next
@@ -75,8 +65,6 @@ class ConfigManager(BaseConfigManager):
         Returns the default configuration dictionary for JIRA.
         """
         return {
-            "default_profile": "production",
-            "profiles": {},
             "api": {
                 "version": "3",
                 "timeout": 30,
@@ -84,29 +72,6 @@ class ConfigManager(BaseConfigManager):
                 "retry_backoff": 2.0,
             },
         }
-
-    def get_profile_config(self, profile: str | None = None) -> dict[str, Any]:
-        """
-        Get configuration for a specific profile.
-
-        Args:
-            profile: Profile name (default: self.profile)
-
-        Returns:
-            Profile configuration
-
-        Raises:
-            ValidationError: If profile doesn't exist
-        """
-        profile_name = profile or self.profile
-        profiles = self.config.get(self.service_name, {}).get("profiles", {})
-
-        if profile_name not in profiles:
-            raise ValidationError(
-                f"Profile '{profile_name}' not found. Available profiles: {list(profiles.keys())}"
-            )
-
-        return profiles[profile_name]
 
     def get_credentials(self) -> tuple:
         """
@@ -192,12 +157,9 @@ class ConfigManager(BaseConfigManager):
         base_api_config.update(jira_api_config)
         return base_api_config
 
-    def get_client(self, profile: str | None = None) -> JiraClient:
+    def get_client(self) -> JiraClient:
         """
-        Create a configured JIRA client for a profile.
-
-        Args:
-            profile: Profile name (default: self.profile)
+        Create a configured JIRA client.
 
         Returns:
             Configured JiraClient instance
@@ -217,31 +179,20 @@ class ConfigManager(BaseConfigManager):
             retry_backoff=api_config.get("retry_backoff", 2.0),
         )
 
-    def get_default_project(self, profile: str | None = None) -> str | None:
+    def get_default_project(self) -> str | None:
         """
-        Get default project key for a profile.
-
-        Args:
-            profile: Profile name (default: self.profile)
+        Get default project key from configuration.
 
         Returns:
             Default project key or None
         """
-        profile = profile or self.profile
-        try:
-            profile_config = self.get_profile_config(profile)
-            return profile_config.get("default_project")
-        except ValidationError:
-            return None
+        return self.config.get(self.service_name, {}).get("default_project")
 
-    def get_agile_fields(self, profile: str | None = None) -> dict[str, str]:
+    def get_agile_fields(self) -> dict[str, str]:
         """
-        Get Agile field IDs for a profile.
+        Get Agile field IDs.
 
         Returns configured field IDs merged with defaults.
-
-        Args:
-            profile: Profile name (default: self.profile)
 
         Returns:
             Dictionary of field names to field IDs:
@@ -251,8 +202,6 @@ class ConfigManager(BaseConfigManager):
             - epic_color: Epic Color field ID
             - sprint: Sprint field ID
         """
-        profile = profile or self.profile
-
         # Start with defaults
         fields = DEFAULT_AGILE_FIELDS.copy()
 
@@ -270,25 +219,20 @@ class ConfigManager(BaseConfigManager):
             if env_value:
                 fields[field_name] = env_value
 
-        # Override with profile-specific config
-        try:
-            profile_config = self.get_profile_config(profile)
-            agile_config = profile_config.get("agile_fields", {})
-            for field_name, field_id in agile_config.items():
-                if field_id:
-                    fields[field_name] = field_id
-        except ValidationError:
-            pass  # Profile doesn't exist, use defaults
+        # Override with config file settings
+        agile_config = self.config.get(self.service_name, {}).get("agile_fields", {})
+        for field_name, field_id in agile_config.items():
+            if field_id:
+                fields[field_name] = field_id
 
         return fields
 
-    def get_agile_field(self, field_name: str, profile: str | None = None) -> str:
+    def get_agile_field(self, field_name: str) -> str:
         """
         Get a specific Agile field ID.
 
         Args:
             field_name: Field name (epic_link, story_points, epic_name, epic_color, sprint)
-            profile: Profile name (default: self.profile)
 
         Returns:
             Field ID string
@@ -309,15 +253,12 @@ class ConfigManager(BaseConfigManager):
                 f"Valid fields: {', '.join(valid_fields)}"
             )
 
-        fields = self.get_agile_fields(profile)
+        fields = self.get_agile_fields()
         return fields[field_name]
 
-    def get_automation_client(self, profile: str | None = None) -> AutomationClient:
+    def get_automation_client(self) -> AutomationClient:
         """
-        Create a configured Automation API client for a profile.
-
-        Args:
-            profile: Profile name (default: self.profile)
+        Create a configured Automation API client.
 
         Returns:
             Configured AutomationClient instance

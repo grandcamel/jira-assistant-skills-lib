@@ -5,7 +5,9 @@ This module contains all logic for jira-fields operations.
 All implementation functions are inlined for direct CLI usage.
 """
 
-from typing import Any
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
 
 import click
 
@@ -15,7 +17,10 @@ from jira_assistant_skills_lib import (
     get_jira_client,
 )
 
-from ..cli_utils import format_json, handle_jira_errors
+from ..cli_utils import format_json, get_client_from_context, handle_jira_errors
+
+if TYPE_CHECKING:
+    from jira_assistant_skills_lib import JiraClient
 
 # =============================================================================
 # Constants
@@ -203,6 +208,7 @@ def _list_fields_impl(
     filter_pattern: str | None = None,
     agile_only: bool = False,
     custom_only: bool = True,
+    client: JiraClient | None = None,
 ) -> list[dict[str, Any]]:
     """
     List fields from JIRA instance.
@@ -211,14 +217,16 @@ def _list_fields_impl(
         filter_pattern: Filter fields by name pattern (case-insensitive)
         agile_only: If True, only show Agile-related fields
         custom_only: If True, only show custom fields (default: True)
+        client: Optional JiraClient instance. If None, creates one internally.
 
     Returns:
         List of field dictionaries
     """
-    with get_jira_client() as client:
-        fields = client.get("/rest/api/3/field")
 
-        result = []
+    def _do_list(c: JiraClient) -> list[dict[str, Any]]:
+        fields = c.get("/rest/api/3/field")
+
+        result: list[dict[str, Any]] = []
         for field in fields:
             if custom_only and not field.get("custom", False):
                 continue
@@ -249,11 +257,18 @@ def _list_fields_impl(
         result.sort(key=lambda x: x["name"].lower())
         return result
 
+    if client is not None:
+        return _do_list(client)
+
+    with get_jira_client() as c:
+        return _do_list(c)
+
 
 def _create_field_impl(
     name: str,
     field_type: str,
     description: str | None = None,
+    client: JiraClient | None = None,
 ) -> dict[str, Any]:
     """
     Create a custom field.
@@ -262,6 +277,7 @@ def _create_field_impl(
         name: Field name
         field_type: Field type (text, number, select, etc.)
         description: Optional field description
+        client: Optional JiraClient instance. If None, creates one internally.
 
     Returns:
         Created field data
@@ -275,10 +291,10 @@ def _create_field_impl(
             f"Valid types: {', '.join(FIELD_TYPES.keys())}"
         )
 
-    with get_jira_client() as client:
+    def _do_create(c: JiraClient) -> dict[str, Any]:
         type_config = FIELD_TYPES[field_type]
 
-        data = {
+        data: dict[str, Any] = {
             "name": name,
             "type": type_config["type"],
             "searcherKey": type_config["searcher"],
@@ -287,14 +303,21 @@ def _create_field_impl(
         if description:
             data["description"] = description
 
-        result = client.post("/rest/api/3/field", data=data)
+        result = c.post("/rest/api/3/field", data=data)
         return result
+
+    if client is not None:
+        return _do_create(client)
+
+    with get_jira_client() as c:
+        return _do_create(c)
 
 
 def _check_project_fields_impl(
     project_key: str,
     issue_type: str | None = None,
     check_agile: bool = False,
+    client: JiraClient | None = None,
 ) -> dict[str, Any]:
     """
     Check field availability for a project.
@@ -303,14 +326,16 @@ def _check_project_fields_impl(
         project_key: Project key
         issue_type: Optional issue type to check
         check_agile: If True, specifically check Agile field availability
+        client: Optional JiraClient instance. If None, creates one internally.
 
     Returns:
         Dictionary with project info and available fields
     """
-    with get_jira_client() as client:
-        project = client.get(f"/rest/api/3/project/{project_key}")
 
-        result = {
+    def _do_check(c: JiraClient) -> dict[str, Any]:
+        project = c.get(f"/rest/api/3/project/{project_key}")
+
+        result: dict[str, Any] = {
             "project_key": project.get("key"),
             "project": {
                 "key": project.get("key"),
@@ -325,15 +350,18 @@ def _check_project_fields_impl(
             "issue_types": [],
         }
 
-        params = {"projectKeys": project_key, "expand": "projects.issuetypes.fields"}
+        params: dict[str, Any] = {
+            "projectKeys": project_key,
+            "expand": "projects.issuetypes.fields",
+        }
         if issue_type:
             params["issuetypeNames"] = issue_type
 
-        meta = client.get("/rest/api/3/issue/createmeta", params=params)
+        meta = c.get("/rest/api/3/issue/createmeta", params=params)
 
         for proj in meta.get("projects", []):
             for itype in proj.get("issuetypes", []):
-                type_info = {
+                type_info: dict[str, Any] = {
                     "name": itype.get("name"),
                     "id": itype.get("id"),
                     "fields": [],
@@ -369,6 +397,12 @@ def _check_project_fields_impl(
 
         return result
 
+    if client is not None:
+        return _do_check(client)
+
+    with get_jira_client() as c:
+        return _do_check(c)
+
 
 def _configure_agile_fields_impl(
     project_key: str,
@@ -376,6 +410,7 @@ def _configure_agile_fields_impl(
     epic_link_id: str | None = None,
     sprint_id: str | None = None,
     dry_run: bool = False,
+    client: JiraClient | None = None,
 ) -> dict[str, Any]:
     """
     Configure Agile fields for a project.
@@ -386,6 +421,7 @@ def _configure_agile_fields_impl(
         epic_link_id: Custom Epic Link field ID (optional, auto-detect)
         sprint_id: Custom Sprint field ID (optional, auto-detect)
         dry_run: If True, show what would be done without making changes
+        client: Optional JiraClient instance. If None, creates one internally.
 
     Returns:
         Configuration result
@@ -393,8 +429,9 @@ def _configure_agile_fields_impl(
     Raises:
         ValidationError: If project is team-managed
     """
-    with get_jira_client() as client:
-        project = client.get(f"/rest/api/3/project/{project_key}")
+
+    def _do_configure(c: JiraClient) -> dict[str, Any]:
+        project = c.get(f"/rest/api/3/project/{project_key}")
 
         if project.get("style") == "next-gen":
             raise ValidationError(
@@ -410,7 +447,7 @@ def _configure_agile_fields_impl(
             "fields_added": [],
         }
 
-        agile_fields = _find_agile_fields(client)
+        agile_fields = _find_agile_fields(c)
 
         field_mapping = {
             "story_points": story_points_id or agile_fields.get("story_points"),
@@ -426,7 +463,7 @@ def _configure_agile_fields_impl(
                 "Create Story Points, Epic Link, and Sprint fields first."
             )
 
-        screens = _find_project_screens(client, project_key)
+        screens = _find_project_screens(c, project_key)
         result["screens_found"] = [s["name"] for s in screens]
 
         if not screens:
@@ -438,7 +475,7 @@ def _configure_agile_fields_impl(
 
             for field_type, field_id in field_mapping.items():
                 if field_id:
-                    success = _add_field_to_screen(client, screen_id, field_id, dry_run)
+                    success = _add_field_to_screen(c, screen_id, field_id, dry_run)
                     if success:
                         result["fields_added"].append(
                             {
@@ -450,6 +487,12 @@ def _configure_agile_fields_impl(
                         )
 
         return result
+
+    if client is not None:
+        return _do_configure(client)
+
+    with get_jira_client() as c:
+        return _do_configure(c)
 
 
 # =============================================================================
@@ -594,12 +637,16 @@ def fields():
 @click.option("--output", "-o", type=click.Choice(["text", "json"]), default="text")
 @click.pass_context
 @handle_jira_errors
-def fields_list(ctx, filter_pattern: str, agile: bool, show_all: bool, output: str):
+def fields_list(
+    ctx: click.Context, filter_pattern: str, agile: bool, show_all: bool, output: str
+):
     """List all available fields."""
+    client = get_client_from_context(ctx)
     result = _list_fields_impl(
         filter_pattern=filter_pattern,
         agile_only=agile,
         custom_only=not show_all,
+        client=client,
     )
 
     if output == "json":
@@ -622,12 +669,16 @@ def fields_list(ctx, filter_pattern: str, agile: bool, show_all: bool, output: s
 @click.option("--output", "-o", type=click.Choice(["text", "json"]), default="text")
 @click.pass_context
 @handle_jira_errors
-def fields_create(ctx, name: str, field_type: str, description: str, output: str):
+def fields_create(
+    ctx: click.Context, name: str, field_type: str, description: str, output: str
+):
     """Create a new custom field."""
+    client = get_client_from_context(ctx)
     result = _create_field_impl(
         name=name,
         field_type=field_type,
         description=description,
+        client=client,
     )
 
     if output == "json":
@@ -646,13 +697,19 @@ def fields_create(ctx, name: str, field_type: str, description: str, output: str
 @click.pass_context
 @handle_jira_errors
 def fields_check_project(
-    ctx, project_key: str, issue_type: str, check_agile: bool, output: str
+    ctx: click.Context,
+    project_key: str,
+    issue_type: str,
+    check_agile: bool,
+    output: str,
 ):
     """Check which fields are available for a project."""
+    client = get_client_from_context(ctx)
     result = _check_project_fields_impl(
         project_key=project_key,
         issue_type=issue_type,
         check_agile=check_agile,
+        client=client,
     )
 
     if output == "json":
@@ -676,7 +733,7 @@ def fields_check_project(
 @click.pass_context
 @handle_jira_errors
 def fields_configure_agile(
-    ctx,
+    ctx: click.Context,
     project_key: str,
     epic_link: str,
     story_points: str,
@@ -685,12 +742,14 @@ def fields_configure_agile(
     output: str,
 ):
     """Configure Agile field mappings for a project."""
+    client = get_client_from_context(ctx)
     result = _configure_agile_fields_impl(
         project_key=project_key,
         story_points_id=story_points,
         epic_link_id=epic_link,
         sprint_id=sprint,
         dry_run=dry_run,
+        client=client,
     )
 
     if output == "json":

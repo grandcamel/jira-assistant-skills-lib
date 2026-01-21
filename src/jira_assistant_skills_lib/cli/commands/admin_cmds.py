@@ -11,9 +11,12 @@ Provides CLI commands for JIRA administration including:
 - Automation rules
 """
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import click
+
+if TYPE_CHECKING:
+    from jira_assistant_skills_lib import JiraClient
 
 from jira_assistant_skills_lib import (
     JiraError,
@@ -28,7 +31,7 @@ from jira_assistant_skills_lib import (
     validate_project_type,
 )
 
-from ..cli_utils import handle_jira_errors
+from ..cli_utils import get_client_from_context, handle_jira_errors
 
 # =============================================================================
 # Helper Functions
@@ -70,14 +73,16 @@ def _list_projects_impl(
     expand: list[str] | None = None,
     start_at: int = 0,
     max_results: int = 50,
+    client: "JiraClient | None" = None,
 ) -> dict[str, Any]:
     """List and search projects."""
-    with get_jira_client() as client:
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
         status = ["live"]
         if include_archived:
             status.append("archived")
 
-        result = client.search_projects(
+        result = c.search_projects(
             query=query,
             type_key=project_type,
             category_id=category_id,
@@ -88,24 +93,48 @@ def _list_projects_impl(
         )
         return result
 
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
+
 
 def _list_trash_projects_impl(
-    start_at: int = 0, max_results: int = 50
+    start_at: int = 0,
+    max_results: int = 50,
+    client: "JiraClient | None" = None,
 ) -> dict[str, Any]:
     """List projects in trash."""
-    with get_jira_client() as client:
-        result = client.search_projects(
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
+        result = c.search_projects(
             status=["deleted"], start_at=start_at, max_results=max_results
         )
         return result
 
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
+
 
 def _get_project_impl(
-    project_key: str, expand: list[str] | None = None
+    project_key: str,
+    expand: list[str] | None = None,
+    client: "JiraClient | None" = None,
 ) -> dict[str, Any]:
     """Get project details."""
-    with get_jira_client() as client:
-        return client.get_project(project_key, expand=expand)
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
+        return c.get_project(project_key, expand=expand)
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
 def _create_project_impl(
@@ -116,6 +145,7 @@ def _create_project_impl(
     lead: str | None = None,
     description: str | None = None,
     category_id: int | None = None,
+    client: "JiraClient | None" = None,
 ) -> dict[str, Any]:
     """Create a new JIRA project."""
     key = validate_project_key(key)
@@ -133,11 +163,11 @@ def _create_project_impl(
         }
         template_key = default_templates.get(project_type)
 
-    with get_jira_client() as client:
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
         lead_account_id = None
         if lead:
             if "@" in lead:
-                users = client.search_users(lead, max_results=1)
+                users = c.search_users(lead, max_results=1)
                 if users:
                     lead_account_id = users[0].get("accountId")
                 else:
@@ -145,7 +175,7 @@ def _create_project_impl(
             else:
                 lead_account_id = lead
 
-        result = client.create_project(
+        result = c.create_project(
             key=key,
             name=name,
             project_type_key=project_type,
@@ -156,11 +186,17 @@ def _create_project_impl(
 
         if category_id:
             try:
-                client.update_project(key, category_id=category_id)
+                c.update_project(key, category_id=category_id)
             except JiraError:
                 pass
 
         return result
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
 def _update_project_impl(
@@ -169,13 +205,15 @@ def _update_project_impl(
     description: str | None = None,
     lead: str | None = None,
     category_id: int | None = None,
+    client: "JiraClient | None" = None,
 ) -> dict[str, Any]:
     """Update a JIRA project."""
-    with get_jira_client() as client:
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
         lead_account_id = None
         if lead:
             if "@" in lead:
-                users = client.search_users(lead, max_results=1)
+                users = c.search_users(lead, max_results=1)
                 if users:
                     lead_account_id = users[0].get("accountId")
                 else:
@@ -183,7 +221,7 @@ def _update_project_impl(
             else:
                 lead_account_id = lead
 
-        return client.update_project(
+        return c.update_project(
             project_key,
             name=name,
             description=description,
@@ -191,56 +229,102 @@ def _update_project_impl(
             category_id=category_id,
         )
 
+    if client is not None:
+        return _do_work(client)
 
-def _delete_project_impl(project_key: str, dry_run: bool = False) -> dict[str, Any]:
+    with get_jira_client() as c:
+        return _do_work(c)
+
+
+def _delete_project_impl(
+    project_key: str,
+    dry_run: bool = False,
+    client: "JiraClient | None" = None,
+) -> dict[str, Any]:
     """Delete a JIRA project."""
-    with get_jira_client() as client:
-        project = client.get_project(project_key)
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
+        project = c.get_project(project_key)
         if dry_run:
             return {"action": "dry_run", "project": project, "would_delete": True}
 
-        client.delete_project(project_key)
+        c.delete_project(project_key)
         return {"action": "deleted", "project": project}
 
+    if client is not None:
+        return _do_work(client)
 
-def _archive_project_impl(project_key: str) -> dict[str, Any]:
+    with get_jira_client() as c:
+        return _do_work(c)
+
+
+def _archive_project_impl(
+    project_key: str,
+    client: "JiraClient | None" = None,
+) -> dict[str, Any]:
     """Archive a JIRA project."""
-    with get_jira_client() as client:
-        client.archive_project(project_key)
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
+        c.archive_project(project_key)
         return {"action": "archived", "project_key": project_key}
 
+    if client is not None:
+        return _do_work(client)
 
-def _restore_project_impl(project_key: str) -> dict[str, Any]:
+    with get_jira_client() as c:
+        return _do_work(c)
+
+
+def _restore_project_impl(
+    project_key: str,
+    client: "JiraClient | None" = None,
+) -> dict[str, Any]:
     """Restore an archived or deleted project."""
-    with get_jira_client() as client:
-        client.restore_project(project_key)
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
+        c.restore_project(project_key)
         return {"action": "restored", "project_key": project_key}
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
 def _get_project_config_impl(
-    project_key: str, show_schemes: bool = False
+    project_key: str,
+    show_schemes: bool = False,
+    client: "JiraClient | None" = None,
 ) -> dict[str, Any]:
     """Get project configuration."""
-    with get_jira_client() as client:
-        project = client.get_project(project_key, expand="description,lead,issueTypes")
-        config = {"project": project}
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
+        project = c.get_project(project_key, expand="description,lead,issueTypes")
+        config: dict[str, Any] = {"project": project}
 
         if show_schemes:
             config["schemes"] = {}
             try:
-                config["schemes"]["permission"] = client.get_project_permission_scheme(
+                config["schemes"]["permission"] = c.get_project_permission_scheme(
                     project_key
                 )
             except JiraError:
                 config["schemes"]["permission"] = None
             try:
-                config["schemes"]["notification"] = (
-                    client.get_project_notification_scheme(project_key)
+                config["schemes"]["notification"] = c.get_project_notification_scheme(
+                    project_key
                 )
             except JiraError:
                 config["schemes"]["notification"] = None
 
         return config
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
 # =============================================================================
@@ -248,22 +332,53 @@ def _get_project_config_impl(
 # =============================================================================
 
 
-def _list_categories_impl() -> list[dict[str, Any]]:
+def _list_categories_impl(
+    client: "JiraClient | None" = None,
+) -> list[dict[str, Any]]:
     """List project categories."""
-    with get_jira_client() as client:
-        return client.get_project_categories()
+
+    def _do_work(c: "JiraClient") -> list[dict[str, Any]]:
+        return c.get_project_categories()
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
-def _create_category_impl(name: str, description: str | None = None) -> dict[str, Any]:
+def _create_category_impl(
+    name: str,
+    description: str | None = None,
+    client: "JiraClient | None" = None,
+) -> dict[str, Any]:
     """Create a project category."""
-    with get_jira_client() as client:
-        return client.create_project_category(name=name, description=description)
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
+        return c.create_project_category(name=name, description=description)
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
-def _assign_category_impl(project_key: str, category_id: int) -> dict[str, Any]:
+def _assign_category_impl(
+    project_key: str,
+    category_id: int,
+    client: "JiraClient | None" = None,
+) -> dict[str, Any]:
     """Assign a category to a project."""
-    with get_jira_client() as client:
-        return client.update_project(project_key, category_id=category_id)
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
+        return c.update_project(project_key, category_id=category_id)
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
 # =============================================================================
@@ -279,18 +394,20 @@ def _search_users_impl(
     include_groups: bool = False,
     project: str | None = None,
     assignable: bool = False,
+    client: "JiraClient | None" = None,
 ) -> list[dict[str, Any]]:
     """Search for users."""
-    with get_jira_client() as client:
+
+    def _do_work(c: "JiraClient") -> list[dict[str, Any]]:
         if assignable and project:
-            users = client.find_assignable_users(
+            users = c.find_assignable_users(
                 query=query,
                 project_key=project,
                 start_at=start_at,
                 max_results=max_results,
             )
         else:
-            users = client.search_users(
+            users = c.search_users(
                 query=query, max_results=max_results, start_at=start_at
             )
             if active_only:
@@ -299,18 +416,34 @@ def _search_users_impl(
         if include_groups:
             for user in users:
                 try:
-                    groups = client.get_user_groups(user["accountId"])
+                    groups = c.get_user_groups(user["accountId"])
                     user["groups"] = [g["name"] for g in groups]
                 except Exception:
                     user["groups"] = []
 
         return users
 
+    if client is not None:
+        return _do_work(client)
 
-def _get_user_impl(account_id: str) -> dict[str, Any]:
+    with get_jira_client() as c:
+        return _do_work(c)
+
+
+def _get_user_impl(
+    account_id: str,
+    client: "JiraClient | None" = None,
+) -> dict[str, Any]:
     """Get user details."""
-    with get_jira_client() as client:
-        return client.get_user(account_id)
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
+        return c.get_user(account_id)
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
 # =============================================================================
@@ -322,10 +455,12 @@ def _list_groups_impl(
     query: str | None = None,
     max_results: int = 50,
     include_members: bool = False,
+    client: "JiraClient | None" = None,
 ) -> list[dict[str, Any]]:
     """List all groups."""
-    with get_jira_client() as client:
-        result = client.find_groups(
+
+    def _do_work(c: "JiraClient") -> list[dict[str, Any]]:
+        result = c.find_groups(
             query=query or "", max_results=max_results, caseInsensitive=True
         )
         groups = result.get("groups", [])
@@ -333,7 +468,7 @@ def _list_groups_impl(
         if include_members:
             for group in groups:
                 try:
-                    members_result = client.get_group_members(
+                    members_result = c.get_group_members(
                         group_name=group["name"], max_results=1
                     )
                     group["memberCount"] = members_result.get("total", 0)
@@ -342,57 +477,117 @@ def _list_groups_impl(
 
         return groups
 
+    if client is not None:
+        return _do_work(client)
 
-def _get_group_members_impl(group_name: str, max_results: int = 50) -> dict[str, Any]:
+    with get_jira_client() as c:
+        return _do_work(c)
+
+
+def _get_group_members_impl(
+    group_name: str,
+    max_results: int = 50,
+    client: "JiraClient | None" = None,
+) -> dict[str, Any]:
     """Get members of a group."""
-    with get_jira_client() as client:
-        return client.get_group_members(group_name=group_name, max_results=max_results)
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
+        return c.get_group_members(group_name=group_name, max_results=max_results)
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
-def _create_group_impl(group_name: str) -> dict[str, Any]:
+def _create_group_impl(
+    group_name: str,
+    client: "JiraClient | None" = None,
+) -> dict[str, Any]:
     """Create a new group."""
-    with get_jira_client() as client:
-        return client.create_group(group_name)
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
+        return c.create_group(group_name)
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
-def _delete_group_impl(group_name: str, dry_run: bool = False) -> dict[str, Any]:
+def _delete_group_impl(
+    group_name: str,
+    dry_run: bool = False,
+    client: "JiraClient | None" = None,
+) -> dict[str, Any]:
     """Delete a group."""
-    with get_jira_client() as client:
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
         if dry_run:
             return {"action": "dry_run", "group_name": group_name, "would_delete": True}
 
-        client.delete_group(group_name)
+        c.delete_group(group_name)
         return {"action": "deleted", "group_name": group_name}
 
+    if client is not None:
+        return _do_work(client)
 
-def _add_user_to_group_impl(group_name: str, user: str) -> dict[str, Any]:
+    with get_jira_client() as c:
+        return _do_work(c)
+
+
+def _add_user_to_group_impl(
+    group_name: str,
+    user: str,
+    client: "JiraClient | None" = None,
+) -> dict[str, Any]:
     """Add a user to a group."""
-    with get_jira_client() as client:
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
         account_id = user
         if "@" in user:
-            users = client.search_users(user, max_results=1)
+            users = c.search_users(user, max_results=1)
             if users:
                 account_id = users[0].get("accountId")
             else:
                 raise ValidationError(f"User not found: {user}")
 
-        client.add_user_to_group(group_name=group_name, account_id=account_id)
+        c.add_user_to_group(group_name=group_name, account_id=account_id)
         return {"action": "added", "group_name": group_name, "account_id": account_id}
 
+    if client is not None:
+        return _do_work(client)
 
-def _remove_user_from_group_impl(group_name: str, user: str) -> dict[str, Any]:
+    with get_jira_client() as c:
+        return _do_work(c)
+
+
+def _remove_user_from_group_impl(
+    group_name: str,
+    user: str,
+    client: "JiraClient | None" = None,
+) -> dict[str, Any]:
     """Remove a user from a group."""
-    with get_jira_client() as client:
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
         account_id = user
         if "@" in user:
-            users = client.search_users(user, max_results=1)
+            users = c.search_users(user, max_results=1)
             if users:
                 account_id = users[0].get("accountId")
             else:
                 raise ValidationError(f"User not found: {user}")
 
-        client.remove_user_from_group(group_name=group_name, account_id=account_id)
+        c.remove_user_from_group(group_name=group_name, account_id=account_id)
         return {"action": "removed", "group_name": group_name, "account_id": account_id}
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
 # =============================================================================
@@ -514,12 +709,15 @@ def _get_automation_template_impl(template_id: str) -> dict[str, Any]:
 
 
 def _list_permission_schemes_impl(
-    name_filter: str | None = None, show_grants: bool = False
+    name_filter: str | None = None,
+    show_grants: bool = False,
+    client: "JiraClient | None" = None,
 ) -> list[dict[str, Any]]:
     """List permission schemes."""
-    with get_jira_client() as client:
+
+    def _do_work(c: "JiraClient") -> list[dict[str, Any]]:
         expand = "permissions" if show_grants else None
-        response = client.get_permission_schemes(expand=expand)
+        response = c.get_permission_schemes(expand=expand)
         schemes = response.get("permissionSchemes", [])
 
         if name_filter:
@@ -528,38 +726,66 @@ def _list_permission_schemes_impl(
 
         return schemes
 
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
+
 
 def _get_permission_scheme_impl(
-    scheme_id: str, show_projects: bool = False
+    scheme_id: str,
+    show_projects: bool = False,
+    client: "JiraClient | None" = None,
 ) -> dict[str, Any]:
     """Get permission scheme details."""
-    with get_jira_client() as client:
-        scheme = client.get_permission_scheme(scheme_id, expand="permissions")
-        result = {"scheme": scheme}
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
+        scheme = c.get_permission_scheme(scheme_id, expand="permissions")
+        result: dict[str, Any] = {"scheme": scheme}
 
         if show_projects:
-            projects = client.get_projects_for_permission_scheme(scheme_id)
+            projects = c.get_projects_for_permission_scheme(scheme_id)
             result["projects"] = projects
 
         return result
 
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
+
 
 def _create_permission_scheme_impl(
-    name: str, description: str | None = None
+    name: str,
+    description: str | None = None,
+    client: "JiraClient | None" = None,
 ) -> dict[str, Any]:
     """Create a permission scheme."""
-    with get_jira_client() as client:
-        return client.create_permission_scheme(name=name, description=description)
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
+        return c.create_permission_scheme(name=name, description=description)
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
 def _assign_permission_scheme_impl(
-    project_key: str, scheme_id: str, dry_run: bool = False
+    project_key: str,
+    scheme_id: str,
+    dry_run: bool = False,
+    client: "JiraClient | None" = None,
 ) -> dict[str, Any]:
     """Assign a permission scheme to a project."""
-    with get_jira_client() as client:
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
         if dry_run:
-            scheme = client.get_permission_scheme(scheme_id)
-            project = client.get_project(project_key)
+            scheme = c.get_permission_scheme(scheme_id)
+            project = c.get_project(project_key)
             return {
                 "action": "dry_run",
                 "project": project,
@@ -567,7 +793,7 @@ def _assign_permission_scheme_impl(
                 "would_assign": True,
             }
 
-        result = client.assign_permission_scheme(project_key, scheme_id)
+        result = c.assign_permission_scheme(project_key, scheme_id)
         return {
             "action": "assigned",
             "project_key": project_key,
@@ -575,12 +801,27 @@ def _assign_permission_scheme_impl(
             "result": result,
         }
 
+    if client is not None:
+        return _do_work(client)
 
-def _list_permissions_impl() -> list[dict[str, Any]]:
+    with get_jira_client() as c:
+        return _do_work(c)
+
+
+def _list_permissions_impl(
+    client: "JiraClient | None" = None,
+) -> list[dict[str, Any]]:
     """List available permissions."""
-    with get_jira_client() as client:
-        response = client.get_all_permissions()
+
+    def _do_work(c: "JiraClient") -> list[dict[str, Any]]:
+        response = c.get_all_permissions()
         return response.get("permissions", {})
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
 # =============================================================================
@@ -588,46 +829,95 @@ def _list_permissions_impl() -> list[dict[str, Any]]:
 # =============================================================================
 
 
-def _list_notification_schemes_impl() -> list[dict[str, Any]]:
+def _list_notification_schemes_impl(
+    client: "JiraClient | None" = None,
+) -> list[dict[str, Any]]:
     """List notification schemes."""
-    with get_jira_client() as client:
-        response = client.get_notification_schemes()
+
+    def _do_work(c: "JiraClient") -> list[dict[str, Any]]:
+        response = c.get_notification_schemes()
         return response.get("values", [])
 
+    if client is not None:
+        return _do_work(client)
 
-def _get_notification_scheme_impl(scheme_id: str) -> dict[str, Any]:
+    with get_jira_client() as c:
+        return _do_work(c)
+
+
+def _get_notification_scheme_impl(
+    scheme_id: str,
+    client: "JiraClient | None" = None,
+) -> dict[str, Any]:
     """Get notification scheme details."""
-    with get_jira_client() as client:
-        return client.get_notification_scheme(scheme_id, expand="all")
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
+        return c.get_notification_scheme(scheme_id, expand="all")
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
 def _create_notification_scheme_impl(
-    name: str, description: str | None = None
+    name: str,
+    description: str | None = None,
+    client: "JiraClient | None" = None,
 ) -> dict[str, Any]:
     """Create a notification scheme."""
-    with get_jira_client() as client:
-        return client.create_notification_scheme(name=name, description=description)
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
+        return c.create_notification_scheme(name=name, description=description)
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
 def _add_notification_impl(
-    scheme_id: str, event: str, recipient: str
+    scheme_id: str,
+    event: str,
+    recipient: str,
+    client: "JiraClient | None" = None,
 ) -> dict[str, Any]:
     """Add a notification to a scheme."""
-    with get_jira_client() as client:
-        return client.add_notification(
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
+        return c.add_notification(
             scheme_id, event_type=event, notification_type=recipient
         )
 
+    if client is not None:
+        return _do_work(client)
 
-def _remove_notification_impl(scheme_id: str, notification_id: str) -> dict[str, Any]:
+    with get_jira_client() as c:
+        return _do_work(c)
+
+
+def _remove_notification_impl(
+    scheme_id: str,
+    notification_id: str,
+    client: "JiraClient | None" = None,
+) -> dict[str, Any]:
     """Remove a notification from a scheme."""
-    with get_jira_client() as client:
-        client.remove_notification(scheme_id, notification_id)
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
+        c.remove_notification(scheme_id, notification_id)
         return {
             "action": "removed",
             "scheme_id": scheme_id,
             "notification_id": notification_id,
         }
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
 # =============================================================================
@@ -640,14 +930,16 @@ def _list_screens_impl(
     scope: list[str] | None = None,
     fetch_all: bool = False,
     max_results: int = 100,
+    client: "JiraClient | None" = None,
 ) -> list[dict[str, Any]]:
     """List all screens."""
-    with get_jira_client() as client:
-        screens = []
+
+    def _do_work(c: "JiraClient") -> list[dict[str, Any]]:
+        screens: list[dict[str, Any]] = []
         start_at = 0
 
         while True:
-            result = client.get_screens(
+            result = c.get_screens(
                 start_at=start_at,
                 max_results=max_results,
                 scope=scope,
@@ -675,61 +967,112 @@ def _list_screens_impl(
 
         return screens
 
+    if client is not None:
+        return _do_work(client)
 
-def _get_screen_impl(screen_id: str) -> dict[str, Any]:
+    with get_jira_client() as c:
+        return _do_work(c)
+
+
+def _get_screen_impl(
+    screen_id: str,
+    client: "JiraClient | None" = None,
+) -> dict[str, Any]:
     """Get screen details."""
-    with get_jira_client() as client:
-        return client.get_screen(screen_id)
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
+        return c.get_screen(screen_id)
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
-def _list_screen_tabs_impl(screen_id: str) -> list[dict[str, Any]]:
+def _list_screen_tabs_impl(
+    screen_id: str,
+    client: "JiraClient | None" = None,
+) -> list[dict[str, Any]]:
     """List screen tabs."""
-    with get_jira_client() as client:
-        return client.get_screen_tabs(screen_id)
+
+    def _do_work(c: "JiraClient") -> list[dict[str, Any]]:
+        return c.get_screen_tabs(screen_id)
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
 def _get_screen_fields_impl(
-    screen_id: str, tab_id: str | None = None
+    screen_id: str,
+    tab_id: str | None = None,
+    client: "JiraClient | None" = None,
 ) -> list[dict[str, Any]]:
     """Get fields on a screen."""
-    with get_jira_client() as client:
+
+    def _do_work(c: "JiraClient") -> list[dict[str, Any]]:
         if tab_id:
-            return client.get_screen_tab_fields(screen_id, tab_id)
+            return c.get_screen_tab_fields(screen_id, tab_id)
         else:
-            tabs = client.get_screen_tabs(screen_id)
-            all_fields = []
+            tabs = c.get_screen_tabs(screen_id)
+            all_fields: list[dict[str, Any]] = []
             for tab in tabs:
-                fields = client.get_screen_tab_fields(screen_id, tab["id"])
+                fields = c.get_screen_tab_fields(screen_id, tab["id"])
                 for field in fields:
                     field["tab"] = tab["name"]
                 all_fields.extend(fields)
             return all_fields
 
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
+
 
 def _add_field_to_screen_impl(
-    screen_id: str, field_id: str, tab_id: str | None = None
+    screen_id: str,
+    field_id: str,
+    tab_id: str | None = None,
+    client: "JiraClient | None" = None,
 ) -> dict[str, Any]:
     """Add a field to a screen."""
-    with get_jira_client() as client:
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
+        nonlocal tab_id
         if not tab_id:
-            tabs = client.get_screen_tabs(screen_id)
+            tabs = c.get_screen_tabs(screen_id)
             if tabs:
                 tab_id = tabs[0]["id"]
             else:
                 raise ValidationError("No tabs found on screen")
 
-        return client.add_field_to_screen_tab(screen_id, tab_id, field_id)
+        return c.add_field_to_screen_tab(screen_id, tab_id, field_id)
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
 def _remove_field_from_screen_impl(
-    screen_id: str, field_id: str, tab_id: str | None = None
+    screen_id: str,
+    field_id: str,
+    tab_id: str | None = None,
+    client: "JiraClient | None" = None,
 ) -> dict[str, Any]:
     """Remove a field from a screen."""
-    with get_jira_client() as client:
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
+        nonlocal tab_id
         if not tab_id:
-            tabs = client.get_screen_tabs(screen_id)
+            tabs = c.get_screen_tabs(screen_id)
             for tab in tabs:
-                fields = client.get_screen_tab_fields(screen_id, tab["id"])
+                fields = c.get_screen_tab_fields(screen_id, tab["id"])
                 if any(f["id"] == field_id for f in fields):
                     tab_id = tab["id"]
                     break
@@ -737,21 +1080,46 @@ def _remove_field_from_screen_impl(
         if not tab_id:
             raise ValidationError(f"Field {field_id} not found on any tab")
 
-        client.remove_field_from_screen_tab(screen_id, tab_id, field_id)
+        c.remove_field_from_screen_tab(screen_id, tab_id, field_id)
         return {"action": "removed", "screen_id": screen_id, "field_id": field_id}
 
+    if client is not None:
+        return _do_work(client)
 
-def _list_screen_schemes_impl() -> list[dict[str, Any]]:
+    with get_jira_client() as c:
+        return _do_work(c)
+
+
+def _list_screen_schemes_impl(
+    client: "JiraClient | None" = None,
+) -> list[dict[str, Any]]:
     """List screen schemes."""
-    with get_jira_client() as client:
-        response = client.get_screen_schemes()
+
+    def _do_work(c: "JiraClient") -> list[dict[str, Any]]:
+        response = c.get_screen_schemes()
         return response.get("values", [])
 
+    if client is not None:
+        return _do_work(client)
 
-def _get_screen_scheme_impl(scheme_id: str) -> dict[str, Any]:
+    with get_jira_client() as c:
+        return _do_work(c)
+
+
+def _get_screen_scheme_impl(
+    scheme_id: str,
+    client: "JiraClient | None" = None,
+) -> dict[str, Any]:
     """Get screen scheme details."""
-    with get_jira_client() as client:
-        return client.get_screen_scheme(scheme_id)
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
+        return c.get_screen_scheme(scheme_id)
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
 # =============================================================================
@@ -763,10 +1131,12 @@ def _list_issue_types_impl(
     subtask_only: bool = False,
     standard_only: bool = False,
     hierarchy_level: int | None = None,
+    client: "JiraClient | None" = None,
 ) -> list[dict[str, Any]]:
     """List issue types."""
-    with get_jira_client() as client:
-        issue_types = client.get_issue_types()
+
+    def _do_work(c: "JiraClient") -> list[dict[str, Any]]:
+        issue_types = c.get_issue_types()
 
         if subtask_only:
             issue_types = [t for t in issue_types if t.get("subtask", False)]
@@ -780,40 +1150,84 @@ def _list_issue_types_impl(
 
         return issue_types
 
+    if client is not None:
+        return _do_work(client)
 
-def _get_issue_type_impl(issue_type_id: str) -> dict[str, Any]:
+    with get_jira_client() as c:
+        return _do_work(c)
+
+
+def _get_issue_type_impl(
+    issue_type_id: str,
+    client: "JiraClient | None" = None,
+) -> dict[str, Any]:
     """Get issue type details."""
-    with get_jira_client() as client:
-        return client.get_issue_type(issue_type_id)
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
+        return c.get_issue_type(issue_type_id)
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
 def _create_issue_type_impl(
-    name: str, description: str | None = None, issue_type: str = "standard"
+    name: str,
+    description: str | None = None,
+    issue_type: str = "standard",
+    client: "JiraClient | None" = None,
 ) -> dict[str, Any]:
     """Create an issue type."""
-    with get_jira_client() as client:
-        return client.create_issue_type(
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
+        return c.create_issue_type(
             name=name,
             description=description,
             type=issue_type,
         )
 
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
+
 
 def _update_issue_type_impl(
-    issue_type_id: str, name: str | None = None, description: str | None = None
+    issue_type_id: str,
+    name: str | None = None,
+    description: str | None = None,
+    client: "JiraClient | None" = None,
 ) -> dict[str, Any]:
     """Update an issue type."""
-    with get_jira_client() as client:
-        return client.update_issue_type(
-            issue_type_id, name=name, description=description
-        )
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
+        return c.update_issue_type(issue_type_id, name=name, description=description)
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
-def _delete_issue_type_impl(issue_type_id: str) -> dict[str, Any]:
+def _delete_issue_type_impl(
+    issue_type_id: str,
+    client: "JiraClient | None" = None,
+) -> dict[str, Any]:
     """Delete an issue type."""
-    with get_jira_client() as client:
-        client.delete_issue_type(issue_type_id)
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
+        c.delete_issue_type(issue_type_id)
         return {"action": "deleted", "issue_type_id": issue_type_id}
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
 # =============================================================================
@@ -821,37 +1235,86 @@ def _delete_issue_type_impl(issue_type_id: str) -> dict[str, Any]:
 # =============================================================================
 
 
-def _list_issue_type_schemes_impl() -> list[dict[str, Any]]:
+def _list_issue_type_schemes_impl(
+    client: "JiraClient | None" = None,
+) -> list[dict[str, Any]]:
     """List issue type schemes."""
-    with get_jira_client() as client:
-        response = client.get_issue_type_schemes()
+
+    def _do_work(c: "JiraClient") -> list[dict[str, Any]]:
+        response = c.get_issue_type_schemes()
         return response.get("values", [])
 
+    if client is not None:
+        return _do_work(client)
 
-def _get_issue_type_scheme_impl(scheme_id: str) -> dict[str, Any]:
+    with get_jira_client() as c:
+        return _do_work(c)
+
+
+def _get_issue_type_scheme_impl(
+    scheme_id: str,
+    client: "JiraClient | None" = None,
+) -> dict[str, Any]:
     """Get issue type scheme details."""
-    with get_jira_client() as client:
-        return client.get_issue_type_scheme(scheme_id)
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
+        return c.get_issue_type_scheme(scheme_id)
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
 def _create_issue_type_scheme_impl(
-    name: str, description: str | None = None
+    name: str,
+    description: str | None = None,
+    client: "JiraClient | None" = None,
 ) -> dict[str, Any]:
     """Create an issue type scheme."""
-    with get_jira_client() as client:
-        return client.create_issue_type_scheme(name=name, description=description)
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
+        return c.create_issue_type_scheme(name=name, description=description)
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
-def _assign_issue_type_scheme_impl(project_key: str, scheme_id: str) -> dict[str, Any]:
+def _assign_issue_type_scheme_impl(
+    project_key: str,
+    scheme_id: str,
+    client: "JiraClient | None" = None,
+) -> dict[str, Any]:
     """Assign an issue type scheme to a project."""
-    with get_jira_client() as client:
-        return client.assign_issue_type_scheme(project_key, scheme_id)
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
+        return c.assign_issue_type_scheme(project_key, scheme_id)
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
-def _get_project_issue_type_scheme_impl(project_id: str) -> dict[str, Any]:
+def _get_project_issue_type_scheme_impl(
+    project_id: str,
+    client: "JiraClient | None" = None,
+) -> dict[str, Any]:
     """Get the issue type scheme for a project."""
-    with get_jira_client() as client:
-        return client.get_project_issue_type_scheme(project_id)
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
+        return c.get_project_issue_type_scheme(project_id)
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
 # =============================================================================
@@ -866,9 +1329,11 @@ def _list_workflows_impl(
     show_usage: bool = False,
     max_results: int = 50,
     fetch_all: bool = False,
+    client: "JiraClient | None" = None,
 ) -> dict[str, Any]:
     """List all workflows."""
-    with get_jira_client() as client:
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
         all_workflows = []
         start_at = 0
         has_more = True
@@ -876,7 +1341,7 @@ def _list_workflows_impl(
         while has_more:
             if details:
                 expand = "transitions,statuses"
-                response = client.search_workflows(
+                response = c.search_workflows(
                     workflow_name=name_filter,
                     expand=expand,
                     start_at=start_at,
@@ -885,9 +1350,7 @@ def _list_workflows_impl(
                 workflows_data = response.get("values", [])
                 is_paginated = True
             else:
-                response = client.get_workflows(
-                    start_at=start_at, max_results=max_results
-                )
+                response = c.get_workflows(start_at=start_at, max_results=max_results)
                 if isinstance(response, list):
                     workflows_data = response
                     is_paginated = False
@@ -927,7 +1390,7 @@ def _list_workflows_impl(
                 try:
                     entity_id = workflow.get("entity_id")
                     if entity_id:
-                        schemes = client.get_workflow_schemes_for_workflow(
+                        schemes = c.get_workflow_schemes_for_workflow(
                             entity_id, max_results=100
                         )
                         workflow["scheme_count"] = schemes.get("total", 0)
@@ -943,6 +1406,12 @@ def _list_workflows_impl(
             "total": len(all_workflows) if fetch_all else total,
             "has_more": not is_last if not fetch_all else False,
         }
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
 def _parse_workflow(
@@ -988,32 +1457,47 @@ def _parse_workflow(
     return workflow
 
 
-def _get_workflow_impl(name: str) -> dict[str, Any]:
+def _get_workflow_impl(
+    name: str,
+    client: "JiraClient | None" = None,
+) -> dict[str, Any]:
     """Get workflow details."""
-    with get_jira_client() as client:
-        response = client.search_workflows(
-            workflow_name=name, expand="transitions,statuses"
-        )
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
+        response = c.search_workflows(workflow_name=name, expand="transitions,statuses")
         workflows = response.get("values", [])
         if not workflows:
             raise JiraError(f"Workflow not found: {name}")
         return _parse_workflow(workflows[0], include_details=True)
 
+    if client is not None:
+        return _do_work(client)
 
-def _search_workflows_impl(query: str) -> list[dict[str, Any]]:
+    with get_jira_client() as c:
+        return _do_work(c)
+
+
+def _search_workflows_impl(
+    query: str,
+    client: "JiraClient | None" = None,
+) -> list[dict[str, Any]]:
     """Search workflows."""
-    result = _list_workflows_impl(name_filter=query, fetch_all=True)
+    result = _list_workflows_impl(name_filter=query, fetch_all=True, client=client)
     return result["workflows"]
 
 
-def _get_workflow_for_issue_impl(issue_key: str) -> dict[str, Any]:
+def _get_workflow_for_issue_impl(
+    issue_key: str,
+    client: "JiraClient | None" = None,
+) -> dict[str, Any]:
     """Get the workflow for an issue."""
-    with get_jira_client() as client:
-        issue = client.get_issue(issue_key, fields="project,issuetype,status")
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
+        issue = c.get_issue(issue_key, fields="project,issuetype,status")
         project_key = issue["fields"]["project"]["key"]
         issue_type_id = issue["fields"]["issuetype"]["id"]
 
-        workflow_scheme = client.get_project_workflow_scheme(project_key)
+        workflow_scheme = c.get_project_workflow_scheme(project_key)
         workflow_name = None
 
         mappings = workflow_scheme.get("issueTypeMappings", {})
@@ -1023,9 +1507,15 @@ def _get_workflow_for_issue_impl(issue_key: str) -> dict[str, Any]:
             workflow_name = workflow_scheme.get("defaultWorkflow")
 
         if workflow_name:
-            return _get_workflow_impl(workflow_name)
+            return _get_workflow_impl(workflow_name, client=c)
         else:
             return {"issue_key": issue_key, "workflow": None}
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
 # =============================================================================
@@ -1033,32 +1523,61 @@ def _get_workflow_for_issue_impl(issue_key: str) -> dict[str, Any]:
 # =============================================================================
 
 
-def _list_workflow_schemes_impl() -> list[dict[str, Any]]:
+def _list_workflow_schemes_impl(
+    client: "JiraClient | None" = None,
+) -> list[dict[str, Any]]:
     """List workflow schemes."""
-    with get_jira_client() as client:
-        response = client.get_workflow_schemes()
+
+    def _do_work(c: "JiraClient") -> list[dict[str, Any]]:
+        response = c.get_workflow_schemes()
         return response.get("values", [])
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
 def _get_workflow_scheme_impl(
-    scheme_id: str, show_projects: bool = False
+    scheme_id: str,
+    show_projects: bool = False,
+    client: "JiraClient | None" = None,
 ) -> dict[str, Any]:
     """Get workflow scheme details."""
-    with get_jira_client() as client:
-        scheme = client.get_workflow_scheme(scheme_id)
-        result = {"scheme": scheme}
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
+        scheme = c.get_workflow_scheme(scheme_id)
+        result: dict[str, Any] = {"scheme": scheme}
 
         if show_projects:
-            projects = client.get_projects_for_workflow_scheme(scheme_id)
+            projects = c.get_projects_for_workflow_scheme(scheme_id)
             result["projects"] = projects.get("values", [])
 
         return result
 
+    if client is not None:
+        return _do_work(client)
 
-def _assign_workflow_scheme_impl(project_key: str, scheme_id: str) -> dict[str, Any]:
+    with get_jira_client() as c:
+        return _do_work(c)
+
+
+def _assign_workflow_scheme_impl(
+    project_key: str,
+    scheme_id: str,
+    client: "JiraClient | None" = None,
+) -> dict[str, Any]:
     """Assign a workflow scheme to a project."""
-    with get_jira_client() as client:
-        return client.assign_workflow_scheme(project_key, scheme_id)
+
+    def _do_work(c: "JiraClient") -> dict[str, Any]:
+        return c.assign_workflow_scheme(project_key, scheme_id)
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
 # =============================================================================
@@ -1066,10 +1585,19 @@ def _assign_workflow_scheme_impl(project_key: str, scheme_id: str) -> dict[str, 
 # =============================================================================
 
 
-def _list_statuses_impl() -> list[dict[str, Any]]:
+def _list_statuses_impl(
+    client: "JiraClient | None" = None,
+) -> list[dict[str, Any]]:
     """List all statuses."""
-    with get_jira_client() as client:
-        return client.get_statuses()
+
+    def _do_work(c: "JiraClient") -> list[dict[str, Any]]:
+        return c.get_statuses()
+
+    if client is not None:
+        return _do_work(client)
+
+    with get_jira_client() as c:
+        return _do_work(c)
 
 
 # =============================================================================
@@ -1499,8 +2027,11 @@ def project_list(
     output,
 ):
     """List and search JIRA projects."""
+    client = get_client_from_context(ctx)
     if trash:
-        result = _list_trash_projects_impl(start_at=start_at, max_results=max_results)
+        result = _list_trash_projects_impl(
+            start_at=start_at, max_results=max_results, client=client
+        )
         if output == "json":
             click.echo(format_json(result))
         else:
@@ -1515,6 +2046,7 @@ def project_list(
             expand=expand_list,
             start_at=start_at,
             max_results=max_results,
+            client=client,
         )
         if output == "json":
             click.echo(format_json(result))
@@ -1530,8 +2062,9 @@ def project_list(
 @handle_jira_errors
 def project_get(ctx, project_key, expand, output):
     """Get project details."""
+    client = get_client_from_context(ctx)
     expand_list = _parse_comma_list(expand)
-    result = _get_project_impl(project_key, expand=expand_list)
+    result = _get_project_impl(project_key, expand=expand_list, client=client)
     if output == "json":
         click.echo(format_json(result))
     else:
@@ -1562,6 +2095,7 @@ def project_create(
     ctx, key, name, project_type, template, lead, description, category, output
 ):
     """Create a new JIRA project."""
+    client = get_client_from_context(ctx)
     result = _create_project_impl(
         key=key,
         name=name,
@@ -1570,6 +2104,7 @@ def project_create(
         lead=lead,
         description=description,
         category_id=category,
+        client=client,
     )
     if output == "json":
         click.echo(format_json(result))
@@ -1591,8 +2126,14 @@ def project_create(
 @handle_jira_errors
 def project_update(ctx, project_key, name, description, lead, category, output):
     """Update a JIRA project."""
+    client = get_client_from_context(ctx)
     result = _update_project_impl(
-        project_key, name=name, description=description, lead=lead, category_id=category
+        project_key,
+        name=name,
+        description=description,
+        lead=lead,
+        category_id=category,
+        client=client,
     )
     if output == "json":
         click.echo(format_json(result))
@@ -1609,12 +2150,13 @@ def project_update(ctx, project_key, name, description, lead, category, output):
 @handle_jira_errors
 def project_delete(ctx, project_key, yes, dry_run, output):
     """Delete a JIRA project."""
+    client = get_client_from_context(ctx)
     if not dry_run and not yes:
         click.confirm(
             f"Are you sure you want to delete project {project_key}?", abort=True
         )
 
-    result = _delete_project_impl(project_key, dry_run=dry_run)
+    result = _delete_project_impl(project_key, dry_run=dry_run, client=client)
     if output == "json":
         click.echo(format_json(result))
     else:
@@ -1631,7 +2173,8 @@ def project_delete(ctx, project_key, yes, dry_run, output):
 @handle_jira_errors
 def project_archive(ctx, project_key, output):
     """Archive a JIRA project."""
-    result = _archive_project_impl(project_key)
+    client = get_client_from_context(ctx)
+    result = _archive_project_impl(project_key, client=client)
     if output == "json":
         click.echo(format_json(result))
     else:
@@ -1645,7 +2188,8 @@ def project_archive(ctx, project_key, output):
 @handle_jira_errors
 def project_restore(ctx, project_key, output):
     """Restore an archived or deleted project."""
-    result = _restore_project_impl(project_key)
+    client = get_client_from_context(ctx)
+    result = _restore_project_impl(project_key, client=client)
     if output == "json":
         click.echo(format_json(result))
     else:
@@ -1666,7 +2210,10 @@ def config_group():
 @handle_jira_errors
 def config_get(ctx, project_key, show_schemes, output):
     """Get project configuration."""
-    result = _get_project_config_impl(project_key, show_schemes=show_schemes)
+    client = get_client_from_context(ctx)
+    result = _get_project_config_impl(
+        project_key, show_schemes=show_schemes, client=client
+    )
     if output == "json":
         click.echo(format_json(result))
     else:
@@ -1695,7 +2242,8 @@ def category_group():
 @handle_jira_errors
 def category_list(ctx, output):
     """List project categories."""
-    result = _list_categories_impl()
+    client = get_client_from_context(ctx)
+    result = _list_categories_impl(client=client)
     if output == "json":
         click.echo(format_json(result))
     else:
@@ -1710,7 +2258,8 @@ def category_list(ctx, output):
 @handle_jira_errors
 def category_create(ctx, name, description, output):
     """Create a project category."""
-    result = _create_category_impl(name=name, description=description)
+    client = get_client_from_context(ctx)
+    result = _create_category_impl(name=name, description=description, client=client)
     if output == "json":
         click.echo(format_json(result))
     else:
@@ -1725,7 +2274,8 @@ def category_create(ctx, name, description, output):
 @handle_jira_errors
 def category_assign(ctx, project_key, category_id, output):
     """Assign a category to a project."""
-    result = _assign_category_impl(project_key, category_id)
+    client = get_client_from_context(ctx)
+    result = _assign_category_impl(project_key, category_id, client=client)
     if output == "json":
         click.echo(format_json(result))
     else:
@@ -1769,6 +2319,7 @@ def user_search(
     output,
 ):
     """Search for users by name or email."""
+    client = get_client_from_context(ctx)
     if assignable and not project:
         raise click.UsageError("--assignable requires --project")
 
@@ -1779,6 +2330,7 @@ def user_search(
         include_groups=include_groups,
         project=project,
         assignable=assignable,
+        client=client,
     )
 
     if output == "json":
@@ -1798,7 +2350,8 @@ def user_search(
 @handle_jira_errors
 def user_get(ctx, account_id, output):
     """Get user details by account ID."""
-    result = _get_user_impl(account_id)
+    client = get_client_from_context(ctx)
+    result = _get_user_impl(account_id, client=client)
     if output == "json":
         click.echo(format_json(result))
     else:
@@ -1827,7 +2380,10 @@ def group_group():
 @handle_jira_errors
 def group_list(ctx, query, include_members, show_system, output):
     """List all groups."""
-    result = _list_groups_impl(query=query, include_members=include_members)
+    client = get_client_from_context(ctx)
+    result = _list_groups_impl(
+        query=query, include_members=include_members, client=client
+    )
     if output == "json":
         click.echo(format_json(result))
     else:
@@ -1850,7 +2406,8 @@ def group_list(ctx, query, include_members, show_system, output):
 @handle_jira_errors
 def group_members(ctx, group_name, max_results, output):
     """Get members of a group."""
-    result = _get_group_members_impl(group_name, max_results=max_results)
+    client = get_client_from_context(ctx)
+    result = _get_group_members_impl(group_name, max_results=max_results, client=client)
     if output == "json":
         click.echo(format_json(result))
     else:
@@ -1864,7 +2421,8 @@ def group_members(ctx, group_name, max_results, output):
 @handle_jira_errors
 def group_create(ctx, group_name, output):
     """Create a new group."""
-    result = _create_group_impl(group_name)
+    client = get_client_from_context(ctx)
+    result = _create_group_impl(group_name, client=client)
     if output == "json":
         click.echo(format_json(result))
     else:
@@ -1880,10 +2438,11 @@ def group_create(ctx, group_name, output):
 @handle_jira_errors
 def group_delete(ctx, group_name, confirm, dry_run, output):
     """Delete a group."""
+    client = get_client_from_context(ctx)
     if not dry_run and not confirm:
         raise click.UsageError("--confirm is required to delete a group")
 
-    result = _delete_group_impl(group_name, dry_run=dry_run)
+    result = _delete_group_impl(group_name, dry_run=dry_run, client=client)
     if output == "json":
         click.echo(format_json(result))
     else:
@@ -1901,7 +2460,8 @@ def group_delete(ctx, group_name, confirm, dry_run, output):
 @handle_jira_errors
 def group_add_user(ctx, group_name, user, output):
     """Add a user to a group."""
-    result = _add_user_to_group_impl(group_name, user)
+    client = get_client_from_context(ctx)
+    result = _add_user_to_group_impl(group_name, user, client=client)
     if output == "json":
         click.echo(format_json(result))
     else:
@@ -1917,10 +2477,11 @@ def group_add_user(ctx, group_name, user, output):
 @handle_jira_errors
 def group_remove_user(ctx, group_name, user, confirm, output):
     """Remove a user from a group."""
+    client = get_client_from_context(ctx)
     if not confirm:
         raise click.UsageError("--confirm is required to remove a user from a group")
 
-    result = _remove_user_from_group_impl(group_name, user)
+    result = _remove_user_from_group_impl(group_name, user, client=client)
     if output == "json":
         click.echo(format_json(result))
     else:
@@ -2107,8 +2668,9 @@ def permission_scheme_group():
 @handle_jira_errors
 def permission_scheme_list(ctx, name_filter, show_grants, output):
     """List permission schemes."""
+    client = get_client_from_context(ctx)
     result = _list_permission_schemes_impl(
-        name_filter=name_filter, show_grants=show_grants
+        name_filter=name_filter, show_grants=show_grants, client=client
     )
     if output == "json":
         click.echo(format_json(result))
@@ -2124,7 +2686,10 @@ def permission_scheme_list(ctx, name_filter, show_grants, output):
 @handle_jira_errors
 def permission_scheme_get(ctx, scheme_id, show_projects, output):
     """Get permission scheme details."""
-    result = _get_permission_scheme_impl(scheme_id, show_projects=show_projects)
+    client = get_client_from_context(ctx)
+    result = _get_permission_scheme_impl(
+        scheme_id, show_projects=show_projects, client=client
+    )
     if output == "json":
         click.echo(format_json(result))
     else:
@@ -2144,7 +2709,10 @@ def permission_scheme_get(ctx, scheme_id, show_projects, output):
 @handle_jira_errors
 def permission_scheme_create(ctx, name, description, output):
     """Create a permission scheme."""
-    result = _create_permission_scheme_impl(name=name, description=description)
+    client = get_client_from_context(ctx)
+    result = _create_permission_scheme_impl(
+        name=name, description=description, client=client
+    )
     if output == "json":
         click.echo(format_json(result))
     else:
@@ -2160,7 +2728,10 @@ def permission_scheme_create(ctx, name, description, output):
 @handle_jira_errors
 def permission_scheme_assign(ctx, project, scheme, dry_run, output):
     """Assign a permission scheme to a project."""
-    result = _assign_permission_scheme_impl(project, scheme, dry_run=dry_run)
+    client = get_client_from_context(ctx)
+    result = _assign_permission_scheme_impl(
+        project, scheme, dry_run=dry_run, client=client
+    )
     if output == "json":
         click.echo(format_json(result))
     else:
@@ -2182,7 +2753,8 @@ def permission_group():
 @handle_jira_errors
 def permission_list(ctx, output):
     """List available permissions."""
-    result = _list_permissions_impl()
+    client = get_client_from_context(ctx)
+    result = _list_permissions_impl(client=client)
     if output == "json":
         click.echo(format_json(result))
     else:
@@ -2203,8 +2775,8 @@ def permission_list(ctx, output):
 @handle_jira_errors
 def permission_check(ctx, project, output):
     """Check your permissions on a project."""
-    with get_jira_client() as client:
-        result = client.get_my_permissions(project_key=project)
+    client = get_client_from_context(ctx)
+    result = client.get_my_permissions(project_key=project)
 
     if output == "json":
         click.echo(format_json(result))
@@ -2235,7 +2807,8 @@ def notification_scheme_group():
 @handle_jira_errors
 def notification_scheme_list(ctx, output):
     """List notification schemes."""
-    result = _list_notification_schemes_impl()
+    client = get_client_from_context(ctx)
+    result = _list_notification_schemes_impl(client=client)
     if output == "json":
         click.echo(format_json(result))
     else:
@@ -2249,7 +2822,8 @@ def notification_scheme_list(ctx, output):
 @handle_jira_errors
 def notification_scheme_get(ctx, scheme_id, output):
     """Get notification scheme details."""
-    result = _get_notification_scheme_impl(scheme_id)
+    client = get_client_from_context(ctx)
+    result = _get_notification_scheme_impl(scheme_id, client=client)
     if output == "json":
         click.echo(format_json(result))
     else:
@@ -2266,7 +2840,10 @@ def notification_scheme_get(ctx, scheme_id, output):
 @handle_jira_errors
 def notification_scheme_create(ctx, name, description, output):
     """Create a notification scheme."""
-    result = _create_notification_scheme_impl(name=name, description=description)
+    client = get_client_from_context(ctx)
+    result = _create_notification_scheme_impl(
+        name=name, description=description, client=client
+    )
     if output == "json":
         click.echo(format_json(result))
     else:
@@ -2288,7 +2865,8 @@ def notification_group():
 @handle_jira_errors
 def notification_add(ctx, scheme, event, recipient, output):
     """Add a notification to a scheme."""
-    result = _add_notification_impl(scheme, event, recipient)
+    client = get_client_from_context(ctx)
+    result = _add_notification_impl(scheme, event, recipient, client=client)
     if output == "json":
         click.echo(format_json(result))
     else:
@@ -2303,7 +2881,8 @@ def notification_add(ctx, scheme, event, recipient, output):
 @handle_jira_errors
 def notification_remove(ctx, scheme, notification_id, output):
     """Remove a notification from a scheme."""
-    result = _remove_notification_impl(scheme, notification_id)
+    client = get_client_from_context(ctx)
+    result = _remove_notification_impl(scheme, notification_id, client=client)
     if output == "json":
         click.echo(format_json(result))
     else:
@@ -2336,9 +2915,13 @@ def screen_group():
 @handle_jira_errors
 def screen_list(ctx, filter_pattern, scope, fetch_all, output):
     """List screens."""
+    client = get_client_from_context(ctx)
     scope_list = list(scope) if scope else None
     result = _list_screens_impl(
-        filter_pattern=filter_pattern, scope=scope_list, fetch_all=fetch_all
+        filter_pattern=filter_pattern,
+        scope=scope_list,
+        fetch_all=fetch_all,
+        client=client,
     )
     if output == "json":
         click.echo(format_json(result))
@@ -2354,7 +2937,8 @@ def screen_list(ctx, filter_pattern, scope, fetch_all, output):
 @handle_jira_errors
 def screen_get(ctx, screen_id, output):
     """Get screen details."""
-    result = _get_screen_impl(screen_id)
+    client = get_client_from_context(ctx)
+    result = _get_screen_impl(screen_id, client=client)
     if output == "json":
         click.echo(format_json(result))
     else:
@@ -2370,7 +2954,8 @@ def screen_get(ctx, screen_id, output):
 @handle_jira_errors
 def screen_tabs(ctx, screen_id, output):
     """List screen tabs."""
-    result = _list_screen_tabs_impl(screen_id)
+    client = get_client_from_context(ctx)
+    result = _list_screen_tabs_impl(screen_id, client=client)
     if output == "json":
         click.echo(format_json(result))
     else:
@@ -2389,7 +2974,8 @@ def screen_tabs(ctx, screen_id, output):
 @handle_jira_errors
 def screen_fields(ctx, screen_id, tab, output):
     """Get fields on a screen."""
-    result = _get_screen_fields_impl(screen_id, tab_id=tab)
+    client = get_client_from_context(ctx)
+    result = _get_screen_fields_impl(screen_id, tab_id=tab, client=client)
     if output == "json":
         click.echo(format_json(result))
     else:
@@ -2412,7 +2998,8 @@ def screen_fields(ctx, screen_id, tab, output):
 @handle_jira_errors
 def screen_add_field(ctx, screen_id, field_id, tab, output):
     """Add a field to a screen."""
-    result = _add_field_to_screen_impl(screen_id, field_id, tab_id=tab)
+    client = get_client_from_context(ctx)
+    result = _add_field_to_screen_impl(screen_id, field_id, tab_id=tab, client=client)
     if output == "json":
         click.echo(format_json(result))
     else:
@@ -2428,7 +3015,10 @@ def screen_add_field(ctx, screen_id, field_id, tab, output):
 @handle_jira_errors
 def screen_remove_field(ctx, screen_id, field_id, tab, output):
     """Remove a field from a screen."""
-    result = _remove_field_from_screen_impl(screen_id, field_id, tab_id=tab)
+    client = get_client_from_context(ctx)
+    result = _remove_field_from_screen_impl(
+        screen_id, field_id, tab_id=tab, client=client
+    )
     if output == "json":
         click.echo(format_json(result))
     else:
@@ -2447,7 +3037,8 @@ def screen_scheme_group():
 @handle_jira_errors
 def screen_scheme_list(ctx, output):
     """List screen schemes."""
-    result = _list_screen_schemes_impl()
+    client = get_client_from_context(ctx)
+    result = _list_screen_schemes_impl(client=client)
     if output == "json":
         click.echo(format_json(result))
     else:
@@ -2473,7 +3064,8 @@ def screen_scheme_list(ctx, output):
 @handle_jira_errors
 def screen_scheme_get(ctx, scheme_id, output):
     """Get screen scheme details."""
-    result = _get_screen_scheme_impl(scheme_id)
+    client = get_client_from_context(ctx)
+    result = _get_screen_scheme_impl(scheme_id, client=client)
     if output == "json":
         click.echo(format_json(result))
     else:
@@ -2502,10 +3094,12 @@ def issue_type_group():
 @handle_jira_errors
 def issue_type_list(ctx, subtask_only, standard_only, hierarchy, output):
     """List issue types."""
+    client = get_client_from_context(ctx)
     result = _list_issue_types_impl(
         subtask_only=subtask_only,
         standard_only=standard_only,
         hierarchy_level=hierarchy,
+        client=client,
     )
     if output == "json":
         click.echo(format_json(result))
@@ -2521,7 +3115,8 @@ def issue_type_list(ctx, subtask_only, standard_only, hierarchy, output):
 @handle_jira_errors
 def issue_type_get(ctx, issue_type_id, output):
     """Get issue type details."""
-    result = _get_issue_type_impl(issue_type_id)
+    client = get_client_from_context(ctx)
+    result = _get_issue_type_impl(issue_type_id, client=client)
     if output == "json":
         click.echo(format_json(result))
     else:
@@ -2547,8 +3142,9 @@ def issue_type_get(ctx, issue_type_id, output):
 @handle_jira_errors
 def issue_type_create(ctx, name, description, issue_type, output):
     """Create an issue type."""
+    client = get_client_from_context(ctx)
     result = _create_issue_type_impl(
-        name=name, description=description, issue_type=issue_type
+        name=name, description=description, issue_type=issue_type, client=client
     )
     if output == "json":
         click.echo(format_json(result))
@@ -2565,7 +3161,10 @@ def issue_type_create(ctx, name, description, issue_type, output):
 @handle_jira_errors
 def issue_type_update(ctx, issue_type_id, name, description, output):
     """Update an issue type."""
-    result = _update_issue_type_impl(issue_type_id, name=name, description=description)
+    client = get_client_from_context(ctx)
+    result = _update_issue_type_impl(
+        issue_type_id, name=name, description=description, client=client
+    )
     if output == "json":
         click.echo(format_json(result))
     else:
@@ -2580,12 +3179,13 @@ def issue_type_update(ctx, issue_type_id, name, description, output):
 @handle_jira_errors
 def issue_type_delete(ctx, issue_type_id, force, output):
     """Delete an issue type."""
+    client = get_client_from_context(ctx)
     if not force:
         click.confirm(
             f"Are you sure you want to delete issue type {issue_type_id}?", abort=True
         )
 
-    result = _delete_issue_type_impl(issue_type_id)
+    result = _delete_issue_type_impl(issue_type_id, client=client)
     if output == "json":
         click.echo(format_json(result))
     else:
@@ -2609,7 +3209,8 @@ def issue_type_scheme_group():
 @handle_jira_errors
 def issue_type_scheme_list(ctx, output):
     """List issue type schemes."""
-    result = _list_issue_type_schemes_impl()
+    client = get_client_from_context(ctx)
+    result = _list_issue_type_schemes_impl(client=client)
     if output == "json":
         click.echo(format_json(result))
     else:
@@ -2635,7 +3236,8 @@ def issue_type_scheme_list(ctx, output):
 @handle_jira_errors
 def issue_type_scheme_get(ctx, scheme_id, output):
     """Get issue type scheme details."""
-    result = _get_issue_type_scheme_impl(scheme_id)
+    client = get_client_from_context(ctx)
+    result = _get_issue_type_scheme_impl(scheme_id, client=client)
     if output == "json":
         click.echo(format_json(result))
     else:
@@ -2652,7 +3254,10 @@ def issue_type_scheme_get(ctx, scheme_id, output):
 @handle_jira_errors
 def issue_type_scheme_create(ctx, name, description, output):
     """Create an issue type scheme."""
-    result = _create_issue_type_scheme_impl(name=name, description=description)
+    client = get_client_from_context(ctx)
+    result = _create_issue_type_scheme_impl(
+        name=name, description=description, client=client
+    )
     if output == "json":
         click.echo(format_json(result))
     else:
@@ -2667,7 +3272,8 @@ def issue_type_scheme_create(ctx, name, description, output):
 @handle_jira_errors
 def issue_type_scheme_assign(ctx, project, scheme, output):
     """Assign an issue type scheme to a project."""
-    result = _assign_issue_type_scheme_impl(project, scheme)
+    client = get_client_from_context(ctx)
+    result = _assign_issue_type_scheme_impl(project, scheme, client=client)
     if output == "json":
         click.echo(format_json(result))
     else:
@@ -2681,7 +3287,8 @@ def issue_type_scheme_assign(ctx, project, scheme, output):
 @handle_jira_errors
 def issue_type_scheme_project(ctx, project_id, output):
     """Get the issue type scheme for a project."""
-    result = _get_project_issue_type_scheme_impl(project_id)
+    client = get_client_from_context(ctx)
+    result = _get_project_issue_type_scheme_impl(project_id, client=client)
     if output == "json":
         click.echo(format_json(result))
     else:
@@ -2714,12 +3321,14 @@ def workflow_group():
 @handle_jira_errors
 def workflow_list(ctx, details, name_filter, scope, show_usage, fetch_all, output):
     """List workflows."""
+    client = get_client_from_context(ctx)
     result = _list_workflows_impl(
         details=details,
         name_filter=name_filter,
         scope=scope,
         show_usage=show_usage,
         fetch_all=fetch_all,
+        client=client,
     )
     if output == "json":
         click.echo(format_json(result["workflows"]))
@@ -2736,7 +3345,8 @@ def workflow_list(ctx, details, name_filter, scope, show_usage, fetch_all, outpu
 @handle_jira_errors
 def workflow_get(ctx, name, output):
     """Get workflow details."""
-    result = _get_workflow_impl(name)
+    client = get_client_from_context(ctx)
+    result = _get_workflow_impl(name, client=client)
     if output == "json":
         click.echo(format_json(result))
     else:
@@ -2754,7 +3364,8 @@ def workflow_get(ctx, name, output):
 @handle_jira_errors
 def workflow_search(ctx, query, output):
     """Search workflows."""
-    result = _search_workflows_impl(query)
+    client = get_client_from_context(ctx)
+    result = _search_workflows_impl(query, client=client)
     if output == "json":
         click.echo(format_json(result))
     else:
@@ -2768,7 +3379,8 @@ def workflow_search(ctx, query, output):
 @handle_jira_errors
 def workflow_for_issue(ctx, issue_key, output):
     """Get the workflow for an issue."""
-    result = _get_workflow_for_issue_impl(issue_key)
+    client = get_client_from_context(ctx)
+    result = _get_workflow_for_issue_impl(issue_key, client=client)
     if output == "json":
         click.echo(format_json(result))
     else:
@@ -2787,7 +3399,8 @@ def workflow_scheme_group():
 @handle_jira_errors
 def workflow_scheme_list(ctx, output):
     """List workflow schemes."""
-    result = _list_workflow_schemes_impl()
+    client = get_client_from_context(ctx)
+    result = _list_workflow_schemes_impl(client=client)
     if output == "json":
         click.echo(format_json(result))
     else:
@@ -2814,7 +3427,10 @@ def workflow_scheme_list(ctx, output):
 @handle_jira_errors
 def workflow_scheme_get(ctx, scheme_id, show_projects, output):
     """Get workflow scheme details."""
-    result = _get_workflow_scheme_impl(scheme_id, show_projects=show_projects)
+    client = get_client_from_context(ctx)
+    result = _get_workflow_scheme_impl(
+        scheme_id, show_projects=show_projects, client=client
+    )
     if output == "json":
         click.echo(format_json(result))
     else:
@@ -2834,7 +3450,8 @@ def workflow_scheme_get(ctx, scheme_id, show_projects, output):
 @handle_jira_errors
 def workflow_scheme_assign(ctx, project, scheme, output):
     """Assign a workflow scheme to a project."""
-    result = _assign_workflow_scheme_impl(project, scheme)
+    client = get_client_from_context(ctx)
+    result = _assign_workflow_scheme_impl(project, scheme, client=client)
     if output == "json":
         click.echo(format_json(result))
     else:
@@ -2858,7 +3475,8 @@ def status_group():
 @handle_jira_errors
 def status_list(ctx, output):
     """List all statuses."""
-    result = _list_statuses_impl()
+    client = get_client_from_context(ctx)
+    result = _list_statuses_impl(client=client)
     if output == "json":
         click.echo(format_json(result))
     else:

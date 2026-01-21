@@ -1283,7 +1283,7 @@ class TestEpicCommands:
 
         with (
             patch(
-                "jira_assistant_skills_lib.cli.commands.agile_cmds.get_jira_client",
+                "jira_assistant_skills_lib.cli.commands.agile_cmds.get_client_from_context",
                 return_value=mock_client,
             ),
             patch(
@@ -1318,7 +1318,7 @@ class TestEpicCommands:
 
         with (
             patch(
-                "jira_assistant_skills_lib.cli.commands.agile_cmds.get_jira_client",
+                "jira_assistant_skills_lib.cli.commands.agile_cmds.get_client_from_context",
                 return_value=mock_client,
             ),
             patch(
@@ -1345,7 +1345,7 @@ class TestEpicCommands:
 
         with (
             patch(
-                "jira_assistant_skills_lib.cli.commands.agile_cmds.get_jira_client",
+                "jira_assistant_skills_lib.cli.commands.agile_cmds.get_client_from_context",
                 return_value=mock_client,
             ),
             patch(
@@ -1366,7 +1366,7 @@ class TestEpicCommands:
 
         with (
             patch(
-                "jira_assistant_skills_lib.cli.commands.agile_cmds.get_jira_client",
+                "jira_assistant_skills_lib.cli.commands.agile_cmds.get_client_from_context",
                 return_value=mock_client,
             ),
             patch(
@@ -1392,7 +1392,7 @@ class TestSprintCommands:
         mock_client.get_board_sprints.return_value = {"values": [sample_sprint]}
 
         with patch(
-            "jira_assistant_skills_lib.cli.commands.agile_cmds.get_jira_client",
+            "jira_assistant_skills_lib.cli.commands.agile_cmds.get_client_from_context",
             return_value=mock_client,
         ):
             runner = CliRunner()
@@ -1414,7 +1414,7 @@ class TestSprintCommands:
         mock_client.create_sprint.return_value = sample_sprint
 
         with patch(
-            "jira_assistant_skills_lib.cli.commands.agile_cmds.get_jira_client",
+            "jira_assistant_skills_lib.cli.commands.agile_cmds.get_client_from_context",
             return_value=mock_client,
         ):
             runner = CliRunner()
@@ -1432,7 +1432,7 @@ class TestSprintCommands:
 
         with (
             patch(
-                "jira_assistant_skills_lib.cli.commands.agile_cmds.get_jira_client",
+                "jira_assistant_skills_lib.cli.commands.agile_cmds.get_client_from_context",
                 return_value=mock_client,
             ),
             patch(
@@ -1451,7 +1451,7 @@ class TestSprintCommands:
         mock_client.get_board_sprints.return_value = {"values": [sample_sprint]}
 
         with patch(
-            "jira_assistant_skills_lib.cli.commands.agile_cmds.get_jira_client",
+            "jira_assistant_skills_lib.cli.commands.agile_cmds.get_client_from_context",
             return_value=mock_client,
         ):
             runner = CliRunner()
@@ -1465,7 +1465,7 @@ class TestSprintCommands:
         mock_client.update_sprint.return_value = {**sample_sprint, "state": "active"}
 
         with patch(
-            "jira_assistant_skills_lib.cli.commands.agile_cmds.get_jira_client",
+            "jira_assistant_skills_lib.cli.commands.agile_cmds.get_client_from_context",
             return_value=mock_client,
         ):
             runner = CliRunner()
@@ -1482,7 +1482,7 @@ class TestSprintCommands:
         mock_client.update_sprint.return_value = {**sample_sprint, "state": "closed"}
 
         with patch(
-            "jira_assistant_skills_lib.cli.commands.agile_cmds.get_jira_client",
+            "jira_assistant_skills_lib.cli.commands.agile_cmds.get_client_from_context",
             return_value=mock_client,
         ):
             runner = CliRunner()
@@ -1497,7 +1497,7 @@ class TestSprintCommands:
     def test_sprint_move_issues_to_sprint(self, mock_client):
         """Test moving issues to sprint."""
         with patch(
-            "jira_assistant_skills_lib.cli.commands.agile_cmds.get_jira_client",
+            "jira_assistant_skills_lib.cli.commands.agile_cmds.get_client_from_context",
             return_value=mock_client,
         ):
             runner = CliRunner()
@@ -1512,7 +1512,7 @@ class TestSprintCommands:
     def test_sprint_move_issues_to_backlog(self, mock_client):
         """Test moving issues to backlog."""
         with patch(
-            "jira_assistant_skills_lib.cli.commands.agile_cmds.get_jira_client",
+            "jira_assistant_skills_lib.cli.commands.agile_cmds.get_client_from_context",
             return_value=mock_client,
         ):
             runner = CliRunner()
@@ -1537,7 +1537,7 @@ class TestOtherAgileCommands:
 
         with (
             patch(
-                "jira_assistant_skills_lib.cli.commands.agile_cmds.get_jira_client",
+                "jira_assistant_skills_lib.cli.commands.agile_cmds.get_client_from_context",
                 return_value=mock_client,
             ),
             patch(
@@ -1557,7 +1557,7 @@ class TestOtherAgileCommands:
     def test_rank_before(self, mock_client):
         """Test ranking issue before another."""
         with patch(
-            "jira_assistant_skills_lib.cli.commands.agile_cmds.get_jira_client",
+            "jira_assistant_skills_lib.cli.commands.agile_cmds.get_client_from_context",
             return_value=mock_client,
         ):
             runner = CliRunner()
@@ -1579,7 +1579,7 @@ class TestOtherAgileCommands:
         """Test estimate command."""
         with (
             patch(
-                "jira_assistant_skills_lib.cli.commands.agile_cmds.get_jira_client",
+                "jira_assistant_skills_lib.cli.commands.agile_cmds.get_client_from_context",
                 return_value=mock_client,
             ),
             patch(
@@ -1600,7 +1600,7 @@ class TestOtherAgileCommands:
 
         with (
             patch(
-                "jira_assistant_skills_lib.cli.commands.agile_cmds.get_jira_client",
+                "jira_assistant_skills_lib.cli.commands.agile_cmds.get_client_from_context",
                 return_value=mock_client,
             ),
             patch(
@@ -1633,7 +1633,7 @@ class TestOtherAgileCommands:
 
         with (
             patch(
-                "jira_assistant_skills_lib.cli.commands.agile_cmds.get_jira_client",
+                "jira_assistant_skills_lib.cli.commands.agile_cmds.get_client_from_context",
                 return_value=mock_client,
             ),
             patch(
@@ -1665,7 +1665,7 @@ class TestOtherAgileCommands:
         }
 
         with patch(
-            "jira_assistant_skills_lib.cli.commands.agile_cmds.get_jira_client",
+            "jira_assistant_skills_lib.cli.commands.agile_cmds.get_client_from_context",
             return_value=mock_client,
         ):
             runner = CliRunner()
@@ -1688,7 +1688,7 @@ class TestErrorHandling:
 
         with (
             patch(
-                "jira_assistant_skills_lib.cli.commands.agile_cmds.get_jira_client",
+                "jira_assistant_skills_lib.cli.commands.agile_cmds.get_client_from_context",
                 return_value=mock_client,
             ),
             patch(

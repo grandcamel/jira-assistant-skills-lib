@@ -667,7 +667,7 @@ class TestTransitionCommand:
 
         with (
             patch(
-                "jira_assistant_skills_lib.cli.commands.lifecycle_cmds.get_jira_client",
+                "jira_assistant_skills_lib.cli.commands.lifecycle_cmds.get_client_from_context",
                 return_value=mock_jira_client,
             ),
             patch(
@@ -694,7 +694,7 @@ class TestTransitionsCommand:
         mock_jira_client.get_transitions.return_value = deepcopy(sample_transitions)
 
         with patch(
-            "jira_assistant_skills_lib.cli.commands.lifecycle_cmds.get_jira_client",
+            "jira_assistant_skills_lib.cli.commands.lifecycle_cmds.get_client_from_context",
             return_value=mock_jira_client,
         ):
             result = cli_runner.invoke(lifecycle, ["transitions", "PROJ-123"])
@@ -709,7 +709,7 @@ class TestTransitionsCommand:
         mock_jira_client.get_transitions.return_value = deepcopy(sample_transitions)
 
         with patch(
-            "jira_assistant_skills_lib.cli.commands.lifecycle_cmds.get_jira_client",
+            "jira_assistant_skills_lib.cli.commands.lifecycle_cmds.get_client_from_context",
             return_value=mock_jira_client,
         ):
             result = cli_runner.invoke(
@@ -730,7 +730,7 @@ class TestAssignCommand:
         mock_jira_client.get_issue.return_value = deepcopy(sample_issue)
 
         with patch(
-            "jira_assistant_skills_lib.cli.commands.lifecycle_cmds.get_jira_client",
+            "jira_assistant_skills_lib.cli.commands.lifecycle_cmds.get_client_from_context",
             return_value=mock_jira_client,
         ):
             result = cli_runner.invoke(lifecycle, ["assign", "PROJ-123", "--self"])
@@ -750,7 +750,7 @@ class TestVersionCommands:
         mock_jira_client.get_versions.return_value = deepcopy(sample_versions)
 
         with patch(
-            "jira_assistant_skills_lib.cli.commands.lifecycle_cmds.get_jira_client",
+            "jira_assistant_skills_lib.cli.commands.lifecycle_cmds.get_client_from_context",
             return_value=mock_jira_client,
         ):
             result = cli_runner.invoke(lifecycle, ["version", "list", "PROJ"])
@@ -770,7 +770,7 @@ class TestComponentCommands:
         mock_jira_client.get_components.return_value = deepcopy(sample_components)
 
         with patch(
-            "jira_assistant_skills_lib.cli.commands.lifecycle_cmds.get_jira_client",
+            "jira_assistant_skills_lib.cli.commands.lifecycle_cmds.get_client_from_context",
             return_value=mock_jira_client,
         ):
             result = cli_runner.invoke(lifecycle, ["component", "list", "PROJ"])

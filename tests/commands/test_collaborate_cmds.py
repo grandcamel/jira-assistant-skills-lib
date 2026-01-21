@@ -382,7 +382,7 @@ class TestCommentCommands:
         mock_jira_client.add_comment.return_value = deepcopy(sample_comment)
 
         with patch(
-            "jira_assistant_skills_lib.cli.commands.collaborate_cmds.get_jira_client",
+            "jira_assistant_skills_lib.cli.commands.collaborate_cmds.get_client_from_context",
             return_value=mock_jira_client,
         ):
             result = cli_runner.invoke(
@@ -400,7 +400,7 @@ class TestCommentCommands:
         mock_jira_client.get_comments.return_value = deepcopy(sample_comments_response)
 
         with patch(
-            "jira_assistant_skills_lib.cli.commands.collaborate_cmds.get_jira_client",
+            "jira_assistant_skills_lib.cli.commands.collaborate_cmds.get_client_from_context",
             return_value=mock_jira_client,
         ):
             result = cli_runner.invoke(
@@ -421,7 +421,7 @@ class TestWatchersCommand:
         mock_jira_client.get.return_value = {"watchers": deepcopy(sample_watchers)}
 
         with patch(
-            "jira_assistant_skills_lib.cli.commands.collaborate_cmds.get_jira_client",
+            "jira_assistant_skills_lib.cli.commands.collaborate_cmds.get_client_from_context",
             return_value=mock_jira_client,
         ):
             result = cli_runner.invoke(
@@ -441,7 +441,7 @@ class TestActivityCommand:
         mock_jira_client.get_changelog.return_value = deepcopy(sample_changelog)
 
         with patch(
-            "jira_assistant_skills_lib.cli.commands.collaborate_cmds.get_jira_client",
+            "jira_assistant_skills_lib.cli.commands.collaborate_cmds.get_client_from_context",
             return_value=mock_jira_client,
         ):
             result = cli_runner.invoke(
@@ -460,7 +460,7 @@ class TestNotifyCommand:
     def test_notify_cli_dry_run(self, cli_runner, mock_jira_client):
         """Test CLI notify command with dry-run."""
         with patch(
-            "jira_assistant_skills_lib.cli.commands.collaborate_cmds.get_jira_client",
+            "jira_assistant_skills_lib.cli.commands.collaborate_cmds.get_client_from_context",
             return_value=mock_jira_client,
         ):
             result = cli_runner.invoke(

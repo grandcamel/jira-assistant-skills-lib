@@ -4,10 +4,12 @@ CLI commands for JIRA issue operations.
 Provides commands for creating, reading, updating, and deleting JIRA issues.
 """
 
+from __future__ import annotations
+
 import json
 from importlib import resources
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import click
 
@@ -29,7 +31,10 @@ from jira_assistant_skills_lib import (
     validate_project_key,
 )
 
-from ..cli_utils import parse_comma_list, parse_json_arg
+from ..cli_utils import get_client_from_context, parse_comma_list, parse_json_arg
+
+if TYPE_CHECKING:
+    from jira_assistant_skills_lib import JiraClient
 
 # =============================================================================
 # Implementation Functions
@@ -80,18 +85,26 @@ def _load_template(template_name: str) -> dict:
         return json.load(f)
 
 
-def _get_issue_impl(issue_key: str, fields: list[str] | None = None) -> dict:
+def _get_issue_impl(
+    issue_key: str,
+    fields: list[str] | None = None,
+    client: JiraClient | None = None,
+) -> dict:
     """
     Get a JIRA issue.
 
     Args:
         issue_key: Issue key (e.g., PROJ-123)
         fields: Specific fields to retrieve (default: all)
+        client: Optional JiraClient instance. If None, creates one internally.
 
     Returns:
         Issue data dictionary
     """
     issue_key = validate_issue_key(issue_key)
+
+    if client is not None:
+        return client.get_issue(issue_key, fields=fields)
 
     with get_jira_client() as client:
         return client.get_issue(issue_key, fields=fields)
@@ -115,6 +128,7 @@ def _create_issue_impl(
     relates_to: list[str] | None = None,
     estimate: str | None = None,
     no_defaults: bool = False,
+    client: JiraClient | None = None,
 ) -> dict:
     """
     Create a new JIRA issue.
@@ -137,6 +151,7 @@ def _create_issue_impl(
         relates_to: List of issue keys this issue relates to
         estimate: Original time estimate (e.g., '2d', '4h')
         no_defaults: If True, skip applying project context defaults
+        client: Optional JiraClient instance. If None, creates one internally.
 
     Returns:
         Created issue data
@@ -187,68 +202,70 @@ def _create_issue_impl(
     if priority:
         fields["priority"] = {"name": priority}
 
-    if assignee:
-        if assignee.lower() == "self":
-            with get_jira_client() as client:
-                account_id = client.get_current_user_id()
-            fields["assignee"] = {"accountId": account_id}
-        elif "@" in assignee:
-            fields["assignee"] = {"emailAddress": assignee}
-        else:
-            fields["assignee"] = {"accountId": assignee}
+    def _do_create(c: JiraClient) -> dict:
+        """Inner function that performs the create with a client."""
+        nonlocal assignee, fields
 
-    if labels:
-        fields["labels"] = labels
+        if assignee:
+            if assignee.lower() == "self":
+                account_id = c.get_current_user_id()
+                fields["assignee"] = {"accountId": account_id}
+            elif "@" in assignee:
+                fields["assignee"] = {"emailAddress": assignee}
+            else:
+                fields["assignee"] = {"accountId": assignee}
 
-    if components:
-        fields["components"] = [{"name": comp} for comp in components]
+        if labels:
+            fields["labels"] = labels
 
-    if custom_fields:
-        fields.update(custom_fields)
+        if components:
+            fields["components"] = [{"name": comp} for comp in components]
 
-    # Agile fields - get field IDs from configuration
-    if epic or story_points is not None:
-        agile_fields = get_agile_fields()
+        if custom_fields:
+            fields.update(custom_fields)
 
-        if epic:
-            epic = validate_issue_key(epic)
-            fields[agile_fields["epic_link"]] = epic
+        # Agile fields - get field IDs from configuration
+        if epic or story_points is not None:
+            agile_fields = get_agile_fields()
 
-        if story_points is not None:
-            fields[agile_fields["story_points"]] = story_points
+            if epic:
+                validated_epic = validate_issue_key(epic)
+                fields[agile_fields["epic_link"]] = validated_epic
 
-    # Time tracking
-    if estimate:
-        fields["timetracking"] = {"originalEstimate": estimate}
+            if story_points is not None:
+                fields[agile_fields["story_points"]] = story_points
 
-    with get_jira_client() as client:
-        result = client.create_issue(fields)
+        # Time tracking
+        if estimate:
+            fields["timetracking"] = {"originalEstimate": estimate}
+
+        result = c.create_issue(fields)
 
         # Add to sprint after creation (sprint assignment requires issue to exist)
         issue_key = result.get("key")
         if sprint:
-            client.move_issues_to_sprint(sprint, [issue_key])
+            c.move_issues_to_sprint(sprint, [issue_key])
 
         # Create issue links after creation
         links_created = []
         links_failed = []
         if blocks:
             for target_key in blocks:
-                target_key = validate_issue_key(target_key)
+                validated_target = validate_issue_key(target_key)
                 try:
-                    client.create_link("Blocks", issue_key, target_key)
-                    links_created.append(f"blocks {target_key}")
+                    c.create_link("Blocks", issue_key, validated_target)
+                    links_created.append(f"blocks {validated_target}")
                 except (PermissionError, NotFoundError) as e:
-                    links_failed.append(f"blocks {target_key}: {e!s}")
+                    links_failed.append(f"blocks {validated_target}: {e!s}")
 
         if relates_to:
             for target_key in relates_to:
-                target_key = validate_issue_key(target_key)
+                validated_target = validate_issue_key(target_key)
                 try:
-                    client.create_link("Relates", issue_key, target_key)
-                    links_created.append(f"relates to {target_key}")
+                    c.create_link("Relates", issue_key, validated_target)
+                    links_created.append(f"relates to {validated_target}")
                 except (PermissionError, NotFoundError) as e:
-                    links_failed.append(f"relates to {target_key}: {e!s}")
+                    links_failed.append(f"relates to {validated_target}: {e!s}")
 
         if links_created:
             result["links_created"] = links_created
@@ -258,6 +275,12 @@ def _create_issue_impl(
             result["defaults_applied"] = defaults_applied
 
         return result
+
+    if client is not None:
+        return _do_create(client)
+
+    with get_jira_client() as c:
+        return _do_create(c)
 
 
 def _update_issue_impl(
@@ -270,6 +293,7 @@ def _update_issue_impl(
     components: list[str] | None = None,
     custom_fields: dict | None = None,
     notify_users: bool = True,
+    client: JiraClient | None = None,
 ) -> None:
     """
     Update a JIRA issue.
@@ -284,6 +308,7 @@ def _update_issue_impl(
         components: New components (replaces existing)
         custom_fields: Custom fields to update
         notify_users: Send notifications to watchers
+        client: Optional JiraClient instance. If None, creates one internally.
     """
     issue_key = validate_issue_key(issue_key)
 
@@ -305,18 +330,6 @@ def _update_issue_impl(
     if priority is not None:
         fields["priority"] = {"name": priority}
 
-    if assignee is not None:
-        if assignee.lower() in ("none", "unassigned"):
-            fields["assignee"] = None
-        elif assignee.lower() == "self":
-            with get_jira_client() as client:
-                account_id = client.get_current_user_id()
-            fields["assignee"] = {"accountId": account_id}
-        elif "@" in assignee:
-            fields["assignee"] = {"emailAddress": assignee}
-        else:
-            fields["assignee"] = {"accountId": assignee}
-
     if labels is not None:
         fields["labels"] = labels
 
@@ -326,31 +339,57 @@ def _update_issue_impl(
     if custom_fields:
         fields.update(custom_fields)
 
-    if not fields:
-        raise ValueError("No fields specified for update")
+    def _do_update(c: JiraClient) -> None:
+        """Inner function that performs the update with a client."""
+        nonlocal fields
 
-    with get_jira_client() as client:
-        client.update_issue(issue_key, fields, notify_users=notify_users)
+        if assignee is not None:
+            if assignee.lower() in ("none", "unassigned"):
+                fields["assignee"] = None
+            elif assignee.lower() == "self":
+                account_id = c.get_current_user_id()
+                fields["assignee"] = {"accountId": account_id}
+            elif "@" in assignee:
+                fields["assignee"] = {"emailAddress": assignee}
+            else:
+                fields["assignee"] = {"accountId": assignee}
+
+        if not fields:
+            raise ValueError("No fields specified for update")
+
+        c.update_issue(issue_key, fields, notify_users=notify_users)
+
+    if client is not None:
+        _do_update(client)
+        return
+
+    with get_jira_client() as c:
+        _do_update(c)
 
 
-def _delete_issue_impl(issue_key: str, force: bool = False) -> dict | None:
+def _delete_issue_impl(
+    issue_key: str,
+    force: bool = False,
+    client: JiraClient | None = None,
+) -> dict | None:
     """
     Delete a JIRA issue.
 
     Args:
         issue_key: Issue key (e.g., PROJ-123)
         force: Skip confirmation prompt
+        client: Optional JiraClient instance. If None, creates one internally.
 
     Returns:
         Issue info dict if not force (for confirmation display), None otherwise
     """
     issue_key = validate_issue_key(issue_key)
 
-    with get_jira_client() as client:
+    def _do_delete(c: JiraClient) -> dict | None:
         if not force:
             # Get issue details for confirmation
             try:
-                issue = client.get_issue(
+                issue = c.get_issue(
                     issue_key, fields=["summary", "issuetype", "status"]
                 )
                 return {
@@ -364,15 +403,34 @@ def _delete_issue_impl(issue_key: str, force: bool = False) -> dict | None:
             except JiraError:
                 return {"key": issue_key}
         else:
-            client.delete_issue(issue_key)
+            c.delete_issue(issue_key)
             return None
 
+    if client is not None:
+        return _do_delete(client)
 
-def _confirm_and_delete(issue_key: str) -> None:
-    """Actually delete the issue after confirmation."""
+    with get_jira_client() as c:
+        return _do_delete(c)
+
+
+def _confirm_and_delete(
+    issue_key: str,
+    client: JiraClient | None = None,
+) -> None:
+    """Actually delete the issue after confirmation.
+
+    Args:
+        issue_key: Issue key (e.g., PROJ-123)
+        client: Optional JiraClient instance. If None, creates one internally.
+    """
     issue_key = validate_issue_key(issue_key)
-    with get_jira_client() as client:
+
+    if client is not None:
         client.delete_issue(issue_key)
+        return
+
+    with get_jira_client() as c:
+        c.delete_issue(issue_key)
 
 
 # =============================================================================
@@ -415,7 +473,7 @@ def issue():
 )
 @click.pass_context
 def get_issue(
-    ctx,
+    ctx: click.Context,
     issue_key: str,
     fields: str,
     detailed: bool,
@@ -425,6 +483,8 @@ def get_issue(
 ):
     """Get the details of a specific issue."""
     try:
+        client = get_client_from_context(ctx)
+
         # Parse fields
         field_list = parse_comma_list(fields)
 
@@ -436,7 +496,7 @@ def get_issue(
             field_list.append("timetracking")
 
         # Get issue
-        issue = _get_issue_impl(issue_key=issue_key, fields=field_list)
+        issue = _get_issue_impl(issue_key=issue_key, fields=field_list, client=client)
 
         # Output formatting
         output_format = (
@@ -514,7 +574,7 @@ def get_issue(
 )
 @click.pass_context
 def create_issue(
-    ctx,
+    ctx: click.Context,
     project: str,
     issue_type: str,
     summary: str,
@@ -536,6 +596,8 @@ def create_issue(
 ):
     """Create a new JIRA issue."""
     try:
+        client = get_client_from_context(ctx)
+
         # Parse comma-separated and JSON arguments
         labels_list = parse_comma_list(labels)
         components_list = parse_comma_list(components)
@@ -561,6 +623,7 @@ def create_issue(
             relates_to=relates_to_list,
             estimate=estimate,
             no_defaults=no_defaults,
+            client=client,
         )
 
         issue_key = result.get("key")
@@ -614,7 +677,7 @@ def create_issue(
 @click.option("--no-notify", is_flag=True, help="Do not send notifications to watchers")
 @click.pass_context
 def update_issue(
-    ctx,
+    ctx: click.Context,
     issue_key: str,
     summary: str,
     description: str,
@@ -627,6 +690,8 @@ def update_issue(
 ):
     """Update a JIRA issue."""
     try:
+        client = get_client_from_context(ctx)
+
         # Parse comma-separated and JSON arguments
         labels_list = parse_comma_list(labels)
         components_list = parse_comma_list(components)
@@ -642,6 +707,7 @@ def update_issue(
             components=components_list,
             custom_fields=custom_fields_dict,
             notify_users=not no_notify,
+            client=client,
         )
 
         print_success(f"Updated issue: {issue_key}")
@@ -666,16 +732,18 @@ def update_issue(
 @click.argument("issue_key")
 @click.option("--force", "-f", is_flag=True, help="Skip confirmation prompt")
 @click.pass_context
-def delete_issue(ctx, issue_key: str, force: bool):
+def delete_issue(ctx: click.Context, issue_key: str, force: bool):
     """Delete a JIRA issue."""
     try:
+        client = get_client_from_context(ctx)
+
         if force:
             # Direct delete without confirmation
-            _delete_issue_impl(issue_key, force=True)
+            _delete_issue_impl(issue_key, force=True, client=client)
             print_success(f"Deleted issue: {issue_key}")
         else:
             # Get issue info for confirmation
-            issue_info = _delete_issue_impl(issue_key, force=False)
+            issue_info = _delete_issue_impl(issue_key, force=False, client=client)
 
             if issue_info:
                 click.echo(f"\nIssue: {issue_info.get('key', issue_key)}")
@@ -688,7 +756,7 @@ def delete_issue(ctx, issue_key: str, force: bool):
                 click.echo()
 
             if click.confirm("Are you sure you want to delete this issue?"):
-                _confirm_and_delete(issue_key)
+                _confirm_and_delete(issue_key, client=client)
                 print_success(f"Deleted issue: {issue_key}")
             else:
                 click.echo("Deletion cancelled.")

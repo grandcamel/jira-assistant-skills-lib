@@ -376,7 +376,7 @@ class TestGetIssueCommand:
         mock_jira_client.get_issue.return_value = deepcopy(sample_issue)
 
         with patch(
-            "jira_assistant_skills_lib.cli.commands.issue_cmds.get_jira_client",
+            "jira_assistant_skills_lib.cli.commands.issue_cmds.get_client_from_context",
             return_value=mock_jira_client,
         ):
             result = cli_runner.invoke(issue, ["get", "PROJ-123"])
@@ -391,7 +391,7 @@ class TestGetIssueCommand:
         mock_jira_client.get_issue.return_value = deepcopy(sample_issue)
 
         with patch(
-            "jira_assistant_skills_lib.cli.commands.issue_cmds.get_jira_client",
+            "jira_assistant_skills_lib.cli.commands.issue_cmds.get_client_from_context",
             return_value=mock_jira_client,
         ):
             result = cli_runner.invoke(issue, ["get", "PROJ-123", "--output", "json"])
@@ -413,7 +413,7 @@ class TestCreateIssueCommand:
 
         with (
             patch(
-                "jira_assistant_skills_lib.cli.commands.issue_cmds.get_jira_client",
+                "jira_assistant_skills_lib.cli.commands.issue_cmds.get_client_from_context",
                 return_value=mock_jira_client,
             ),
             patch(
@@ -445,7 +445,7 @@ class TestUpdateIssueCommand:
     def test_update_issue_cli_success(self, cli_runner, mock_jira_client):
         """Test CLI update issue command success."""
         with patch(
-            "jira_assistant_skills_lib.cli.commands.issue_cmds.get_jira_client",
+            "jira_assistant_skills_lib.cli.commands.issue_cmds.get_client_from_context",
             return_value=mock_jira_client,
         ):
             result = cli_runner.invoke(
@@ -464,7 +464,7 @@ class TestDeleteIssueCommand:
     def test_delete_issue_cli_force(self, cli_runner, mock_jira_client):
         """Test CLI delete issue command with force flag."""
         with patch(
-            "jira_assistant_skills_lib.cli.commands.issue_cmds.get_jira_client",
+            "jira_assistant_skills_lib.cli.commands.issue_cmds.get_client_from_context",
             return_value=mock_jira_client,
         ):
             result = cli_runner.invoke(
