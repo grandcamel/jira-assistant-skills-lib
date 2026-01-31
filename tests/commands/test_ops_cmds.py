@@ -550,7 +550,7 @@ class TestCacheWarmCommand:
 
         with (
             patch(
-                "jira_as.cli.commands.ops_cmds.get_jira_client",
+                "jira_as.cli.cli_utils.get_jira_client",
                 return_value=mock_jira_client,
             ),
             patch(

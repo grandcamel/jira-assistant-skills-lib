@@ -1337,7 +1337,8 @@ def search_build(
     if not clause and not template:
         raise click.UsageError("Provide --clause or --template to build a query")
 
-    client = get_client_from_context(ctx)
+    # Only get client when validation is requested
+    client = get_client_from_context(ctx) if validate else None
     result = _build_jql_impl(
         clauses=list(clause) if clause else None,
         template=template,
