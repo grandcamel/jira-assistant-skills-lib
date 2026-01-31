@@ -13,10 +13,7 @@ from typing import TYPE_CHECKING, Any
 
 import click
 
-from jira_as import (
-    JiraCache,
-    get_jira_client,
-)
+from jira_as import JiraCache, get_jira_client
 
 from ..cli_utils import format_json, get_client_from_context, handle_jira_errors
 
@@ -43,11 +40,7 @@ def _format_bytes(size_bytes: int) -> str:
 def _is_critical_error(e: Exception) -> bool:
     """Check if an exception is a critical error that should stop execution."""
     try:
-        from jira_as import (
-            AuthenticationError,
-            RateLimitError,
-            ServerError,
-        )
+        from jira_as import AuthenticationError, RateLimitError, ServerError
 
         if isinstance(e, (AuthenticationError, RateLimitError, ServerError)):
             return True

@@ -35,11 +35,7 @@ class TestPackageImports:
 
     def test_error_imports(self):
         """Test error classes are importable."""
-        from jira_as import (
-            AuthenticationError,
-            JiraError,
-            ValidationError,
-        )
+        from jira_as import AuthenticationError, JiraError, ValidationError
 
         assert JiraError is not None
         assert AuthenticationError is not None
@@ -47,41 +43,28 @@ class TestPackageImports:
 
     def test_validator_imports(self):
         """Test validator functions are importable."""
-        from jira_as import (
-            validate_issue_key,
-            validate_jql,
-        )
+        from jira_as import validate_issue_key, validate_jql
 
         assert validate_issue_key is not None
         assert validate_jql is not None
 
     def test_formatter_imports(self):
         """Test formatter functions are importable."""
-        from jira_as import (
-            format_issue,
-            format_table,
-        )
+        from jira_as import format_issue, format_table
 
         assert format_issue is not None
         assert format_table is not None
 
     def test_adf_imports(self):
         """Test ADF helper functions are importable."""
-        from jira_as import (
-            markdown_to_adf,
-            text_to_adf,
-        )
+        from jira_as import markdown_to_adf, text_to_adf
 
         assert text_to_adf is not None
         assert markdown_to_adf is not None
 
     def test_time_utils_imports(self):
         """Test time utilities are importable."""
-        from jira_as import (
-            SECONDS_PER_HOUR,
-            format_seconds,
-            parse_time_string,
-        )
+        from jira_as import SECONDS_PER_HOUR, format_seconds, parse_time_string
 
         assert parse_time_string is not None
         assert format_seconds is not None

@@ -11,11 +11,7 @@ from typing import TYPE_CHECKING, Any
 
 import click
 
-from jira_as import (
-    JiraError,
-    ValidationError,
-    get_jira_client,
-)
+from jira_as import JiraError, ValidationError, get_jira_client
 
 from ..cli_utils import format_json, get_client_from_context, handle_jira_errors
 
@@ -357,7 +353,8 @@ def _check_project_fields_impl(
         # Filter by issue type name if specified
         if issue_type:
             issue_types = [
-                it for it in issue_types
+                it
+                for it in issue_types
                 if it.get("name", "").lower() == issue_type.lower()
             ]
 

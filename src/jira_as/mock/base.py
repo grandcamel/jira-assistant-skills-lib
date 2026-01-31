@@ -612,9 +612,7 @@ class MockJiraClientBase:
         self._issues[issue_key] = new_issue
         return {"key": issue_key, "id": issue_id, "self": new_issue["self"]}
 
-    def create_issues_bulk(
-        self, issue_updates: list[dict[str, Any]]
-    ) -> dict[str, Any]:
+    def create_issues_bulk(self, issue_updates: list[dict[str, Any]]) -> dict[str, Any]:
         """Create multiple issues in bulk.
 
         Args:
@@ -1244,9 +1242,9 @@ class MockJiraClientBase:
         Returns:
             Response with 'values' array of user objects.
         """
-        users = [
-            self.USERS[aid] for aid in account_ids if aid in self.USERS
-        ][:max_results]
+        users = [self.USERS[aid] for aid in account_ids if aid in self.USERS][
+            :max_results
+        ]
         return {"values": users}
 
     def get_user_groups(self, account_id: str) -> list:
@@ -1389,9 +1387,7 @@ class MockJiraClientBase:
         # Return empty list for other projects
         return []
 
-    def get_project_versions(
-        self, project_key: str, expand: str | None = None
-    ) -> list:
+    def get_project_versions(self, project_key: str, expand: str | None = None) -> list:
         """Get all versions for a project.
 
         Args:

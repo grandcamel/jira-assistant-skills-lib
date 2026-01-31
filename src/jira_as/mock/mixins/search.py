@@ -371,9 +371,7 @@ class SearchMixin(_Base):
             "jql": jql,
         }
 
-    def parse_jql(
-        self, queries: list, validation: str = "strict"
-    ) -> dict[str, Any]:
+    def parse_jql(self, queries: list, validation: str = "strict") -> dict[str, Any]:
         """Parse and validate JQL queries.
 
         Args:
@@ -740,9 +738,7 @@ class SearchMixin(_Base):
             "value": value,
         }
 
-    def delete_filter_permission(
-        self, filter_id: str, permission_id: int
-    ) -> None:
+    def delete_filter_permission(self, filter_id: str, permission_id: int) -> None:
         """Delete a permission from a filter.
 
         Args:

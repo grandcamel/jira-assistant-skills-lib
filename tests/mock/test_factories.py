@@ -2,7 +2,6 @@
 Tests for mock factory classes.
 """
 
-
 from jira_as.mock.factories import (
     CommentFactory,
     ResponseFactory,

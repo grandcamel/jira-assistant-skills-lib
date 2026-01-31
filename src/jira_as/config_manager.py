@@ -384,9 +384,7 @@ def get_project_defaults(
         Dict with default values: priority, assignee, labels, components, etc.
         Returns empty dict if no project context exists.
     """
-    from .project_context import (
-        get_defaults_for_issue_type,
-    )
+    from .project_context import get_defaults_for_issue_type
     from .project_context import get_project_context as _get_project_context
 
     context = _get_project_context(project_key)

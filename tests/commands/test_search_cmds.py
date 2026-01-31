@@ -428,9 +428,7 @@ class TestSearchImplementation:
 
         output_file = str(tmp_path / "export.csv")
 
-        with patch(
-            "jira_as.cli.commands.search_cmds.export_csv"
-        ) as mock_export:
+        with patch("jira_as.cli.commands.search_cmds.export_csv") as mock_export:
             result = _export_results_impl(
                 jql="project = TEST",
                 output_file=output_file,

@@ -603,9 +603,7 @@ class TestAddWorklogImpl:
         """Test worklog with all options."""
         mock_client.add_worklog.return_value = sample_worklog
 
-        with patch(
-            "jira_as.cli.commands.time_cmds.parse_relative_date"
-        ) as mock_parse:
+        with patch("jira_as.cli.commands.time_cmds.parse_relative_date") as mock_parse:
             mock_parse.return_value = datetime(2025, 1, 15, 9, 0)
             result = _add_worklog_impl(
                 "PROJ-123",

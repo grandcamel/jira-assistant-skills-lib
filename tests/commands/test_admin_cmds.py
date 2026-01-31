@@ -422,9 +422,7 @@ class TestProjectImplementation:
     @patch("jira_as.cli.commands.admin_cmds.validate_project_key")
     @patch("jira_as.cli.commands.admin_cmds.validate_project_name")
     @patch("jira_as.cli.commands.admin_cmds.validate_project_type")
-    @patch(
-        "jira_as.cli.commands.admin_cmds.validate_project_template"
-    )
+    @patch("jira_as.cli.commands.admin_cmds.validate_project_template")
     def test_create_project_impl(
         self,
         mock_validate_template,

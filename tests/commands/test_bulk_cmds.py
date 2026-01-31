@@ -244,9 +244,7 @@ class TestBulkTransitionImplementation:
     """Tests for bulk transition implementation."""
 
     @patch("jira_as.cli.commands.bulk_cmds.validate_jql")
-    def test_bulk_transition_dry_run(
-        self, mock_validate, mock_client, sample_issues
-    ):
+    def test_bulk_transition_dry_run(self, mock_validate, mock_client, sample_issues):
         """Test bulk transition dry run."""
         mock_validate.return_value = "project = TEST"
         mock_client.search_issues.return_value = {"issues": sample_issues}

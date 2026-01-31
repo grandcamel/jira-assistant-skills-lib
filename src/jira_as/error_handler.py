@@ -20,9 +20,7 @@ from typing import Any
 from assistant_skills_lib.error_handler import (
     AuthenticationError as BaseAuthenticationError,
 )
-from assistant_skills_lib.error_handler import (
-    BaseAPIError,
-)
+from assistant_skills_lib.error_handler import BaseAPIError
 from assistant_skills_lib.error_handler import ConflictError as BaseConflictError
 from assistant_skills_lib.error_handler import NotFoundError as BaseNotFoundError
 from assistant_skills_lib.error_handler import PermissionError as BasePermissionError

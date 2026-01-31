@@ -386,9 +386,7 @@ class JiraClient:
         data: dict[str, Any] = {"fields": fields}
         return self.post("/rest/api/3/issue", data=data, operation="create issue")
 
-    def create_issues_bulk(
-        self, issue_updates: list[dict[str, Any]]
-    ) -> dict[str, Any]:
+    def create_issues_bulk(self, issue_updates: list[dict[str, Any]]) -> dict[str, Any]:
         """
         Create multiple issues in bulk.
 

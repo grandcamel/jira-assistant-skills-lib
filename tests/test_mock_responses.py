@@ -3,7 +3,6 @@ Tests for mock_responses backwards compatibility module.
 """
 
 
-
 class TestMockResponsesBackwardsCompatibility:
     """Tests for backwards compatibility imports."""
 

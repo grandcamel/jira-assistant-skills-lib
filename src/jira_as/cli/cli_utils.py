@@ -267,11 +267,7 @@ def output_results(
         columns: Column names for table output
         success_msg: Optional success message for text output
     """
-    from jira_as import (
-        format_json,
-        format_table,
-        print_success,
-    )
+    from jira_as import format_json, format_table, print_success
 
     if output_format == "json":
         click.echo(format_json(data))

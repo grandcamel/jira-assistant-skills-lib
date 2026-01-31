@@ -38,10 +38,7 @@ from .adf_helper import (
 )
 
 # Autocomplete cache
-from .autocomplete_cache import (
-    AutocompleteCache,
-    get_autocomplete_cache,
-)
+from .autocomplete_cache import AutocompleteCache, get_autocomplete_cache
 
 # Automation client
 from .automation_client import AutomationClient
@@ -58,11 +55,7 @@ from .batch_processor import (
 )
 
 # Cache
-from .cache import (
-    CacheStats,
-    JiraCache,
-    get_cache,
-)
+from .cache import CacheStats, JiraCache, get_cache
 
 # Configuration
 from .config_manager import (
@@ -167,12 +160,7 @@ from .project_context import (
 )
 
 # Request batching
-from .request_batcher import (
-    BatchError,
-    BatchResult,
-    RequestBatcher,
-    batch_fetch_issues,
-)
+from .request_batcher import BatchError, BatchResult, RequestBatcher, batch_fetch_issues
 
 # Time utilities
 from .time_utils import (
@@ -195,10 +183,7 @@ from .time_utils import (
 )
 
 # Transition helpers
-from .transition_helpers import (
-    find_transition_by_keywords,
-    find_transition_by_name,
-)
+from .transition_helpers import find_transition_by_keywords, find_transition_by_name
 
 # User helpers
 from .user_helpers import (
