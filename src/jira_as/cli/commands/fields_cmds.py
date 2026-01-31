@@ -350,35 +350,39 @@ def _check_project_fields_impl(
             "issue_types": [],
         }
 
-        params: dict[str, Any] = {
-            "projectKeys": project_key,
-            "expand": "projects.issuetypes.fields",
-        }
+        # Use new per-project createmeta endpoints (replaces deprecated /issue/createmeta)
+        issue_types_resp = c.get_create_issue_meta_issuetypes(project_key)
+        issue_types = issue_types_resp.get("values", [])
+
+        # Filter by issue type name if specified
         if issue_type:
-            params["issuetypeNames"] = issue_type
+            issue_types = [
+                it for it in issue_types
+                if it.get("name", "").lower() == issue_type.lower()
+            ]
 
-        meta = c.get("/rest/api/3/issue/createmeta", params=params)
+        for itype in issue_types:
+            type_info: dict[str, Any] = {
+                "name": itype.get("name"),
+                "id": itype.get("id"),
+                "fields": [],
+            }
 
-        for proj in meta.get("projects", []):
-            for itype in proj.get("issuetypes", []):
-                type_info: dict[str, Any] = {
-                    "name": itype.get("name"),
-                    "id": itype.get("id"),
-                    "fields": [],
+            # Get fields for this issue type
+            fields_resp = c.get_create_issue_meta_fields(project_key, itype.get("id"))
+            for finfo in fields_resp.get("values", []):
+                fid = finfo.get("fieldId")
+                field = {
+                    "id": fid,
+                    "name": finfo.get("name"),
+                    "required": finfo.get("required", False),
                 }
+                type_info["fields"].append(field)
 
-                for fid, finfo in itype.get("fields", {}).items():
-                    field = {
-                        "id": fid,
-                        "name": finfo.get("name"),
-                        "required": finfo.get("required", False),
-                    }
-                    type_info["fields"].append(field)
+                if fid not in result["fields"]:
+                    result["fields"][fid] = finfo.get("name")
 
-                    if fid not in result["fields"]:
-                        result["fields"][fid] = finfo.get("name")
-
-                result["issue_types"].append(type_info)
+            result["issue_types"].append(type_info)
 
         if check_agile:
             result["agile_fields"] = {}

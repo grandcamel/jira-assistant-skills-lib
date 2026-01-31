@@ -646,6 +646,125 @@ class MockJiraClientBase:
             "errors": errors,
         }
 
+    def get_create_issue_meta_issuetypes(
+        self,
+        project_id_or_key: str,
+        start_at: int = 0,
+        max_results: int = 50,
+    ) -> dict[str, Any]:
+        """Get issue types for project create metadata.
+
+        This replaces the deprecated /rest/api/3/issue/createmeta endpoint.
+
+        Args:
+            project_id_or_key: Project ID or key.
+            start_at: Starting index for pagination.
+            max_results: Maximum results per page.
+
+        Returns:
+            Issue types available for creating issues in the project.
+        """
+        # Verify project exists
+        self._verify_project_exists(project_id_or_key)
+
+        issue_types = [
+            {
+                "id": "10000",
+                "name": "Epic",
+                "description": "A big user story",
+                "subtask": False,
+            },
+            {
+                "id": "10001",
+                "name": "Story",
+                "description": "A user story",
+                "subtask": False,
+            },
+            {
+                "id": "10002",
+                "name": "Bug",
+                "description": "A bug",
+                "subtask": False,
+            },
+            {
+                "id": "10003",
+                "name": "Task",
+                "description": "A task",
+                "subtask": False,
+            },
+            {
+                "id": "10004",
+                "name": "Sub-task",
+                "description": "A sub-task",
+                "subtask": True,
+            },
+        ]
+
+        from .factories import ResponseFactory
+
+        return ResponseFactory.paginated(issue_types, start_at, max_results)
+
+    def get_create_issue_meta_fields(
+        self,
+        project_id_or_key: str,
+        issue_type_id: str,
+        start_at: int = 0,
+        max_results: int = 50,
+    ) -> dict[str, Any]:
+        """Get fields for a specific issue type in create metadata.
+
+        This replaces the deprecated /rest/api/3/issue/createmeta endpoint.
+
+        Args:
+            project_id_or_key: Project ID or key.
+            issue_type_id: Issue type ID.
+            start_at: Starting index for pagination.
+            max_results: Maximum results per page.
+
+        Returns:
+            Fields available for creating issues of this type.
+        """
+        # Verify project exists
+        self._verify_project_exists(project_id_or_key)
+
+        # Return common fields for all issue types
+        fields = [
+            {
+                "fieldId": "summary",
+                "name": "Summary",
+                "required": True,
+                "schema": {"type": "string"},
+            },
+            {
+                "fieldId": "description",
+                "name": "Description",
+                "required": False,
+                "schema": {"type": "string"},
+            },
+            {
+                "fieldId": "priority",
+                "name": "Priority",
+                "required": False,
+                "schema": {"type": "priority"},
+            },
+            {
+                "fieldId": "assignee",
+                "name": "Assignee",
+                "required": False,
+                "schema": {"type": "user"},
+            },
+            {
+                "fieldId": "labels",
+                "name": "Labels",
+                "required": False,
+                "schema": {"type": "array", "items": "string"},
+            },
+        ]
+
+        from .factories import ResponseFactory
+
+        return ResponseFactory.paginated(fields, start_at, max_results)
+
     def update_issue(
         self,
         issue_key: str,

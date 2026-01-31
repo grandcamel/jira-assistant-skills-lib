@@ -326,13 +326,49 @@ class TestCreateFieldImpl:
 class TestCheckProjectFieldsImpl:
     """Tests for the _check_project_fields_impl implementation function."""
 
+    @pytest.fixture
+    def sample_issuetypes_meta(self):
+        """Sample response from get_create_issue_meta_issuetypes."""
+        return {
+            "values": [
+                {"id": "10001", "name": "Task", "description": "A task"},
+                {"id": "10002", "name": "Bug", "description": "A bug"},
+            ]
+        }
+
+    @pytest.fixture
+    def sample_fields_meta_task(self):
+        """Sample response from get_create_issue_meta_fields for Task."""
+        return {
+            "values": [
+                {"fieldId": "summary", "name": "Summary", "required": True},
+                {"fieldId": "description", "name": "Description", "required": False},
+                {"fieldId": "customfield_10001", "name": "Story Points", "required": False},
+                {"fieldId": "customfield_10002", "name": "Epic Link", "required": False},
+            ]
+        }
+
+    @pytest.fixture
+    def sample_fields_meta_bug(self):
+        """Sample response from get_create_issue_meta_fields for Bug."""
+        return {
+            "values": [
+                {"fieldId": "summary", "name": "Summary", "required": True},
+                {"fieldId": "description", "name": "Description", "required": False},
+                {"fieldId": "priority", "name": "Priority", "required": True},
+            ]
+        }
+
     def test_check_project_fields_basic(
-        self, mock_jira_client, sample_project_classic, sample_project_meta
+        self, mock_jira_client, sample_project_classic,
+        sample_issuetypes_meta, sample_fields_meta_task, sample_fields_meta_bug
     ):
         """Test checking project fields."""
-        mock_jira_client.get.side_effect = [
-            deepcopy(sample_project_classic),
-            deepcopy(sample_project_meta),
+        mock_jira_client.get.return_value = deepcopy(sample_project_classic)
+        mock_jira_client.get_create_issue_meta_issuetypes.return_value = deepcopy(sample_issuetypes_meta)
+        mock_jira_client.get_create_issue_meta_fields.side_effect = [
+            deepcopy(sample_fields_meta_task),
+            deepcopy(sample_fields_meta_bug),
         ]
 
         with patch(
@@ -349,12 +385,15 @@ class TestCheckProjectFieldsImpl:
         mock_jira_client.__exit__.assert_called_once()
 
     def test_check_project_fields_team_managed(
-        self, mock_jira_client, sample_project_nextgen, sample_project_meta
+        self, mock_jira_client, sample_project_nextgen,
+        sample_issuetypes_meta, sample_fields_meta_task, sample_fields_meta_bug
     ):
         """Test checking team-managed project fields."""
-        mock_jira_client.get.side_effect = [
-            deepcopy(sample_project_nextgen),
-            deepcopy(sample_project_meta),
+        mock_jira_client.get.return_value = deepcopy(sample_project_nextgen)
+        mock_jira_client.get_create_issue_meta_issuetypes.return_value = deepcopy(sample_issuetypes_meta)
+        mock_jira_client.get_create_issue_meta_fields.side_effect = [
+            deepcopy(sample_fields_meta_task),
+            deepcopy(sample_fields_meta_bug),
         ]
 
         with patch(
@@ -366,12 +405,15 @@ class TestCheckProjectFieldsImpl:
         assert result["is_team_managed"] is True
 
     def test_check_project_fields_with_agile(
-        self, mock_jira_client, sample_project_classic, sample_project_meta
+        self, mock_jira_client, sample_project_classic,
+        sample_issuetypes_meta, sample_fields_meta_task, sample_fields_meta_bug
     ):
         """Test checking project fields with Agile check."""
-        mock_jira_client.get.side_effect = [
-            deepcopy(sample_project_classic),
-            deepcopy(sample_project_meta),
+        mock_jira_client.get.return_value = deepcopy(sample_project_classic)
+        mock_jira_client.get_create_issue_meta_issuetypes.return_value = deepcopy(sample_issuetypes_meta)
+        mock_jira_client.get_create_issue_meta_fields.side_effect = [
+            deepcopy(sample_fields_meta_task),
+            deepcopy(sample_fields_meta_bug),
         ]
 
         with patch(
@@ -385,13 +427,19 @@ class TestCheckProjectFieldsImpl:
         assert result["agile_fields"]["story_points"] is not None
 
     def test_check_project_fields_specific_issue_type(
-        self, mock_jira_client, sample_project_classic, sample_project_meta
+        self, mock_jira_client, sample_project_classic,
+        sample_fields_meta_task
     ):
         """Test checking fields for specific issue type."""
-        mock_jira_client.get.side_effect = [
-            deepcopy(sample_project_classic),
-            deepcopy(sample_project_meta),
-        ]
+        # Only Task issue type returned (filtered)
+        sample_issuetypes_filtered = {
+            "values": [
+                {"id": "10001", "name": "Task", "description": "A task"},
+            ]
+        }
+        mock_jira_client.get.return_value = deepcopy(sample_project_classic)
+        mock_jira_client.get_create_issue_meta_issuetypes.return_value = sample_issuetypes_filtered
+        mock_jira_client.get_create_issue_meta_fields.return_value = deepcopy(sample_fields_meta_task)
 
         with patch(
             "jira_as.cli.commands.fields_cmds.get_jira_client",
@@ -401,6 +449,7 @@ class TestCheckProjectFieldsImpl:
 
         # Should still work but pass issue type to API
         assert result["project_key"] == "PROJ"
+        assert len(result["issue_types"]) == 1
 
 
 # =============================================================================

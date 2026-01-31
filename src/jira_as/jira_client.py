@@ -406,6 +406,72 @@ class JiraClient:
             "/rest/api/3/issue/bulk", data=data, operation="bulk create issues"
         )
 
+    def get_create_issue_meta_issuetypes(
+        self,
+        project_id_or_key: str,
+        start_at: int = 0,
+        max_results: int = 50,
+    ) -> dict[str, Any]:
+        """
+        Get issue types for project create metadata.
+
+        This replaces the deprecated /rest/api/3/issue/createmeta endpoint.
+
+        Args:
+            project_id_or_key: Project ID or key
+            start_at: Starting index for pagination
+            max_results: Maximum results per page
+
+        Returns:
+            Issue types available for creating issues in the project
+
+        Raises:
+            JiraError or subclass on failure
+        """
+        params: dict[str, Any] = {
+            "startAt": start_at,
+            "maxResults": max_results,
+        }
+        return self.get(
+            f"/rest/api/3/issue/createmeta/{project_id_or_key}/issuetypes",
+            params=params,
+            operation=f"get create issue meta for project {project_id_or_key}",
+        )
+
+    def get_create_issue_meta_fields(
+        self,
+        project_id_or_key: str,
+        issue_type_id: str,
+        start_at: int = 0,
+        max_results: int = 50,
+    ) -> dict[str, Any]:
+        """
+        Get fields for a specific issue type in create metadata.
+
+        This replaces the deprecated /rest/api/3/issue/createmeta endpoint.
+
+        Args:
+            project_id_or_key: Project ID or key
+            issue_type_id: Issue type ID
+            start_at: Starting index for pagination
+            max_results: Maximum results per page
+
+        Returns:
+            Fields available for creating issues of this type
+
+        Raises:
+            JiraError or subclass on failure
+        """
+        params: dict[str, Any] = {
+            "startAt": start_at,
+            "maxResults": max_results,
+        }
+        return self.get(
+            f"/rest/api/3/issue/createmeta/{project_id_or_key}/issuetypes/{issue_type_id}",
+            params=params,
+            operation=f"get create issue fields for {project_id_or_key}/{issue_type_id}",
+        )
+
     def update_issue(
         self, issue_key: str, fields: dict[str, Any], notify_users: bool = True
     ) -> None:
@@ -4863,7 +4929,7 @@ class JiraClient:
 
         Args:
             account_id: User's account ID (preferred)
-            email: User's email address (may fail if email is privacy-restricted)
+            email: User's email address (searches using query parameter)
             expand: Optional fields to expand (e.g., ['groups', 'applicationRoles'])
 
         Returns:
@@ -4871,23 +4937,36 @@ class JiraClient:
 
         Raises:
             ValidationError: If neither account_id nor email is provided
+            NotFoundError: If no user found for email
             JiraError or subclass on failure
         """
         if not account_id and not email:
-            from error_handler import ValidationError
+            from .error_handler import ValidationError
 
             raise ValidationError("Either account_id or email must be provided")
 
-        params: dict[str, Any] = {}
+        # If account_id provided, use direct lookup
         if account_id:
-            params["accountId"] = account_id
-        if email:
-            # Search by email - this may fail if email is hidden
-            params["username"] = email  # Legacy parameter, still works for email lookup
-        if expand:
-            params["expand"] = ",".join(expand)
+            params: dict[str, Any] = {"accountId": account_id}
+            if expand:
+                params["expand"] = ",".join(expand)
+            return self.get("/rest/api/3/user", params=params, operation="get user")
 
-        return self.get("/rest/api/3/user", params=params, operation="get user")
+        # For email lookup, use search_users (replaces deprecated username parameter)
+        users = self.search_users(query=email)
+        if not users:
+            from .error_handler import NotFoundError
+
+            raise NotFoundError(f"No user found with email: {email}")
+
+        # Return the first matching user
+        user = users[0]
+
+        # If expand requested, fetch full user details
+        if expand:
+            return self.get_user(account_id=user["accountId"], expand=expand)
+
+        return user
 
     def get_current_user(self, expand: list | None = None) -> dict[str, Any]:
         """
