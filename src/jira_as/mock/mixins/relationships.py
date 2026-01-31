@@ -88,6 +88,14 @@ class RelationshipsMixin(_Base):
             "issueLinkTypes": self.LINK_TYPES,
         }
 
+    def get_link_types(self) -> list[dict[str, str]]:
+        """Get all available issue link types.
+
+        Returns:
+            List of link type objects with id, name, inward, outward.
+        """
+        return self.LINK_TYPES
+
     def get_issue_link_type(self, link_type_id: str) -> dict[str, Any]:
         """Get an issue link type by ID.
 

@@ -832,3 +832,99 @@ class JSMMixin(_Base):
         """
         # In mock, this is a no-op
         pass
+
+    # =========================================================================
+    # Request Participant Operations
+    # =========================================================================
+
+    def get_request_participants(
+        self,
+        issue_key: str,
+        start: int = 0,
+        limit: int = 50,
+    ) -> list[dict[str, Any]]:
+        """Get participants for a request.
+
+        Args:
+            issue_key: The key of the request (e.g., 'DEMOSD-1').
+            start: Starting index for pagination.
+            limit: Maximum results per page.
+
+        Returns:
+            List of participant user dicts.
+
+        Raises:
+            NotFoundError: If the request is not found.
+        """
+        if issue_key not in self._issues:
+            from ...error_handler import NotFoundError
+
+            raise NotFoundError(f"Request {issue_key} not found")
+
+        # Return mock participants - the reporter and a sample participant
+        issue = self._issues[issue_key]
+        reporter = issue["fields"].get("reporter")
+
+        participants: list[dict[str, Any]] = []
+        if reporter:
+            participants.append(reporter)
+
+        # Add a second mock participant if we have one
+        if "def456" in self.USERS and reporter != self.USERS["def456"]:
+            participants.append(self.USERS["def456"])
+
+        return participants[start : start + limit]
+
+    def add_request_participants(
+        self,
+        issue_key: str,
+        account_ids: list[str] | None = None,
+        usernames: list[str] | None = None,
+    ) -> dict[str, Any]:
+        """Add participants to a request.
+
+        Args:
+            issue_key: The key of the request.
+            account_ids: List of user account IDs.
+            usernames: List of usernames (legacy).
+
+        Returns:
+            The updated participants list.
+
+        Raises:
+            NotFoundError: If the request is not found.
+        """
+        if issue_key not in self._issues:
+            from ...error_handler import NotFoundError
+
+            raise NotFoundError(f"Request {issue_key} not found")
+
+        # Return mock response
+        return self.get_request_participants(issue_key)
+
+    def remove_request_participants(
+        self,
+        issue_key: str,
+        account_ids: list[str] | None = None,
+        usernames: list[str] | None = None,
+    ) -> dict[str, Any]:
+        """Remove participants from a request.
+
+        Args:
+            issue_key: The key of the request.
+            account_ids: List of user account IDs to remove.
+            usernames: List of usernames to remove (legacy).
+
+        Returns:
+            The updated participants list.
+
+        Raises:
+            NotFoundError: If the request is not found.
+        """
+        if issue_key not in self._issues:
+            from ...error_handler import NotFoundError
+
+            raise NotFoundError(f"Request {issue_key} not found")
+
+        # Return mock response
+        return self.get_request_participants(issue_key)

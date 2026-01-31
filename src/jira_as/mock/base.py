@@ -1112,6 +1112,124 @@ class MockJiraClientBase:
             },
         ]
 
+    def get_project_components(self, project_key: str) -> list:
+        """Get all components for a project.
+
+        Args:
+            project_key: The project key (e.g., 'DEMO').
+
+        Returns:
+            List of component objects.
+
+        Raises:
+            NotFoundError: If the project is not found.
+        """
+        self._verify_project_exists(project_key)
+
+        # Return mock components for known projects
+        if project_key == "DEMO":
+            return [
+                {
+                    "id": "10000",
+                    "name": "Backend",
+                    "description": "Backend services and APIs",
+                    "self": f"{self.base_url}/rest/api/3/component/10000",
+                    "project": "DEMO",
+                    "projectId": 10000,
+                },
+                {
+                    "id": "10001",
+                    "name": "Frontend",
+                    "description": "Frontend UI components",
+                    "self": f"{self.base_url}/rest/api/3/component/10001",
+                    "project": "DEMO",
+                    "projectId": 10000,
+                },
+                {
+                    "id": "10002",
+                    "name": "Documentation",
+                    "description": "Project documentation",
+                    "self": f"{self.base_url}/rest/api/3/component/10002",
+                    "project": "DEMO",
+                    "projectId": 10000,
+                },
+            ]
+        elif project_key == "DEMOSD":
+            return [
+                {
+                    "id": "10100",
+                    "name": "IT Support",
+                    "description": "IT support requests",
+                    "self": f"{self.base_url}/rest/api/3/component/10100",
+                    "project": "DEMOSD",
+                    "projectId": 10001,
+                },
+                {
+                    "id": "10101",
+                    "name": "Hardware",
+                    "description": "Hardware related issues",
+                    "self": f"{self.base_url}/rest/api/3/component/10101",
+                    "project": "DEMOSD",
+                    "projectId": 10001,
+                },
+            ]
+
+        # Return empty list for other projects
+        return []
+
+    def get_project_versions(
+        self, project_key: str, expand: str | None = None
+    ) -> list:
+        """Get all versions for a project.
+
+        Args:
+            project_key: The project key (e.g., 'DEMO').
+            expand: Optional expansions.
+
+        Returns:
+            List of version objects.
+
+        Raises:
+            NotFoundError: If the project is not found.
+        """
+        self._verify_project_exists(project_key)
+
+        # Return mock versions for known projects
+        if project_key == "DEMO":
+            return [
+                {
+                    "id": "10000",
+                    "name": "1.0.0",
+                    "description": "Initial release",
+                    "archived": False,
+                    "released": True,
+                    "releaseDate": "2025-01-01",
+                    "self": f"{self.base_url}/rest/api/3/version/10000",
+                    "projectId": 10000,
+                },
+                {
+                    "id": "10001",
+                    "name": "1.1.0",
+                    "description": "Feature update",
+                    "archived": False,
+                    "released": False,
+                    "self": f"{self.base_url}/rest/api/3/version/10001",
+                    "projectId": 10000,
+                },
+                {
+                    "id": "10002",
+                    "name": "2.0.0",
+                    "description": "Major release",
+                    "archived": False,
+                    "released": False,
+                    "self": f"{self.base_url}/rest/api/3/version/10002",
+                    "projectId": 10000,
+                },
+            ]
+
+        # Return empty list for other projects
+        return []
+
     # =========================================================================
     # HTTP Methods (scaffolding for low-level access)
     # =========================================================================
